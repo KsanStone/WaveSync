@@ -14,8 +14,6 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.function.BiConsumer
-import kotlin.math.abs
-import kotlin.math.sqrt
 
 
 @Component
@@ -30,7 +28,7 @@ class AudioCaptureService {
     private var source: SupportedCaptureSource? = null
     private var lock: CountDownLatch = CountDownLatch(0)
     private var recordingFuture: CompletableFuture<Void>? = null
-    private var fftObservers: MutableList<BiConsumer<FloatArray, Int>> = mutableListOf()
+    private var fftObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
 
     lateinit var fftResult: FloatArray
 
@@ -65,22 +63,13 @@ class AudioCaptureService {
 
     fun doFFT(samples: FloatArray, rate: Int) {
         println("SAMPLE ${samples.min()} ${samples.max()}")
-//        fft.realForward(samples)
-//        val scalar = 1.0f / samples.size.toFloat() * 2.0f
-
-//        for (i in 0 until samples.size / 2) {
-//            val real = samples[i * 2] * scalar
-//            val imaginary = samples[i * 2 + 1] * scalar
-//            fftResult[i] = sqrt(((real * real) + (imaginary * imaginary)))
-//        }
         val imag = FloatArray(samples.size)
-        imag.fill(0.0f)
         FourierMath.transform(1, samples.size, samples, imag)
         FourierMath.calculateMagnitudes(samples, imag, fftResult)
-        fftObservers.forEach { it.accept(fftResult, rate) }
+        fftObservers.forEach { it.accept(fftResult, source!!) }
     }
 
-    fun registerObserver(observer: BiConsumer<FloatArray, Int>) {
+    fun registerObserver(observer: BiConsumer<FloatArray, SupportedCaptureSource>) {
         fftObservers.add(observer)
     }
 
@@ -157,10 +146,9 @@ class AudioCaptureService {
                                     service.openDevice(deviceId).use { device ->
                                         val deviceMix = device.getMix().orElse(XtMix(192000, XtSample.FLOAT32))
                                         val inChannelCount = device.getChannelCount(false)
-                                        var supportedChannels: Int = 0
                                         var channels: XtChannels
-                                        var format: XtFormat? = null
-                                        supportedChannels = 1
+                                        var format: XtFormat?
+                                        var supportedChannels = 1
                                         while (supportedChannels < inChannelCount) {
                                             channels = XtChannels(supportedChannels, 0, 0, 0)
                                             format = XtFormat(deviceMix, channels)

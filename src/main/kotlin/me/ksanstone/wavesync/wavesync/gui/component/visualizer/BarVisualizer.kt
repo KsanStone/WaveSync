@@ -6,13 +6,13 @@ import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.Background
 import javafx.scene.layout.BackgroundFill
 import javafx.scene.paint.Color
+import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import java.util.*
-import kotlin.math.abs
 import kotlin.math.floor
 
 class BarVisualizer : AnchorPane() {
 
-    lateinit var canvas: Canvas
+    var canvas: Canvas
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
@@ -29,20 +29,20 @@ class BarVisualizer : AnchorPane() {
 
         background = Background(BackgroundFill(Color.AZURE, null, null))
         canvas = Canvas()
-        AnchorPane.setBottomAnchor(canvas, 0.0)
-        AnchorPane.setLeftAnchor(canvas, 0.0)
-        AnchorPane.setRightAnchor(canvas, 0.0)
-        AnchorPane.setTopAnchor(canvas, 0.0)
+        setBottomAnchor(canvas, 0.0)
+        setLeftAnchor(canvas, 0.0)
+        setRightAnchor(canvas, 0.0)
+        setTopAnchor(canvas, 0.0)
         canvas.widthProperty().bind(widthProperty())
         canvas.heightProperty().bind(heightProperty())
         children.add(canvas)
     }
 
-    private var buffer = FloatArray(512)
+    private var buffer: List<Float> = listOf(0.0f)
 
-    fun handleFFT(array: FloatArray, rate: Int) {
-        buffer = array
-        println("FFT${array.min()} ${array.max()}")
+    fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
+        buffer = array.slice(0 until source.trimResultTo(array.size * 2, 20_000))
+        println("FFT ${array.min()} ${array.max()}")
     }
 
     fun draw() {
@@ -63,7 +63,7 @@ class BarVisualizer : AnchorPane() {
         var y = 0.0
 
         for (i in 0 until bufferLength) {
-            y = kotlin.math.max(buffer[i].toDouble(), y.toDouble())
+            y = kotlin.math.max(buffer[i].toDouble(), y)
             if (i % step != 0) continue
 
             val barHeight = y * barHeightScalar
