@@ -26,8 +26,8 @@ data class SupportedCaptureSource(
         return trimResultBufferTo(size, format.mix.rate, frequency)
     }
 
-    fun getDescriptor(): String {
-        return "$name | ${format.mix.rate}Hz ${format.mix.sample}"
+    fun getPropertyDescriptor(): String {
+        return "${format.mix.rate}Hz ${format.mix.sample}"
     }
 
     companion object {

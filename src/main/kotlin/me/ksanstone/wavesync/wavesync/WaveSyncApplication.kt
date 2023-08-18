@@ -20,6 +20,7 @@ class WaveSyncApplication : Application() {
     }
 
     override fun start(stage: Stage) {
+        primaryStage = stage
         applicationContext.publishEvent(StageReadyEvent(stage))
     }
 
@@ -28,6 +29,10 @@ class WaveSyncApplication : Application() {
         applicationContext.close()
         Platform.exit()
         exitProcess(0)
+    }
+
+    companion object {
+        lateinit var primaryStage: Stage
     }
 }
 

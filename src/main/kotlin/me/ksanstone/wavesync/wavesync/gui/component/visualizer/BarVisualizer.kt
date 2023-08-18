@@ -1,12 +1,11 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
+import javafx.animation.Animation
 import javafx.animation.KeyFrame
 import javafx.animation.Timeline
 import javafx.beans.property.FloatProperty
-import javafx.beans.property.IntegerProperty
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleFloatProperty
-import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.value.ObservableValue
 import javafx.scene.canvas.Canvas
@@ -31,11 +30,18 @@ class BarVisualizer : AnchorPane() {
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
-        val fiveSecondsWonder = Timeline(
+        val drawLoop = Timeline(
             KeyFrame(Duration.millis(16.0), { draw() })
         )
-        fiveSecondsWonder.cycleCount = Timeline.INDEFINITE
-        fiveSecondsWonder.play()
+        drawLoop.cycleCount = Timeline.INDEFINITE
+        drawLoop.play()
+
+        parentProperty().addListener { _, _, newValue ->
+            if (newValue != null && drawLoop.status != Animation.Status.RUNNING)
+                drawLoop.play()
+            else if (newValue == null && drawLoop.status == Animation.Status.RUNNING)
+                drawLoop.pause()
+        }
 
         background = Background(BackgroundFill(Color.AZURE, null, null))
         canvas = Canvas()
@@ -84,12 +90,12 @@ class BarVisualizer : AnchorPane() {
         var y = 0.0
 
         for (i in 0 until bufferLength) {
-            y = kotlin.math.max(buffer[i].toDouble(), y)
+            y = max(buffer[i].toDouble(), y)
             if (i % step != 0) continue
             val barHeight = y * barHeightScalar
 
-            val color = startColor.get().interpolate(endColor.get(), y.toDouble())
-            gc.fill = color;
+            val color = startColor.get().interpolate(endColor.get(), y)
+            gc.fill = color
             gc.fillRect(x, height - barHeight, barWidth + 1, barHeight)
             x += barWidth + gap
             y = 0.0
@@ -97,7 +103,7 @@ class BarVisualizer : AnchorPane() {
 
         val drop = (deltaT * dropRate.get()).toFloat()
         for (i in buffer.indices) {
-            buffer[i] = (buffer[i] - drop * (buffer[i].pow(2) * 2f).coerceAtLeast(0.5f)).coerceAtLeast(0.0f)
+            buffer[i] = buffer[i] - drop * (buffer[i].pow(2) + 1).coerceAtLeast(0.0f)
         }
     }
 }
