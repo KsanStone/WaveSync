@@ -221,7 +221,7 @@ public class FourierMath {
      * @param ai
      */
     public static void fft(int n, double ar[], double ai[]) {
-        transform(1, n, ar, ai); // TODO -1 or 1
+        transform(1, n, ar, ai);
     }
 
     /**
@@ -232,6 +232,6 @@ public class FourierMath {
      * @param ai
      */
     public static void ifft(int n, double ar[], double ai[]) {
-        transform(-1, n, ar, ai); // TODO -1 or 1
+        transform(-1, n, ar, ai);
     }
 }

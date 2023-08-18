@@ -1,9 +1,11 @@
 package me.ksanstone.wavesync.wavesync.gui.controller
 
+import javafx.application.Platform
 import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.ComboBox
+import javafx.scene.control.Label
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.event.FXMLInitializeEvent
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
@@ -19,6 +21,8 @@ class MainController() : Initializable  {
     var audioDeviceListComboBox: ComboBox<String>? = null
     @FXML
     var visualizer: BarVisualizer? = null
+    @FXML
+    var deviceInfoLabel: Label? = null;
 
     private val deviceList: MutableList<SupportedCaptureSource> = ArrayList()
     private lateinit var audioCaptureService: AudioCaptureService
@@ -29,6 +33,9 @@ class MainController() : Initializable  {
         CompletableFuture.runAsync {
             audioCaptureService.stopCapture()
             audioCaptureService.startCapture(source)
+            Platform.runLater {
+                deviceInfoLabel!!.text = source.getDescriptor()
+            }
         }.exceptionally {
             it.printStackTrace()
             null

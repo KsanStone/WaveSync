@@ -26,6 +26,10 @@ data class SupportedCaptureSource(
         return trimResultBufferTo(size, format.mix.rate, frequency)
     }
 
+    fun getDescriptor(): String {
+        return "$name | ${format.mix.rate}Hz ${format.mix.sample}"
+    }
+
     companion object {
         fun getMinimumSamples(frequency: Int, rate: Int): Int {
             return (1.0 / frequency * rate).toInt()

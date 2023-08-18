@@ -2,6 +2,8 @@ package me.ksanstone.wavesync.wavesync.service
 
 import com.sun.jna.Pointer
 import jakarta.annotation.PreDestroy
+import me.ksanstone.wavesync.wavesync.service.windowing.HammingWindowFunction
+import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -29,6 +31,7 @@ class AudioCaptureService {
     private var lock: CountDownLatch = CountDownLatch(0)
     private var recordingFuture: CompletableFuture<Void>? = null
     private var fftObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
+    private var windowFunction: WindowFunction? = null
 
     lateinit var fftResult: FloatArray
 
@@ -62,7 +65,7 @@ class AudioCaptureService {
     }
 
     fun doFFT(samples: FloatArray, rate: Int) {
-        println("SAMPLE ${samples.min()} ${samples.max()}")
+        windowFunction!!.applyFunction(samples)
         val imag = FloatArray(samples.size)
         FourierMath.transform(1, samples.size, samples, imag)
         FourierMath.calculateMagnitudes(samples, imag, fftResult)
@@ -88,7 +91,7 @@ class AudioCaptureService {
                     val deviceParams = XtDeviceStreamParams(streamParams, format, bufferSize.current)
 
                     this.source = source
-                    setScanWindowSize(source.getMinimumSamples(20).closestPowerOf2())
+                    setScanWindowSize(source.getMinimumSamples(100).closestPowerOf2())
                     val deviceStream = device.openStream(deviceParams, null)
                     deviceStream.use { stream ->
                         logger.info("Stream opened")
@@ -123,6 +126,7 @@ class AudioCaptureService {
         sampleBufferArray = FloatArray(size)
         sampleBufferArrayIndex = 0
         fftResult = FloatArray(size / 2)
+        windowFunction = HammingWindowFunction(size)
     }
 
     @PreDestroy

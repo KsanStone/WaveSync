@@ -1,31 +1,41 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
+import javafx.animation.KeyFrame
+import javafx.animation.Timeline
+import javafx.beans.property.FloatProperty
+import javafx.beans.property.IntegerProperty
+import javafx.beans.property.ObjectProperty
+import javafx.beans.property.SimpleFloatProperty
+import javafx.beans.property.SimpleIntegerProperty
+import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.value.ObservableValue
 import javafx.scene.canvas.Canvas
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.Background
 import javafx.scene.layout.BackgroundFill
 import javafx.scene.paint.Color
+import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
-import java.util.*
-import kotlin.math.floor
+import kotlin.math.*
+
 
 class BarVisualizer : AnchorPane() {
 
-    var canvas: Canvas
+    private var canvas: Canvas
+
+    val dropRate: FloatProperty = SimpleFloatProperty(1F)
+    val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.LIGHTPINK)
+    val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
+    val scaling: FloatProperty = SimpleFloatProperty(10.0F)
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
-        Timer().scheduleAtFixedRate(object : TimerTask() {
-            override fun run() {
-                try {
-                    draw()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }, 500, 100) //TODO shutdown on finalize
+        val fiveSecondsWonder = Timeline(
+            KeyFrame(Duration.millis(16.0), { draw() })
+        )
+        fiveSecondsWonder.cycleCount = Timeline.INDEFINITE
+        fiveSecondsWonder.play()
 
         background = Background(BackgroundFill(Color.AZURE, null, null))
         canvas = Canvas()
@@ -38,14 +48,25 @@ class BarVisualizer : AnchorPane() {
         children.add(canvas)
     }
 
-    private var buffer: List<Float> = listOf(0.0f)
+    private var buffer: FloatArray = FloatArray(512)
 
     fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
-        buffer = array.slice(0 until source.trimResultTo(array.size * 2, 20_000))
-        println("FFT ${array.min()} ${array.max()}")
+        val size = source.trimResultTo(array.size * 2, 20_000)
+        if (buffer.size != size)
+            buffer = FloatArray(size)
+
+        array.slice(0 until size).forEachIndexed { index, fl ->
+            buffer[index] = max(buffer[index], fl * (scaling.get() * (1.0f - ln(fl + 0.2f) - 0.813f) + 1) ).coerceAtMost(1.0f)
+        }
     }
 
-    fun draw() {
+    private var lastDraw = System.nanoTime()
+
+    private fun draw() {
+        val now = System.nanoTime()
+        val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0
+        lastDraw = now
+
         val gc = canvas.getGraphicsContext2D()
         gc.fill = Color.rgb(33, 33, 33)
         gc.fillRect(0.0, 0.0, width, height)
@@ -65,12 +86,18 @@ class BarVisualizer : AnchorPane() {
         for (i in 0 until bufferLength) {
             y = kotlin.math.max(buffer[i].toDouble(), y)
             if (i % step != 0) continue
-
             val barHeight = y * barHeightScalar
+
+            val color = startColor.get().interpolate(endColor.get(), y.toDouble())
+            gc.fill = color;
             gc.fillRect(x, height - barHeight, barWidth + 1, barHeight)
             x += barWidth + gap
             y = 0.0
         }
 
+        val drop = (deltaT * dropRate.get()).toFloat()
+        for (i in buffer.indices) {
+            buffer[i] = (buffer[i] - drop * (buffer[i].pow(2) * 2f).coerceAtLeast(0.5f)).coerceAtLeast(0.0f)
+        }
     }
 }
