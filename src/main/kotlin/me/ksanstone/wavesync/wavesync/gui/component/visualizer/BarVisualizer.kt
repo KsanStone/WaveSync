@@ -3,10 +3,7 @@ package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 import javafx.animation.Animation
 import javafx.animation.KeyFrame
 import javafx.animation.Timeline
-import javafx.beans.property.FloatProperty
-import javafx.beans.property.ObjectProperty
-import javafx.beans.property.SimpleFloatProperty
-import javafx.beans.property.SimpleObjectProperty
+import javafx.beans.property.*
 import javafx.beans.value.ObservableValue
 import javafx.scene.canvas.Canvas
 import javafx.scene.layout.AnchorPane
@@ -26,6 +23,7 @@ class BarVisualizer : AnchorPane() {
     val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.LIGHTPINK)
     val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val scaling: FloatProperty = SimpleFloatProperty(10.0F)
+    val cutoff: IntegerProperty = SimpleIntegerProperty(20000)
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
@@ -57,7 +55,7 @@ class BarVisualizer : AnchorPane() {
     private var buffer: FloatArray = FloatArray(512)
 
     fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
-        val size = source.trimResultTo(array.size * 2, 20_000)
+        val size = source.trimResultTo(array.size * 2, cutoff.get())
         if (buffer.size != size)
             buffer = FloatArray(size)
 

@@ -3,7 +3,6 @@ package me.ksanstone.wavesync.wavesync.gui.initializer
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
 import javafx.scene.Scene
-import javafx.scene.layout.Pane
 import javafx.stage.Modality
 import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.WaveSyncApplication
@@ -21,12 +20,4 @@ class MenuInitializer {
         dialog.show()
     }
 
-    fun showPopupMenu(root: Pane) {
-        val dialog = Stage()
-        dialog.initModality(Modality.APPLICATION_MODAL)
-        dialog.initOwner(WaveSyncApplication.primaryStage)
-        val dialogScene = Scene(root, root.prefWidth(-1.0), root.prefHeight(-1.0))
-        dialog.setScene(dialogScene)
-        dialog.show()
-    }
 }

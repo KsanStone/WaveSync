@@ -1,7 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.controller
 
 import javafx.application.Platform
-import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.ComboBox
@@ -19,11 +18,11 @@ import java.util.concurrent.CompletableFuture
 class MainController() : Initializable {
 
     @FXML
-    var audioDeviceListComboBox: ComboBox<String>? = null
+    lateinit var audioDeviceListComboBox: ComboBox<String>
     @FXML
-    var visualizer: BarVisualizer? = null
+    lateinit var visualizer: BarVisualizer
     @FXML
-    var deviceInfoLabel: Label? = null
+    lateinit var deviceInfoLabel: Label
 
     private val deviceList: MutableList<SupportedCaptureSource> = ArrayList()
     private lateinit var audioCaptureService: AudioCaptureService
@@ -35,12 +34,11 @@ class MainController() : Initializable {
 
     @FXML
     fun audioDevicePicker() {
-        val source = deviceList.find { it.name == audioDeviceListComboBox!!.value} ?: return
+        val source = deviceList.find { it.name == audioDeviceListComboBox.value} ?: return
         CompletableFuture.runAsync {
-            audioCaptureService.stopCapture()
-            audioCaptureService.startCapture(source)
+            audioCaptureService.changeSource(source)
             Platform.runLater {
-                deviceInfoLabel!!.text = source.getPropertyDescriptor()
+                deviceInfoLabel.text = source.getPropertyDescriptor()
             }
         }.exceptionally {
             it.printStackTrace()
@@ -57,11 +55,11 @@ class MainController() : Initializable {
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         deviceList.clear()
         deviceList.addAll(AudioCaptureService.findSupportedSources())
-        audioDeviceListComboBox!!.items.addAll(deviceList.map { it.name })
+        audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
         WaveSyncBootApplication.applicationContext.publishEvent(FXMLInitializeEvent(this))
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
-        audioCaptureService.registerObserver(visualizer!!::handleFFT)
+        audioCaptureService.registerObserver(visualizer::handleFFT)
     }
 
     companion object {

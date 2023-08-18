@@ -2,6 +2,10 @@ package me.ksanstone.wavesync.wavesync.service
 
 import com.sun.jna.Pointer
 import jakarta.annotation.PreDestroy
+import javafx.beans.property.IntegerProperty
+import javafx.beans.property.ObjectProperty
+import javafx.beans.property.SimpleIntegerProperty
+import javafx.beans.property.SimpleObjectProperty
 import me.ksanstone.wavesync.wavesync.service.windowing.HammingWindowFunction
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunction
 import org.slf4j.Logger
@@ -27,13 +31,15 @@ class AudioCaptureService {
     private lateinit var sampleBufferArray: FloatArray
     private var sampleBufferArrayIndex: Int = 0
     private var currentStream: XtStream? = null
-    private var source: SupportedCaptureSource? = null
     private var lock: CountDownLatch = CountDownLatch(0)
     private var recordingFuture: CompletableFuture<Void>? = null
     private var fftObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
     private var windowFunction: WindowFunction? = null
 
     lateinit var fftResult: FloatArray
+
+    val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
+    val lowpass: IntegerProperty = SimpleIntegerProperty(100)
 
     fun onBuffer(stream: XtStream, buffer: XtBuffer, user: Any?): Int {
         val safe = XtSafeBuffer.get(stream) ?: return 0
@@ -47,7 +53,7 @@ class AudioCaptureService {
     }
 
     fun processAudio(audio: FloatArray, frames: Int) {
-        val channels = source!!.format.channels.inputs
+        val channels = source.get().format.channels.inputs
         val sampleFactor = 1.0f / channels.toFloat()
         for (frame in 0 until frames) {
             val sampleIndex = frame * 2
@@ -57,7 +63,7 @@ class AudioCaptureService {
             }
             sampleBufferArray[sampleBufferArrayIndex++] = audio[sampleIndex]
             if (sampleBufferArrayIndex == sampleBufferArray.size) {
-                doFFT(sampleBufferArray, source!!.format.mix.rate)
+                doFFT(sampleBufferArray, source.get().format.mix.rate)
                 sampleBufferArrayIndex = 0
             }
         }
@@ -69,7 +75,7 @@ class AudioCaptureService {
         val imag = FloatArray(samples.size)
         FourierMath.transform(1, samples.size, samples, imag)
         FourierMath.calculateMagnitudes(samples, imag, fftResult)
-        fftObservers.forEach { it.accept(fftResult, source!!) }
+        fftObservers.forEach { it.accept(fftResult, source.get()) }
     }
 
     fun registerObserver(observer: BiConsumer<FloatArray, SupportedCaptureSource>) {
@@ -90,8 +96,8 @@ class AudioCaptureService {
                     val streamParams = XtStreamParams(true, this::onBuffer, null, null)
                     val deviceParams = XtDeviceStreamParams(streamParams, format, bufferSize.current)
 
-                    this.source = source
-                    setScanWindowSize(source.getMinimumSamples(100).closestPowerOf2())
+                    this.source.set(source)
+                    setScanWindowSize(source.getMinimumSamples(lowpass.get()).closestPowerOf2())
                     val deviceStream = device.openStream(deviceParams, null)
                     deviceStream.use { stream ->
                         logger.info("Stream opened")
@@ -119,6 +125,18 @@ class AudioCaptureService {
             recordingFuture?.get()
             recordingFuture = null
         }
+    }
+
+    fun restartCapture() {
+        if (source.get() != null) {
+            stopCapture()
+            startCapture(source.get())
+        }
+    }
+
+    fun changeSource(source: SupportedCaptureSource) {
+        stopCapture()
+        startCapture(source)
     }
 
     fun setScanWindowSize(size: Int) {
