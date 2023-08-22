@@ -7,23 +7,27 @@ import javafx.beans.property.*
 import javafx.beans.value.ObservableValue
 import javafx.scene.canvas.Canvas
 import javafx.scene.layout.AnchorPane
-import javafx.scene.layout.Background
-import javafx.scene.layout.BackgroundFill
 import javafx.scene.paint.Color
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
-import kotlin.math.*
+import me.ksanstone.wavesync.wavesync.service.smoothing.IMagnitudeSmoother
+import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
+import kotlin.math.floor
+import kotlin.math.ln
+import kotlin.math.max
 
 
 class BarVisualizer : AnchorPane() {
 
     private var canvas: Canvas
+    private var smoother: IMagnitudeSmoother
 
-    val dropRate: FloatProperty = SimpleFloatProperty(1F)
+    val smoothing: FloatProperty = SimpleFloatProperty(1F)
     val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.LIGHTPINK)
     val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val scaling: FloatProperty = SimpleFloatProperty(10.0F)
     val cutoff: IntegerProperty = SimpleIntegerProperty(20000)
+    val targetBarWidth: IntegerProperty = SimpleIntegerProperty(7)
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
@@ -41,7 +45,6 @@ class BarVisualizer : AnchorPane() {
                 drawLoop.pause()
         }
 
-        background = Background(BackgroundFill(Color.AZURE, null, null))
         canvas = Canvas()
         setBottomAnchor(canvas, 0.0)
         setLeftAnchor(canvas, 0.0)
@@ -50,38 +53,51 @@ class BarVisualizer : AnchorPane() {
         canvas.widthProperty().bind(widthProperty())
         canvas.heightProperty().bind(heightProperty())
         children.add(canvas)
-    }
 
-    private var buffer: FloatArray = FloatArray(512)
+        smoother = MultiplicativeSmoother()
+        smoother.dataSize = 512
 
-    fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
-        val size = source.trimResultTo(array.size * 2, cutoff.get())
-        if (buffer.size != size)
-            buffer = FloatArray(size)
-
-        array.slice(0 until size).forEachIndexed { index, fl ->
-            buffer[index] = max(buffer[index], fl * (scaling.get() * (1.0f - ln(fl + 0.2f) - 0.813f) + 1) ).coerceAtMost(1.0f)
+        smoothing.addListener { _ ->
+            smoother.factor = smoothing.get().toDouble()
         }
     }
 
+    fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
+        val size = source.trimResultTo(array.size * 2, cutoff.get())
+        if (smoother.dataSize != size) {
+            smoother.dataSize = size
+        }
+
+        smoother.data = array.slice(0 until size).map { fl ->
+            (fl * (scaling.get() * (1.0f - ln(fl + 0.2f) - 0.813f) + 1) ).coerceAtMost(1.0f)
+        }.toFloatArray()
+    }
+
     private var lastDraw = System.nanoTime()
+
+    private fun calculateStep(targetWidth: Int, bufferLength: Int, width: Double): Int {
+        val estimatedWidth = width / bufferLength
+        return Math.round(targetWidth.toDouble() / estimatedWidth).toInt().coerceAtLeast(1)
+    }
 
     private fun draw() {
         val now = System.nanoTime()
         val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0
         lastDraw = now
 
-        val gc = canvas.getGraphicsContext2D()
+        smoother.applySmoothing(deltaT)
+
+        val gc = canvas.graphicsContext2D
         gc.fill = Color.rgb(33, 33, 33)
         gc.fillRect(0.0, 0.0, width, height)
 
         val gap = 0
-        val bufferLength = buffer.size
-        val targetBarWidth = 10
-        val step = Math.round(targetBarWidth / (width / bufferLength)).toInt().coerceAtLeast(1)
+        val bufferLength = smoother.dataSize
+        val step = calculateStep(targetBarWidth.get(), bufferLength, width)
         val totalBars = floor(bufferLength.toDouble() / step)
         val barWidth = (width - (totalBars - 1) * gap) / totalBars
         val barHeightScalar = height
+        val buffer = smoother.data
 
         gc.fill = Color.LIGHTPINK
         var x = 0.0
@@ -97,11 +113,6 @@ class BarVisualizer : AnchorPane() {
             gc.fillRect(x, height - barHeight, barWidth + 1, barHeight)
             x += barWidth + gap
             y = 0.0
-        }
-
-        val drop = (deltaT * dropRate.get()).toFloat()
-        for (i in buffer.indices) {
-            buffer[i] = buffer[i] - drop * (buffer[i].pow(2) + 1).coerceAtLeast(0.0f)
         }
     }
 }

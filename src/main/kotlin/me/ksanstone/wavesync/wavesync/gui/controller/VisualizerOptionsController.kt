@@ -36,7 +36,7 @@ class VisualizerOptionsController : Initializable {
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
 
         MainController.instance.visualizer.scaling.bind(scalingSlider.valueProperty())
-        MainController.instance.visualizer.dropRate.bind(dropRateSlider.valueProperty())
+        MainController.instance.visualizer.smoothing.bind(dropRateSlider.valueProperty())
 
         minFreqSpinner.valueFactory = IntegerSpinnerValueFactory(10, 200, audioCaptureService.lowpass.get())
         maxFreqSpinner.valueFactory = IntegerSpinnerValueFactory(3000, 96000, MainController.instance.visualizer.cutoff.get())

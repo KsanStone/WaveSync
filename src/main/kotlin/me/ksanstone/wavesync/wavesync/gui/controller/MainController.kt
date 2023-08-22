@@ -47,14 +47,24 @@ class MainController() : Initializable {
     }
 
     @FXML
+    fun refreshDeviceList() {
+        audioCaptureService.stopCapture()
+        deviceList.clear()
+        deviceList.addAll(AudioCaptureService.findSupportedSources())
+        audioDeviceListComboBox.items.clear()
+        audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
+    }
+
+    @FXML
     fun showOptionMenu() {
-        menuInitializer.showPopupMenu("layout/controlMenu.fxml")
+        menuInitializer.showPopupMenu("layout/controlMenu.fxml", "Device options")
     }
 
     @FXML
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         deviceList.clear()
         deviceList.addAll(AudioCaptureService.findSupportedSources())
+        audioDeviceListComboBox.items.clear()
         audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
         WaveSyncBootApplication.applicationContext.publishEvent(FXMLInitializeEvent(this))
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
