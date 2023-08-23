@@ -37,12 +37,22 @@ class MainController() : Initializable {
         val source = deviceList.find { it.name == audioDeviceListComboBox.value} ?: return
         CompletableFuture.runAsync {
             audioCaptureService.changeSource(source)
-            Platform.runLater {
-                deviceInfoLabel.text = source.getPropertyDescriptor()
-            }
+            refreshInfoLabel()
         }.exceptionally {
             it.printStackTrace()
             null
+        }
+    }
+
+    private fun refreshInfoLabel() {
+        Platform.runLater {
+            val source = audioCaptureService.source.get()
+            if (source == null) {
+                println("NO DEVICE")
+                deviceInfoLabel.text = "No device"
+            } else {
+                deviceInfoLabel.text = source.getPropertyDescriptor(audioCaptureService.lowpass.get(), visualizer.cutoff.get())
+            }
         }
     }
 
@@ -53,11 +63,15 @@ class MainController() : Initializable {
         deviceList.addAll(AudioCaptureService.findSupportedSources())
         audioDeviceListComboBox.items.clear()
         audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
+
+        refreshInfoLabel()
     }
 
     @FXML
     fun showOptionMenu() {
-        menuInitializer.showPopupMenu("layout/controlMenu.fxml", "Device options")
+        Platform.runLater {
+            menuInitializer.showPopupMenu("layout/controlMenu.fxml", "Device options")
+        }
     }
 
     @FXML
@@ -67,9 +81,13 @@ class MainController() : Initializable {
         audioDeviceListComboBox.items.clear()
         audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
         WaveSyncBootApplication.applicationContext.publishEvent(FXMLInitializeEvent(this))
+
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
         audioCaptureService.registerObserver(visualizer::handleFFT)
+
+        audioCaptureService.lowpass.addListener { _ -> refreshInfoLabel() }
+        visualizer.cutoff.addListener { _ -> refreshInfoLabel() }
     }
 
     companion object {

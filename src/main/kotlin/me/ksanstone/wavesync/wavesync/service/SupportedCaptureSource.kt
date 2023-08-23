@@ -26,13 +26,14 @@ data class SupportedCaptureSource(
         return trimResultBufferTo(size, format.mix.rate, frequency)
     }
 
-    fun getPropertyDescriptor(): String {
-        return "${format.mix.rate}Hz ${format.mix.sample}"
+    fun getPropertyDescriptor(targetMin: Int, targetMax: Int): String {
+        val minSamples = getMinimumSamples(targetMin)
+        return "${format.mix.rate}Hz • ${format.mix.sample} • $minSamples [${trimResultTo(minSamples * 2, targetMax)}] samples • ${targetMin}Hz - ${targetMax}Hz"
     }
 
     companion object {
         fun getMinimumSamples(frequency: Int, rate: Int): Int {
-            return (1.0 / frequency * rate).toInt()
+            return (1.0 / frequency * rate).toInt().closestPowerOf2()
         }
 
         fun getMaxFrequencyForRate(rate: Int): Int {
@@ -41,7 +42,7 @@ data class SupportedCaptureSource(
 
         fun trimResultBufferTo(bufferSize: Int, rate: Int, frequency: Int): Int {
             val factor = rate.toDouble() / bufferSize.toDouble()
-            return ceil(frequency.toDouble() / factor).toInt()
+            return ceil(frequency.toDouble() / factor).toInt().coerceAtMost(bufferSize)
         }
     }
 }

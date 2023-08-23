@@ -5,7 +5,7 @@ class MultiplicativeSmoother : IMagnitudeSmoother {
     private lateinit var dataTarget: FloatArray
     private lateinit var dataArray: FloatArray
 
-    override var factor: Double = 0.90
+    override var factor: Double = 0.91
 
     override var dataSize: Int
         get() = dataTarget.size

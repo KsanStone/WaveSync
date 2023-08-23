@@ -83,6 +83,7 @@ class AudioCaptureService {
     }
 
     fun startCapture(source: SupportedCaptureSource) {
+        this.source.set(source)
         recordingFuture = CompletableFuture.runAsync {
             lock = CountDownLatch(1)
             XtAudio.init(null, Pointer.NULL).use { platform ->
@@ -96,13 +97,12 @@ class AudioCaptureService {
                     val streamParams = XtStreamParams(true, this::onBuffer, null, null)
                     val deviceParams = XtDeviceStreamParams(streamParams, format, bufferSize.current)
 
-                    this.source.set(source)
-                    setScanWindowSize(source.getMinimumSamples(lowpass.get()).closestPowerOf2())
+                    setScanWindowSize(source.getMinimumSamples(lowpass.get()))
                     val deviceStream = device.openStream(deviceParams, null)
                     deviceStream.use { stream ->
                         logger.info("Stream opened")
                         this.currentStream = stream
-                        XtSafeBuffer.register(stream).use { safeBuffer ->
+                        XtSafeBuffer.register(stream).use { _ ->
                             bufferArray = ByteArray(
                                 stream.getFrames() * format.channels.inputs * XtAudio.getSampleAttributes(format.mix.sample).size
                             )

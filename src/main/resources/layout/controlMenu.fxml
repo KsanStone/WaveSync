@@ -8,7 +8,7 @@
     <children>
         <GridPane hgap="5.0" layoutX="188.0" layoutY="117.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <columnConstraints>
-                <ColumnConstraints fillWidth="false" halignment="CENTER" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="130.0" />
+                <ColumnConstraints halignment="CENTER" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="130.0" />
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" />
             </columnConstraints>
             <rowConstraints>
@@ -17,16 +17,21 @@
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="10.0" vgrow="ALWAYS" />
                 <RowConstraints maxHeight="5" minHeight="5" prefHeight="5" vgrow="NEVER" />
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="10.0" vgrow="ALWAYS" />
+                <RowConstraints maxHeight="5" minHeight="5" prefHeight="5" vgrow="NEVER" />
+                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="10.0" vgrow="ALWAYS" />
             </rowConstraints>
             <children>
-                <Label text="Drop rate" />
-                <Label text="Scaling" GridPane.rowIndex="2" />
-                <Slider fx:id="dropRateSlider" blockIncrement="0.05" majorTickUnit="0.1" max="1.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="0.95" GridPane.columnIndex="1" />
-                <Slider fx:id="scalingSlider" blockIncrement="5.0" majorTickUnit="10.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="20.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                <Label text="Frequency range" GridPane.rowIndex="4" />
-                <Separator GridPane.rowIndex="1" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS" maxWidth="1.7976931348623157E308" GridPane.fillWidth="true"/>
-                <Separator GridPane.rowIndex="3" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS" maxWidth="1.7976931348623157E308" GridPane.fillWidth="true"/>
-                <GridPane hgap="5.0" GridPane.columnIndex="1" GridPane.rowIndex="4">
+            <Separator prefWidth="200.0" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
+            <Slider fx:id="barWidthSlider" blockIncrement="5.0" majorTickUnit="5.0" max="51.0" min="1.0" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="5.0" GridPane.columnIndex="1" />
+            <Label text="Bar width" />
+                <Label text="Drop rate" GridPane.rowIndex="2" />
+                <Label text="Scaling" GridPane.rowIndex="4" />
+                <Slider fx:id="dropRateSlider" blockIncrement="0.05" majorTickUnit="0.1" max="1.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="0.91" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                <Slider fx:id="scalingSlider" blockIncrement="5.0" majorTickUnit="10.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="20.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                <Label text="Frequency range" GridPane.rowIndex="6" />
+                <Separator maxWidth="1.7976931348623157E308" GridPane.columnSpan="2" GridPane.fillWidth="true" GridPane.hgrow="ALWAYS" GridPane.rowIndex="3" />
+                <Separator maxWidth="1.7976931348623157E308" GridPane.columnSpan="2" GridPane.fillWidth="true" GridPane.hgrow="ALWAYS" GridPane.rowIndex="5" />
+                <GridPane hgap="5.0" GridPane.columnIndex="1" GridPane.rowIndex="6">
                     <columnConstraints>
                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />

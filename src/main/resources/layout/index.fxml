@@ -4,6 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import me.ksanstone.wavesync.wavesync.gui.component.visualizer.*?>
+<?import org.kordamp.ikonli.javafx.*?>
 
 <AnchorPane prefHeight="500" prefWidth="800" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.MainController">
    <children>
@@ -12,9 +13,17 @@
             <BarVisualizer fx:id="visualizer" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="10.0" minWidth="10.0" prefHeight="10.0" prefWidth="10.0" VBox.vgrow="ALWAYS" />
             <HBox alignment="CENTER_LEFT" prefWidth="200.0" spacing="5.0">
                <children>
-                  <Button fx:id="optionButton" mnemonicParsing="false" onAction="#showOptionMenu" text="Options" />
+                  <Button mnemonicParsing="false" onAction="#showOptionMenu">
+                     <graphic>
+                        <FontIcon iconColor="white" iconLiteral="mdmz-settings" iconSize="20" />
+                     </graphic>
+                  </Button>
                   <ComboBox fx:id="audioDeviceListComboBox" onAction="#audioDevicePicker" prefWidth="350.0" HBox.hgrow="SOMETIMES" />
-                  <Button onAction="#refreshDeviceList" text="Refresh" mnemonicParsing="false"/>
+                  <Button mnemonicParsing="false" onAction="#refreshDeviceList">
+                     <graphic>
+                        <FontIcon iconColor="white" iconLiteral="mdmz-refresh" iconSize="20" />
+                     </graphic>
+                  </Button>
                   <Label fx:id="deviceInfoLabel" text="No device" HBox.hgrow="SOMETIMES" />
                </children>
                <padding>
