@@ -42,11 +42,10 @@ data class SupportedCaptureSource(
 
         fun trimResultBufferTo(bufferSize: Int, rate: Int, frequency: Int): Int {
             val factor = rate.toDouble() / bufferSize.toDouble()
-            return ceil(frequency.toDouble() / factor).toInt().coerceAtMost(bufferSize)
+            return ceil(frequency.toDouble() / factor).toInt().coerceAtMost(bufferSize / 2)
         }
     }
 }
-
 
 fun Int.closestPowerOf2(): Int {
     var pow = 1

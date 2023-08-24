@@ -38,10 +38,15 @@ class VisualizerOptionsController : Initializable {
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
 
         val tw = MainController.instance.visualizer.targetBarWidth.get()
+        val maxFreq = audioCaptureService.source.get()?.getMaxFrequency() ?: 96000
 
-        minFreqSpinner.valueFactory = IntegerSpinnerValueFactory(10, 200, audioCaptureService.lowpass.get())
-        maxFreqSpinner.valueFactory = IntegerSpinnerValueFactory(3000, 96000, MainController.instance.visualizer.cutoff.get())
+        minFreqSpinner.valueFactory = IntegerSpinnerValueFactory(10, 200, audioCaptureService.lowPass.get())
+        maxFreqSpinner.valueFactory = IntegerSpinnerValueFactory(3000, maxFreq, MainController.instance.visualizer.cutoff.get())
         barWidthSlider.value = tw.toDouble()
+
+        scalingSlider.value = MainController.instance.visualizer.scaling.get().toDouble()
+        dropRateSlider.value = MainController.instance.visualizer.smoothing.get().toDouble()
+        barWidthSlider.value = MainController.instance.visualizer.targetBarWidth.get().toDouble()
 
         MainController.instance.visualizer.scaling.bind(scalingSlider.valueProperty())
         MainController.instance.visualizer.smoothing.bind(dropRateSlider.valueProperty())
@@ -66,7 +71,7 @@ class VisualizerOptionsController : Initializable {
 
     fun applyFreqSettings() {
         MainController.instance.visualizer.cutoff.set(maxFreqSpinner.value)
-        audioCaptureService.lowpass.set(minFreqSpinner.value)
+        audioCaptureService.lowPass.set(minFreqSpinner.value)
         audioCaptureService.restartCapture()
         updateInfo()
     }

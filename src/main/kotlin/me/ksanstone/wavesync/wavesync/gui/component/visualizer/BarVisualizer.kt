@@ -11,6 +11,10 @@ import javafx.scene.chart.NumberAxis
 import javafx.scene.layout.AnchorPane
 import javafx.scene.paint.Color
 import javafx.util.Duration
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.smoothing.IMagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
@@ -26,12 +30,12 @@ class BarVisualizer : AnchorPane() {
     private var smoother: IMagnitudeSmoother
     private var canvasHeightProperty: DoubleBinding
 
-    val smoothing: FloatProperty = SimpleFloatProperty(0.91F)
+    val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
     val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.LIGHTPINK)
     val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
-    val scaling: FloatProperty = SimpleFloatProperty(10.0F)
-    val cutoff: IntegerProperty = SimpleIntegerProperty(20000)
-    val targetBarWidth: IntegerProperty = SimpleIntegerProperty(4)
+    val scaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
+    val cutoff: IntegerProperty = SimpleIntegerProperty(BAR_CUTOFF)
+    val targetBarWidth: IntegerProperty = SimpleIntegerProperty(TARGET_BAR_WIDTH)
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
@@ -50,7 +54,7 @@ class BarVisualizer : AnchorPane() {
         }
 
         frequencyAxis = NumberAxis(0.0, 20000.0, 1000.0)
-        frequencyAxis.prefHeight = 30.0
+
         setBottomAnchor(frequencyAxis, 0.0)
         setLeftAnchor(frequencyAxis, 0.0)
         setRightAnchor(frequencyAxis, 0.0)
@@ -75,7 +79,6 @@ class BarVisualizer : AnchorPane() {
     private fun sizeFrequencyAxis() {
         frequencyAxis.lowerBound = 0.0
         frequencyAxis.upperBound = smoother.dataSize * (source.format.mix.rate.toDouble() / fftSize)
-        println(frequencyAxis.upperBound)
     }
 
     private lateinit var source: SupportedCaptureSource
@@ -97,9 +100,9 @@ class BarVisualizer : AnchorPane() {
 
     private var lastDraw = System.nanoTime()
 
-    private fun calculateStep(targetWidth: Int, bufferLength: Int, width: Double): Int {
+    private fun calculateStep(targetWidth: Int, bufferLength: Int, width: Double): Double {
         val estimatedWidth = width / bufferLength
-        return Math.round(targetWidth.toDouble() / estimatedWidth).toInt().coerceAtLeast(1)
+        return (targetWidth.toDouble() / estimatedWidth).coerceAtLeast(1.0)
     }
 
     private fun draw() {
@@ -124,10 +127,12 @@ class BarVisualizer : AnchorPane() {
         gc.fill = Color.LIGHTPINK
         var x = 0.0
         var y = 0.0
+        var stepAccumulator = 0.0
 
         for (i in 0 until bufferLength) {
             y = max(buffer[i].toDouble(), y)
-            if (i % step != 0) continue
+            if (++stepAccumulator < step) continue
+            stepAccumulator -= step
             val barHeight = y * canvasHeight
 
             val color = startColor.get().interpolate(endColor.get(), y)

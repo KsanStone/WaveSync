@@ -25,19 +25,31 @@ class MainController() : Initializable {
     lateinit var deviceInfoLabel: Label
 
     private val deviceList: MutableList<SupportedCaptureSource> = ArrayList()
-    private lateinit var audioCaptureService: AudioCaptureService
-    private lateinit var menuInitializer: MenuInitializer
+    private var audioCaptureService: AudioCaptureService
+    private var menuInitializer: MenuInitializer
+    private var lastDeviceId: String? = null
 
     init {
         instance = this
+
+        audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
+        menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
     }
 
     @FXML
     fun audioDevicePicker() {
-        val source = deviceList.find { it.name == audioDeviceListComboBox.value} ?: return
+        setByName(audioDeviceListComboBox.value ?: "")
+    }
+
+    private fun setByName(name: String) {
+        val source = deviceList.find { it.name == name} ?: return
         CompletableFuture.runAsync {
+            lastDeviceId = source.id
             audioCaptureService.changeSource(source)
             refreshInfoLabel()
+            Platform.runLater {
+                audioDeviceListComboBox.value = name
+            }
         }.exceptionally {
             it.printStackTrace()
             null
@@ -48,10 +60,9 @@ class MainController() : Initializable {
         Platform.runLater {
             val source = audioCaptureService.source.get()
             if (source == null) {
-                println("NO DEVICE")
                 deviceInfoLabel.text = "No device"
             } else {
-                deviceInfoLabel.text = source.getPropertyDescriptor(audioCaptureService.lowpass.get(), visualizer.cutoff.get())
+                deviceInfoLabel.text = source.getPropertyDescriptor(audioCaptureService.lowPass.get(), visualizer.cutoff.get())
             }
         }
     }
@@ -60,11 +71,16 @@ class MainController() : Initializable {
     fun refreshDeviceList() {
         audioCaptureService.stopCapture()
         deviceList.clear()
-        deviceList.addAll(AudioCaptureService.findSupportedSources())
+        deviceList.addAll(audioCaptureService.findSupportedSources())
         audioDeviceListComboBox.items.clear()
         audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
-
         refreshInfoLabel()
+
+        if (lastDeviceId != null) {
+            val similarDevice = audioCaptureService.findSimilarAudioSource(lastDeviceId!!, deviceList)?: return
+
+            setByName(similarDevice.name)
+        }
     }
 
     @FXML
@@ -74,19 +90,22 @@ class MainController() : Initializable {
         }
     }
 
+    private fun selectDefaultDevice() {
+        val default = audioCaptureService.findDefaultAudioSource(deviceList)
+        if (default != null) {
+            setByName(default.name)
+        }
+    }
+
     @FXML
     override fun initialize(location: URL?, resources: ResourceBundle?) {
-        deviceList.clear()
-        deviceList.addAll(AudioCaptureService.findSupportedSources())
-        audioDeviceListComboBox.items.clear()
-        audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
         WaveSyncBootApplication.applicationContext.publishEvent(FXMLInitializeEvent(this))
 
-        audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
-        menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
-        audioCaptureService.registerObserver(visualizer::handleFFT)
+        refreshDeviceList()
+        selectDefaultDevice()
 
-        audioCaptureService.lowpass.addListener { _ -> refreshInfoLabel() }
+        audioCaptureService.registerObserver(visualizer::handleFFT)
+        audioCaptureService.lowPass.addListener { _ -> refreshInfoLabel() }
         visualizer.cutoff.addListener { _ -> refreshInfoLabel() }
     }
 

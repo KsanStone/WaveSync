@@ -24,7 +24,7 @@
             <Separator prefWidth="200.0" GridPane.columnSpan="2" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
             <Slider fx:id="barWidthSlider" blockIncrement="5.0" majorTickUnit="5.0" max="51.0" min="1.0" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="5.0" GridPane.columnIndex="1" />
             <Label text="Bar width" />
-                <Label text="Drop rate" GridPane.rowIndex="2" />
+                <Label text="Smoothing" GridPane.rowIndex="2" />
                 <Label text="Scaling" GridPane.rowIndex="4" />
                 <Slider fx:id="dropRateSlider" blockIncrement="0.05" majorTickUnit="0.1" max="1.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="0.91" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                 <Slider fx:id="scalingSlider" blockIncrement="5.0" majorTickUnit="10.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="20.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />

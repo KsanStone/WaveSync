@@ -6,6 +6,7 @@ import javafx.beans.property.IntegerProperty
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleObjectProperty
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.CAPTURE_LOW_PASS
 import me.ksanstone.wavesync.wavesync.service.windowing.HammingWindowFunction
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunction
 import org.slf4j.Logger
@@ -39,7 +40,7 @@ class AudioCaptureService {
     lateinit var fftResult: FloatArray
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
-    val lowpass: IntegerProperty = SimpleIntegerProperty(100)
+    val lowPass: IntegerProperty = SimpleIntegerProperty(CAPTURE_LOW_PASS)
 
     fun onBuffer(stream: XtStream, buffer: XtBuffer, user: Any?): Int {
         val safe = XtSafeBuffer.get(stream) ?: return 0
@@ -97,14 +98,14 @@ class AudioCaptureService {
                     val streamParams = XtStreamParams(true, this::onBuffer, null, null)
                     val deviceParams = XtDeviceStreamParams(streamParams, format, bufferSize.current)
 
-                    setScanWindowSize(source.getMinimumSamples(lowpass.get()))
+                    setScanWindowSize(source.getMinimumSamples(lowPass.get()))
                     val deviceStream = device.openStream(deviceParams, null)
                     deviceStream.use { stream ->
                         logger.info("Stream opened")
                         this.currentStream = stream
                         XtSafeBuffer.register(stream).use { _ ->
                             bufferArray = ByteArray(
-                                stream.getFrames() * format.channels.inputs * XtAudio.getSampleAttributes(format.mix.sample).size
+                                stream.frames * format.channels.inputs * XtAudio.getSampleAttributes(format.mix.sample).size
                             )
                             stream.start()
                             logger.info("Capture started")
@@ -152,53 +153,70 @@ class AudioCaptureService {
         stopCapture()
     }
 
-    companion object {
-        fun findSupportedSources(): List<SupportedCaptureSource> {
-            val supported = ArrayList<SupportedCaptureSource>()
-            XtAudio.init(null, Pointer.NULL).use { platform ->
-                val service = platform.getService(XtSystem.WASAPI)
-                try {
-                    service.openDeviceList(EnumSet.of<XtEnumFlags>(XtEnumFlags.INPUT)).use { list ->
-                        for (i in 0 until list.getCount()) {
-                            val deviceId = list.getId(i)
-                            val caps = list.getCapabilities(deviceId)
-                            if (caps.contains(XtDeviceCaps.LOOPBACK)) {
-                                val deviceName = list.getName(deviceId)
-                                try {
-                                    service.openDevice(deviceId).use { device ->
-                                        val deviceMix = device.getMix().orElse(XtMix(192000, XtSample.FLOAT32))
-                                        val inChannelCount = device.getChannelCount(false)
-                                        var channels: XtChannels
-                                        var format: XtFormat?
-                                        var supportedChannels = 1
-                                        while (supportedChannels < inChannelCount) {
-                                            channels = XtChannels(supportedChannels, 0, 0, 0)
-                                            format = XtFormat(deviceMix, channels)
-                                            if (device.supportsFormat(format)) {
-                                                supported.add(
-                                                    SupportedCaptureSource(
-                                                        device,
-                                                        format,
-                                                        deviceName,
-                                                        deviceId
-                                                    )
+    private fun extractDeviceUUID(deviceId: String): String {
+        return deviceId.split("}.{")[1]
+    }
+
+    fun findSimilarAudioSource(device: String, devices: List<SupportedCaptureSource>): SupportedCaptureSource? {
+        val extractedId = extractDeviceUUID(device)
+        return devices.find { extractDeviceUUID(it.id) == extractedId }
+    }
+
+    fun findDefaultAudioSource(devices: List<SupportedCaptureSource>): SupportedCaptureSource? {
+        XtAudio.init(null, Pointer.NULL).use { platform ->
+            val service = platform.getService(XtSystem.WASAPI)
+            val device = service.getDefaultDeviceId(true) ?: return null
+            val extractedId = extractDeviceUUID(device)
+            return devices.find { extractDeviceUUID(it.id) == extractedId }
+        }
+    }
+
+    fun findSupportedSources(): List<SupportedCaptureSource> {
+        val supported = ArrayList<SupportedCaptureSource>()
+        XtAudio.init(null, Pointer.NULL).use { platform ->
+            val service = platform.getService(XtSystem.WASAPI)
+            try {
+                service.openDeviceList(EnumSet.of(XtEnumFlags.INPUT)).use { list ->
+                    for (i in 0 until list.count) {
+                        val deviceId = list.getId(i)
+                        val caps = list.getCapabilities(deviceId)
+                        if (caps.contains(XtDeviceCaps.LOOPBACK)) {
+                            val deviceName = list.getName(deviceId)
+                            try {
+                                service.openDevice(deviceId).use { device ->
+                                    val deviceMix = device.mix.orElse(XtMix(192000, XtSample.FLOAT32))
+                                    val inChannelCount = device.getChannelCount(false)
+                                    var channels: XtChannels
+                                    var format: XtFormat?
+                                    var supportedChannels = 1
+                                    while (supportedChannels < inChannelCount) {
+                                        channels = XtChannels(supportedChannels, 0, 0, 0)
+                                        format = XtFormat(deviceMix, channels)
+                                        if (device.supportsFormat(format)) {
+                                            supported.add(
+                                                SupportedCaptureSource(
+                                                    device,
+                                                    format,
+                                                    deviceName,
+                                                    deviceId
                                                 )
-                                                break
-                                            }
-                                            supportedChannels++
+                                            )
+                                            logger.info("Detected: ${supported[supported.size - 1]}")
+                                            break
                                         }
+                                        supportedChannels++
                                     }
-                                } catch (e: Exception) {
-                                    println(deviceName + " FAIL " + e.message)
                                 }
+                            } catch (e: Exception) {
+                                logger.error(deviceName + " FAIL " + e.message)
                             }
                         }
                     }
-                } catch (e: Exception) {
-                    println("INIT FAILED")
                 }
+            } catch (e: Exception) {
+                logger.error("INIT FAILED")
             }
-            return supported
         }
+        return supported
     }
 }
