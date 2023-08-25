@@ -5,17 +5,23 @@ import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.image.Image
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
+import me.ksanstone.wavesync.wavesync.service.ThemeService
+import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
 
 
 @Component
-class WaveSyncStageInitializer : ApplicationListener<StageReadyEvent> {
+class WaveSyncStageInitializer(
+    private val themeService: ThemeService,
+    private val localizationService: LocalizationService
+) : ApplicationListener<StageReadyEvent> {
     override fun onApplicationEvent(event: StageReadyEvent) {
         val stage = event.stage
-        val root: Parent = FXMLLoader.load(javaClass.classLoader.getResource("layout/index.fxml"))
+        val root: Parent = FXMLLoader.load(javaClass.classLoader.getResource("layout/index.fxml"), localizationService.getDefault())
         val scene = Scene(root)
-        scene.stylesheets.add("styles/style.css")
+
+        themeService.applyTheme("Primer Dark")
 
         stage.title = "WaveSync"
         stage.icons.add(Image("icon.png"))

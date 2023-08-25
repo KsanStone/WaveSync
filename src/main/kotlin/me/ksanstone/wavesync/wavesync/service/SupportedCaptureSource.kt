@@ -3,6 +3,7 @@ package me.ksanstone.wavesync.wavesync.service
 import xt.audio.Structs
 import xt.audio.XtDevice
 import kotlin.math.ceil
+import kotlin.math.round
 
 data class SupportedCaptureSource(
     val device: XtDevice,
@@ -14,10 +15,6 @@ data class SupportedCaptureSource(
         return "SupportedCaptureSource { name: $name id: $id freq: ${format.mix.rate} channel: ${format.channels.inputs} format: ${format.mix.sample} }"
     }
 
-    fun getMinimumSamples(frequency: Int): Int {
-        return getMinimumSamples(frequency, format.mix.rate)
-    }
-
     fun getMaxFrequency(): Int {
         return getMaxFrequencyForRate(format.mix.rate)
     }
@@ -26,9 +23,18 @@ data class SupportedCaptureSource(
         return trimResultBufferTo(size, format.mix.rate, frequency)
     }
 
-    fun getPropertyDescriptor(targetMin: Int, targetMax: Int): String {
-        val minSamples = getMinimumSamples(targetMin)
-        return "${format.mix.rate}Hz • ${format.mix.sample} • $minSamples [${trimResultTo(minSamples * 2, targetMax)}] samples • ${targetMin}Hz - ${targetMax}Hz"
+    fun getPropertyDescriptor(fftSize: Int, targetMin: Int, targetMax: Int): String {
+        val resultingSamples = trimResultTo(fftSize * 2, targetMax) - bufferBeginningSkipFor(targetMin, fftSize * 2)
+        return "${format.mix.rate}Hz • ${format.mix.sample} • $fftSize [$resultingSamples] • ${targetMin}Hz - ${targetMax}Hz"
+    }
+
+    fun getMinimumFrequency(samples: Int): Int {
+        val sampleT = samples.toDouble() / format.mix.rate
+        return round(1.0 / sampleT).toInt()
+    }
+
+    fun bufferBeginningSkipFor(freq: Int, bufferSize: Int): Int {
+        return trimResultBufferTo(bufferSize, this.format.mix.rate, freq)
     }
 
     companion object {

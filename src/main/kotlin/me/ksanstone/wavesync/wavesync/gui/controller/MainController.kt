@@ -3,13 +3,14 @@ package me.ksanstone.wavesync.wavesync.gui.controller
 import javafx.application.Platform
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.scene.control.ComboBox
+import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.event.FXMLInitializeEvent
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import java.net.URL
 import java.util.*
@@ -18,7 +19,7 @@ import java.util.concurrent.CompletableFuture
 class MainController() : Initializable {
 
     @FXML
-    lateinit var audioDeviceListComboBox: ComboBox<String>
+    lateinit var audioDeviceListComboBox: ChoiceBox<String>
     @FXML
     lateinit var visualizer: BarVisualizer
     @FXML
@@ -26,14 +27,17 @@ class MainController() : Initializable {
 
     private val deviceList: MutableList<SupportedCaptureSource> = ArrayList()
     private var audioCaptureService: AudioCaptureService
+    private var localizationService: LocalizationService
     private var menuInitializer: MenuInitializer
     private var lastDeviceId: String? = null
+    private lateinit var resources: ResourceBundle
 
     init {
         instance = this
 
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
+        localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     }
 
     @FXML
@@ -60,9 +64,9 @@ class MainController() : Initializable {
         Platform.runLater {
             val source = audioCaptureService.source.get()
             if (source == null) {
-                deviceInfoLabel.text = "No device"
+                deviceInfoLabel.text = localizationService.get("dialog.deviceOptions.noDevice")
             } else {
-                deviceInfoLabel.text = source.getPropertyDescriptor(audioCaptureService.lowPass.get(), visualizer.cutoff.get())
+                deviceInfoLabel.text = source.getPropertyDescriptor(audioCaptureService.fftSize.get(), visualizer.lowPass.get(), visualizer.cutoff.get())
             }
         }
     }
@@ -86,7 +90,7 @@ class MainController() : Initializable {
     @FXML
     fun showOptionMenu() {
         Platform.runLater {
-            menuInitializer.showPopupMenu("layout/controlMenu.fxml", "Device options")
+            menuInitializer.showPopupMenu("layout/controlMenu.fxml", resources.getString("dialog.deviceOptions.title"))
         }
     }
 
@@ -99,14 +103,24 @@ class MainController() : Initializable {
 
     @FXML
     override fun initialize(location: URL?, resources: ResourceBundle?) {
+        this.resources = resources!!
         WaveSyncBootApplication.applicationContext.publishEvent(FXMLInitializeEvent(this))
 
         refreshDeviceList()
         selectDefaultDevice()
 
         audioCaptureService.registerObserver(visualizer::handleFFT)
-        audioCaptureService.lowPass.addListener { _ -> refreshInfoLabel() }
+        audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
         visualizer.cutoff.addListener { _ -> refreshInfoLabel() }
+        visualizer.lowPass.addListener { _ -> refreshInfoLabel() }
+    }
+
+    /**
+     * WIll be used to refresh the ui once the audio interface is changed
+     */
+    fun deepRefresh() {
+        refreshDeviceList()
+        lastDeviceId = null
     }
 
     companion object {

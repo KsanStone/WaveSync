@@ -1,0 +1,8 @@
+.axis > .axis-tick-mark,
+.axis > .axis-minor-tick-mark {
+    -fx-stroke: -color-base-4;
+}
+
+.axis {
+    -fx-tick-label-fill: -color-fg-muted;
+}

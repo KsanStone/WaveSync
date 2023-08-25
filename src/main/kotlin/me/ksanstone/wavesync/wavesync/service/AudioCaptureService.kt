@@ -6,12 +6,12 @@ import javafx.beans.property.IntegerProperty
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleObjectProperty
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.CAPTURE_LOW_PASS
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.service.windowing.HammingWindowFunction
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunction
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import xt.audio.Enums.*
 import xt.audio.Structs.*
 import xt.audio.XtAudio
@@ -23,7 +23,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.function.BiConsumer
 
 
-@Component
+@Service
 class AudioCaptureService {
 
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
@@ -40,7 +40,7 @@ class AudioCaptureService {
     lateinit var fftResult: FloatArray
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
-    val lowPass: IntegerProperty = SimpleIntegerProperty(CAPTURE_LOW_PASS)
+    val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
 
     fun onBuffer(stream: XtStream, buffer: XtBuffer, user: Any?): Int {
         val safe = XtSafeBuffer.get(stream) ?: return 0
@@ -98,7 +98,7 @@ class AudioCaptureService {
                     val streamParams = XtStreamParams(true, this::onBuffer, null, null)
                     val deviceParams = XtDeviceStreamParams(streamParams, format, bufferSize.current)
 
-                    setScanWindowSize(source.getMinimumSamples(lowPass.get()))
+                    setScanWindowSize(fftSize.get())
                     val deviceStream = device.openStream(deviceParams, null)
                     deviceStream.use { stream ->
                         logger.info("Stream opened")
@@ -136,6 +136,7 @@ class AudioCaptureService {
     }
 
     fun changeSource(source: SupportedCaptureSource) {
+        if (source == this.source.get()) return
         stopCapture()
         startCapture(source)
     }
@@ -208,7 +209,7 @@ class AudioCaptureService {
                                     }
                                 }
                             } catch (e: Exception) {
-                                logger.error(deviceName + " FAIL " + e.message)
+                                logger.error(deviceName + "FAIL " + e.message)
                             }
                         }
                     }

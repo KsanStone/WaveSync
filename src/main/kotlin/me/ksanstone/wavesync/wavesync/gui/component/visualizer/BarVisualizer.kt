@@ -12,6 +12,7 @@ import javafx.scene.layout.AnchorPane
 import javafx.scene.paint.Color
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
@@ -35,9 +36,12 @@ class BarVisualizer : AnchorPane() {
     val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val scaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
     val cutoff: IntegerProperty = SimpleIntegerProperty(BAR_CUTOFF)
+    val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(TARGET_BAR_WIDTH)
 
     init {
+        stylesheets.add("/styles/bar-visualizer.css")
+
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
         val drawLoop = Timeline(
@@ -74,26 +78,32 @@ class BarVisualizer : AnchorPane() {
         smoothing.addListener { _ ->
             smoother.factor = smoothing.get().toDouble()
         }
+        cutoff.addListener { _ -> sizeFrequencyAxis() }
+        lowPass.addListener { _ -> sizeFrequencyAxis() }
     }
 
     private fun sizeFrequencyAxis() {
-        frequencyAxis.lowerBound = 0.0
-        frequencyAxis.upperBound = smoother.dataSize * (source.format.mix.rate.toDouble() / fftSize)
+        val upper = source.trimResultTo(fftSize, cutoff.get())
+        val lower = source.bufferBeginningSkipFor(lowPass.get(), fftSize)
+        frequencyAxis.lowerBound = lower * (source.format.mix.rate.toDouble() / fftSize)
+        frequencyAxis.upperBound = upper * (source.format.mix.rate.toDouble() / fftSize)
     }
 
     private lateinit var source: SupportedCaptureSource
     private var fftSize: Int = 1024
+    private var frequencyBinSkip: Int = 0
 
     fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
         this.source = source
         this.fftSize = array.size * 2
-        val size = source.trimResultTo(array.size * 2, cutoff.get())
+        var size = source.trimResultTo(array.size * 2, cutoff.get())
+        frequencyBinSkip = source.bufferBeginningSkipFor(lowPass.get(), array.size * 2)
+        size = (size - frequencyBinSkip).coerceAtLeast(10)
         if (smoother.dataSize != size) {
             smoother.dataSize = size
-            sizeFrequencyAxis()
         }
 
-        smoother.data = array.slice(0 until size).map { fl ->
+        smoother.data = array.slice(frequencyBinSkip until size).map { fl ->
             (fl * (scaling.get() * (1.0f - ln(fl + 0.2f) - 0.813f) + 1) ).coerceAtMost(1.0f)
         }.toFloatArray()
     }
@@ -114,8 +124,7 @@ class BarVisualizer : AnchorPane() {
 
         val canvasHeight = canvasHeightProperty.doubleValue()
         val gc = canvas.graphicsContext2D
-        gc.fill = Color.rgb(33, 33, 33)
-        gc.fillRect(0.0, 0.0, width, canvasHeight)
+        gc.clearRect(0.0, 0.0, width, canvasHeight)
 
         val gap = 0
         val bufferLength = smoother.dataSize
@@ -123,6 +132,7 @@ class BarVisualizer : AnchorPane() {
         val totalBars = floor(bufferLength.toDouble() / step)
         val barWidth = (width - (totalBars - 1) * gap) / totalBars
         val buffer = smoother.data
+        val padding = (barWidth * 0.1).coerceAtMost(1.0)
 
         gc.fill = Color.LIGHTPINK
         var x = 0.0
@@ -133,11 +143,12 @@ class BarVisualizer : AnchorPane() {
             y = max(buffer[i].toDouble(), y)
             if (++stepAccumulator < step) continue
             stepAccumulator -= step
-            val barHeight = y * canvasHeight
 
+            val barHeight = y * canvasHeight
             val color = startColor.get().interpolate(endColor.get(), y)
+
             gc.fill = color
-            gc.fillRect(x, canvasHeight - barHeight, barWidth, barHeight)
+            gc.fillRect(x, canvasHeight - barHeight, barWidth + padding, barHeight)
             x += barWidth + gap
             y = 0.0
         }

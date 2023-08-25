@@ -2,17 +2,28 @@ package me.ksanstone.wavesync.wavesync.gui.controller
 
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.scene.control.Label
-import javafx.scene.control.Slider
-import javafx.scene.control.Spinner
+import javafx.scene.control.*
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
-import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
+import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import java.net.URL
 import java.util.*
+import kotlin.math.pow
 
 class VisualizerOptionsController : Initializable {
+
+    @FXML
+    lateinit var applyFreqButton: Button
+
+    @FXML
+    lateinit var minFreqSpinner: Spinner<Int>
+
+    @FXML
+    lateinit var fftInfoLabel: Label
+
+    @FXML
+    lateinit var fftSizeChoiceBox: ChoiceBox<Int>
 
     @FXML
     lateinit var barWidthSlider: Slider
@@ -24,24 +35,26 @@ class VisualizerOptionsController : Initializable {
     lateinit var scalingSlider: Slider
 
     @FXML
-    lateinit var minFreqSpinner: Spinner<Int>
-
-    @FXML
     lateinit var maxFreqSpinner: Spinner<Int>
 
-    @FXML
-    lateinit var freqInfoLabel: Label
-
     private lateinit var audioCaptureService: AudioCaptureService
+    private lateinit var localizationService: LocalizationService
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
+        localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
+
+        fftSizeChoiceBox.items.clear()
+        fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14).map { 2.0.pow(it.toDouble()).toInt() }.toList())
+        fftSizeChoiceBox.value = audioCaptureService.fftSize.get()
+        fftSizeChoiceBox.valueProperty().addListener { _ -> updateFftInfoLabel() }
+        audioCaptureService.source.addListener { _ -> updateFftInfoLabel() }
 
         val tw = MainController.instance.visualizer.targetBarWidth.get()
         val maxFreq = audioCaptureService.source.get()?.getMaxFrequency() ?: 96000
 
-        minFreqSpinner.valueFactory = IntegerSpinnerValueFactory(10, 200, audioCaptureService.lowPass.get())
         maxFreqSpinner.valueFactory = IntegerSpinnerValueFactory(3000, maxFreq, MainController.instance.visualizer.cutoff.get())
+        minFreqSpinner.valueFactory = IntegerSpinnerValueFactory(0, 3000, MainController.instance.visualizer.lowPass.get())
         barWidthSlider.value = tw.toDouble()
 
         scalingSlider.value = MainController.instance.visualizer.scaling.get().toDouble()
@@ -51,29 +64,33 @@ class VisualizerOptionsController : Initializable {
         MainController.instance.visualizer.scaling.bind(scalingSlider.valueProperty())
         MainController.instance.visualizer.smoothing.bind(dropRateSlider.valueProperty())
         MainController.instance.visualizer.targetBarWidth.bind(barWidthSlider.valueProperty())
+        MainController.instance.visualizer.cutoff.bind(maxFreqSpinner.valueProperty())
+        MainController.instance.visualizer.lowPass.bind(minFreqSpinner.valueProperty())
 
-        updateInfo()
-        audioCaptureService.source.addListener { _ ->
-            updateInfo()
+        fftSizeChoiceBox.valueProperty().addListener { _, _, v ->
+            if (v != audioCaptureService.fftSize.get()) {
+                if (!applyFreqButton.styleClass.contains("accent")) applyFreqButton.styleClass.add("accent")
+            } else {
+                applyFreqButton.styleClass.remove("accent")
+            }
         }
+
+        updateFftInfoLabel()
     }
 
-    private fun updateInfo() {
-        if (audioCaptureService.source.get() == null) {
-            freqInfoLabel.text = "No device selected"
+    private fun updateFftInfoLabel() {
+        if (audioCaptureService.source.get() != null) {
+            val freq = audioCaptureService.source.get().getMinimumFrequency(fftSizeChoiceBox.value)
+            fftInfoLabel.text = localizationService.format("dialog.deviceOptions.windowSizeInfo", freq)
         } else {
-            val rate = audioCaptureService.source.get().format.mix.rate
-            val window = SupportedCaptureSource.getMinimumSamples(minFreqSpinner.value, rate)
-            val buffer = SupportedCaptureSource.trimResultBufferTo(window * 2, rate, maxFreqSpinner.value)
-            freqInfoLabel.text = "Window: $window • Visible buffer: $buffer"
+            fftInfoLabel.text = localizationService.get("dialog.deviceOptions.noDevice")
         }
     }
 
     fun applyFreqSettings() {
-        MainController.instance.visualizer.cutoff.set(maxFreqSpinner.value)
-        audioCaptureService.lowPass.set(minFreqSpinner.value)
+        audioCaptureService.fftSize.set(fftSizeChoiceBox.value)
+        applyFreqButton.styleClass.remove("accent")
         audioCaptureService.restartCapture()
-        updateInfo()
     }
 
 }
