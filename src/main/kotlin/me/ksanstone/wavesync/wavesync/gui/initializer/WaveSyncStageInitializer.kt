@@ -5,8 +5,8 @@ import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.image.Image
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
-import me.ksanstone.wavesync.wavesync.service.ThemeService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.ThemeService
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
 

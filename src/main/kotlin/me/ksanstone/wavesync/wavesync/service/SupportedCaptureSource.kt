@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.service
 
+import javafx.util.Duration
 import xt.audio.Structs
 import xt.audio.XtDevice
 import kotlin.math.ceil
@@ -35,6 +36,10 @@ data class SupportedCaptureSource(
 
     fun bufferBeginningSkipFor(freq: Int, bufferSize: Int): Int {
         return trimResultBufferTo(bufferSize, this.format.mix.rate, freq)
+    }
+
+    fun getUpdateInterval(samples: Int): Duration {
+        return Duration.seconds(1.0 / format.mix.rate * samples)
     }
 
     companion object {

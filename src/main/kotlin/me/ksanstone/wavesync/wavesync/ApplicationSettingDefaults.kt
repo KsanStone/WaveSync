@@ -7,4 +7,5 @@ object ApplicationSettingDefaults {
     const val BAR_CUTOFF = 20000
     const val TARGET_BAR_WIDTH = 4
     const val FFT_SIZE = 1024
+    const val MIN_UI_VISUALIZER_WINDOW = 500
 }
