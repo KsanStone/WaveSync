@@ -1,6 +1,7 @@
 package me.ksanstone.wavesync.wavesync.service
 
 import com.sun.jna.Pointer
+import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import javafx.beans.property.IntegerProperty
 import javafx.beans.property.ObjectProperty
@@ -24,7 +25,9 @@ import java.util.function.BiConsumer
 
 
 @Service
-class AudioCaptureService {
+class AudioCaptureService(
+    private val preferenceService: PreferenceService
+) {
 
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
 
@@ -41,6 +44,11 @@ class AudioCaptureService {
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
+
+    @PostConstruct
+    fun registerProperties() {
+        preferenceService.registerProperty(fftSize, "fftSize")
+    }
 
     fun onBuffer(stream: XtStream, buffer: XtBuffer, user: Any?): Int {
         val safe = XtSafeBuffer.get(stream) ?: return 0

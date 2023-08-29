@@ -12,7 +12,7 @@
       <VBox prefHeight="162.0" prefWidth="304.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
             <BarVisualizer fx:id="visualizer" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="10.0" minWidth="10.0" prefHeight="10.0" prefWidth="10.0" VBox.vgrow="ALWAYS" />
-            <HBox alignment="CENTER_LEFT" prefWidth="200.0" spacing="5.0" fillHeight="true">
+            <HBox alignment="CENTER_LEFT" fillHeight="true" prefWidth="200.0" spacing="5.0">
                <children>
                   <Button mnemonicParsing="false" onAction="#showOptionMenu" styleClass="button-icon">
                      <graphic>

@@ -11,6 +11,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import java.net.URL
 import java.util.*
@@ -29,6 +30,7 @@ class MainController() : Initializable {
     private var audioCaptureService: AudioCaptureService
     private var localizationService: LocalizationService
     private var menuInitializer: MenuInitializer
+    private var preferenceService: PreferenceService
     private var lastDeviceId: String? = null
     private lateinit var resources: ResourceBundle
 
@@ -38,6 +40,7 @@ class MainController() : Initializable {
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
+        preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
     }
 
     @FXML
@@ -113,6 +116,8 @@ class MainController() : Initializable {
         audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
         visualizer.cutoff.addListener { _ -> refreshInfoLabel() }
         visualizer.lowPass.addListener { _ -> refreshInfoLabel() }
+
+        visualizer.registerPreferences("mainBarVisualizer", preferenceService)
     }
 
     /**

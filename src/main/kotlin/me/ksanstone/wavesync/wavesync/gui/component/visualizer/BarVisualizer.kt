@@ -16,6 +16,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
+import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.smoothing.IMagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
@@ -82,14 +83,23 @@ class BarVisualizer : AnchorPane() {
         lowPass.addListener { _ -> sizeFrequencyAxis() }
     }
 
-    private fun sizeFrequencyAxis() {
-        val upper = source.trimResultTo(fftSize, cutoff.get())
-        val lower = source.bufferBeginningSkipFor(lowPass.get(), fftSize)
-        frequencyAxis.lowerBound = lower * (source.format.mix.rate.toDouble() / fftSize)
-        frequencyAxis.upperBound = upper * (source.format.mix.rate.toDouble() / fftSize)
+    fun registerPreferences(id: String, preferenceService: PreferenceService) {
+        preferenceService.registerProperty(smoothing, "$id-smoothing")
+        preferenceService.registerProperty(scaling, "$id-scaling")
+        preferenceService.registerProperty(cutoff, "$id-cutoff")
+        preferenceService.registerProperty(lowPass, "$id-lowPass")
+        preferenceService.registerProperty(targetBarWidth, "$id-targetBarWidth")
     }
 
-    private lateinit var source: SupportedCaptureSource
+    private fun sizeFrequencyAxis() {
+        if (source == null) return
+        val upper = source!!.trimResultTo(fftSize, cutoff.get())
+        val lower = source!!.bufferBeginningSkipFor(lowPass.get(), fftSize)
+        frequencyAxis.lowerBound = lower * (source!!.format.mix.rate.toDouble() / fftSize)
+        frequencyAxis.upperBound = upper * (source!!.format.mix.rate.toDouble() / fftSize)
+    }
+
+    private var source: SupportedCaptureSource? = null
     private var fftSize: Int = 1024
     private var frequencyBinSkip: Int = 0
 
@@ -132,7 +142,7 @@ class BarVisualizer : AnchorPane() {
         val totalBars = floor(bufferLength.toDouble() / step)
         val barWidth = (width - (totalBars - 1) * gap) / totalBars
         val buffer = smoother.data
-        val padding = (barWidth * 0.1).coerceAtMost(1.0)
+        val padding = (barWidth * 0.3).coerceAtMost(1.0)
 
 
         gc.fill = Color.HOTPINK

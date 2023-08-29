@@ -18,10 +18,14 @@ class WaveSyncStageInitializer(
 ) : ApplicationListener<StageReadyEvent> {
     override fun onApplicationEvent(event: StageReadyEvent) {
         val stage = event.stage
-        val root: Parent = FXMLLoader.load(javaClass.classLoader.getResource("layout/index.fxml"), localizationService.getDefault())
+        val root: Parent =
+            FXMLLoader.load(
+                javaClass.classLoader.getResource("layout/index.fxml"),
+                localizationService.getDefault()
+            )
         val scene = Scene(root)
 
-        themeService.applyTheme("Primer Dark")
+        themeService.applyCurrent()
 
         stage.title = "WaveSync"
         stage.icons.add(Image("icon.png"))
