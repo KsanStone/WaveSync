@@ -104,7 +104,10 @@ class BarVisualizer : AnchorPane() {
     private var frequencyBinSkip: Int = 0
 
     fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
-        this.source = source
+        if (source != this.source) {
+            this.source = source
+            sizeFrequencyAxis()
+        }
         this.fftSize = array.size * 2
         var size = source.trimResultTo(array.size * 2, cutoff.get())
         frequencyBinSkip = source.bufferBeginningSkipFor(lowPass.get(), array.size * 2)

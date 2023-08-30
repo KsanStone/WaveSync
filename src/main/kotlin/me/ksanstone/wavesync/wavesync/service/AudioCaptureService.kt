@@ -189,7 +189,7 @@ class AudioCaptureService(
                     for (i in 0 until list.count) {
                         val deviceId = list.getId(i)
                         val caps = list.getCapabilities(deviceId)
-                        if (caps.contains(XtDeviceCaps.LOOPBACK)) {
+                        if (caps.contains(XtDeviceCaps.LOOPBACK) || caps.contains(XtDeviceCaps.INPUT)) {
                             val deviceName = list.getName(deviceId)
                             try {
                                 service.openDevice(deviceId).use { device ->
