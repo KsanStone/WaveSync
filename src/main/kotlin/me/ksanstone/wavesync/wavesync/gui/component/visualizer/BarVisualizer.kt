@@ -46,7 +46,7 @@ class BarVisualizer : AnchorPane() {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
         val drawLoop = Timeline(
-            KeyFrame(Duration.millis(16.0), { draw() })
+            KeyFrame(Duration.millis(6.0), { draw() })
         )
         drawLoop.cycleCount = Timeline.INDEFINITE
         drawLoop.play()

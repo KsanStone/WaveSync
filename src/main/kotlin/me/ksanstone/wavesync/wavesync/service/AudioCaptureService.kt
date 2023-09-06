@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.service
 
+import com.sun.jna.Platform
 import com.sun.jna.Pointer
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
@@ -44,10 +45,31 @@ class AudioCaptureService(
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
+    val usedAudioSystem: ObjectProperty<XtSystem> = SimpleObjectProperty()
+    var audioSystems: List<XtSystem> = listOf()
 
     @PostConstruct
     fun registerProperties() {
         preferenceService.registerProperty(fftSize, "fftSize")
+        preferenceService.registerProperty(usedAudioSystem, "audioSystem", XtSystem::class.java)
+        detectSupportedAudioSystems()
+        if (usedAudioSystem.get() == null) {
+            if (Platform.isWindows() && audioSystems.contains(XtSystem.WASAPI)) {
+                usedAudioSystem.set(XtSystem.WASAPI)
+            }
+        }
+        if (!audioSystems.contains(usedAudioSystem.get())) {
+            usedAudioSystem.set(null)
+            logger.warn("No audio system selected")
+        }
+
+        usedAudioSystem.addListener { _ -> stopCapture() }
+    }
+
+    fun detectSupportedAudioSystems() {
+        XtAudio.init(null, Pointer.NULL).use { platform ->
+            audioSystems = platform.systems.toList()
+        }
     }
 
     fun onBuffer(stream: XtStream, buffer: XtBuffer, user: Any?): Int {
@@ -96,7 +118,7 @@ class AudioCaptureService(
         recordingFuture = CompletableFuture.runAsync {
             lock = CountDownLatch(1)
             XtAudio.init(null, Pointer.NULL).use { platform ->
-                val service = platform.getService(XtSystem.WASAPI)
+                val service = platform.getService(usedAudioSystem.get())
                 logger.info("Selected device $source")
                 service.openDevice(source.id).use {
                     val device = it
@@ -163,7 +185,7 @@ class AudioCaptureService(
     }
 
     private fun extractDeviceUUID(deviceId: String): String {
-        return deviceId.split("}.{")[1]
+        return deviceId.split("}.{").getOrElse(1) { return deviceId }
     }
 
     fun findSimilarAudioSource(device: String, devices: List<SupportedCaptureSource>): SupportedCaptureSource? {
@@ -173,7 +195,7 @@ class AudioCaptureService(
 
     fun findDefaultAudioSource(devices: List<SupportedCaptureSource>): SupportedCaptureSource? {
         XtAudio.init(null, Pointer.NULL).use { platform ->
-            val service = platform.getService(XtSystem.WASAPI)
+            val service = platform.getService(usedAudioSystem.get())
             val device = service.getDefaultDeviceId(true) ?: return null
             val extractedId = extractDeviceUUID(device)
             return devices.find { extractDeviceUUID(it.id) == extractedId }
@@ -183,7 +205,7 @@ class AudioCaptureService(
     fun findSupportedSources(): List<SupportedCaptureSource> {
         val supported = ArrayList<SupportedCaptureSource>()
         XtAudio.init(null, Pointer.NULL).use { platform ->
-            val service = platform.getService(XtSystem.WASAPI)
+            val service = platform.getService(usedAudioSystem.get())
             try {
                 service.openDeviceList(EnumSet.of(XtEnumFlags.INPUT)).use { list ->
                     for (i in 0 until list.count) {

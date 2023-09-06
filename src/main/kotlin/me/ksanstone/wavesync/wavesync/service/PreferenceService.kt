@@ -1,10 +1,7 @@
 package me.ksanstone.wavesync.wavesync.service
 
 import jakarta.annotation.PostConstruct
-import javafx.beans.property.FloatProperty
-import javafx.beans.property.IntegerProperty
-import javafx.beans.property.Property
-import javafx.beans.property.StringProperty
+import javafx.beans.property.*
 import org.springframework.stereotype.Service
 import java.util.prefs.Preferences
 
@@ -39,6 +36,14 @@ class PreferenceService {
         property.value = preferences.get(name, property.get())
         property.addListener { _ ->
             preferences.put(name, property.get())
+        }
+        properties.add(property)
+    }
+
+    fun <E : Enum<E>> registerProperty(property: ObjectProperty<E>, name: String, enumClass: Class<E>) {
+        property.value = enumClass.enumConstants.firstOrNull { it.name == preferences.get(name, property.get()?.name) }
+        property.addListener { _ ->
+            preferences.put(name, property.get().name)
         }
         properties.add(property)
     }

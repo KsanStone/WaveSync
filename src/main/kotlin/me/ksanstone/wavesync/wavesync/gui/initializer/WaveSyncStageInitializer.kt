@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component
 @Component
 class WaveSyncStageInitializer(
     private val themeService: ThemeService,
-    private val localizationService: LocalizationService
+    private val localizationService: LocalizationService,
 ) : ApplicationListener<StageReadyEvent> {
     override fun onApplicationEvent(event: StageReadyEvent) {
         val stage = event.stage

@@ -9,12 +9,16 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.MIN_UI_VISUALIZ
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import xt.audio.Enums.XtSystem
 import java.net.URL
 import java.util.*
 import kotlin.math.pow
 import kotlin.math.round
 
 class VisualizerOptionsController : Initializable {
+
+    @FXML
+    lateinit var audioServerChoiceBox: ChoiceBox<String>
 
     @FXML
     lateinit var applyFreqButton: Button
@@ -59,12 +63,24 @@ class VisualizerOptionsController : Initializable {
         maxFreqSpinner.valueFactory.value = 20_000
     }
 
+    private fun changeAudioSystem() {
+        audioCaptureService.usedAudioSystem.set(XtSystem.valueOf(audioServerChoiceBox.value))
+        MainController.instance.refreshDeviceList()
+    }
+
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
 
+        audioServerChoiceBox.items.clear()
+        audioServerChoiceBox.items.addAll(audioCaptureService.audioSystems.map { it.name })
+        audioServerChoiceBox.value = audioCaptureService.usedAudioSystem.get()?.name
+        audioServerChoiceBox.valueProperty().addListener { _ ->
+            changeAudioSystem()
+        }
+
         fftSizeChoiceBox.items.clear()
-        fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14).map { 2.0.pow(it.toDouble()).toInt() }.toList())
+        fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14, 15).map { 2.0.pow(it.toDouble()).toInt() }.toList())
         fftSizeChoiceBox.value = audioCaptureService.fftSize.get()
         fftSizeChoiceBox.valueProperty().addListener { _ -> updateFftInfoLabel() }
         audioCaptureService.source.addListener { _ -> updateFftInfoLabel() }
