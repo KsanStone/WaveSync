@@ -6,10 +6,13 @@ import javafx.animation.Timeline
 import javafx.beans.binding.DoubleBinding
 import javafx.beans.property.*
 import javafx.beans.value.ObservableValue
+import javafx.collections.ListChangeListener
+import javafx.scene.Node
 import javafx.scene.canvas.Canvas
 import javafx.scene.chart.NumberAxis
 import javafx.scene.layout.AnchorPane
 import javafx.scene.paint.Color
+import javafx.scene.text.Text
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
@@ -20,6 +23,7 @@ import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.smoothing.IMagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
+import java.text.DecimalFormat
 import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.max
@@ -59,6 +63,23 @@ class BarVisualizer : AnchorPane() {
         }
 
         frequencyAxis = NumberAxis(0.0, 20000.0, 1000.0)
+        frequencyAxis.childrenUnmodifiable
+            .addListener(ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
+                while (c.next()) {
+                    if (c.wasAdded()) {
+                        for (mark in c.addedSubList) {
+                            if (mark is Text) {
+                                val parsed = DecimalFormat("###,###.###").parse(mark.text).toDouble()
+                                if (parsed == frequencyAxis.lowerBound) {
+                                    mark.text = if(mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
+                                } else if (parsed == frequencyAxis.upperBound) {
+                                    mark.text = if(mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
+                                }
+                            }
+                        }
+                    }
+                }
+            } as ListChangeListener<Node?>?)
 
         setBottomAnchor(frequencyAxis, 0.0)
         setLeftAnchor(frequencyAxis, 0.0)
@@ -117,7 +138,7 @@ class BarVisualizer : AnchorPane() {
         }
 
         smoother.data = array.slice(frequencyBinSkip until size).map { fl ->
-            (fl * (scaling.get() * (1.0f - ln(fl + 0.2f) - 0.813f) + 1) ).coerceAtMost(1.0f)
+            (fl * (scaling.get() * (1.0f - ln(fl + 0.2f) - 0.813f) + 1)).coerceAtMost(1.0f)
         }.toFloatArray()
     }
 

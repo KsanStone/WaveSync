@@ -1,237 +1,149 @@
-package me.ksanstone.wavesync.wavesync.service;
+package me.ksanstone.wavesync.wavesync.service
 
-public class FourierMath {
-    static private final int MAX_SIZE_LOG_2 = 16;
-    static BitReverseTable[] reverseTables = new BitReverseTable[MAX_SIZE_LOG_2];
-    static DoubleSineTable[] sineTables = new DoubleSineTable[MAX_SIZE_LOG_2];
-    static FloatSineTable[] floatSineTables = new FloatSineTable[MAX_SIZE_LOG_2];
+import kotlin.math.sin
+import kotlin.math.sqrt
 
-    private static class DoubleSineTable {
-        double[] sineValues;
+object FourierMath {
+    private const val MAX_SIZE_LOG_2 = 16
+    private var reverseTables = arrayOfNulls<BitReverseTable>(MAX_SIZE_LOG_2)
+    private var floatSineTables = arrayOfNulls<FloatSineTable>(MAX_SIZE_LOG_2)
 
-        DoubleSineTable(int numBits) {
-            int len = 1 << numBits;
-            sineValues = new double[1 << numBits];
-            for (int i = 0; i < len; i++) {
-                sineValues[i] = Math.sin((i * Math.PI * 2.0) / len);
-            }
-        }
-    }
-
-    private static double[] getDoubleSineTable(int n) {
-        DoubleSineTable sineTable = sineTables[n];
+    private fun getFloatSineTable(n: Int): FloatArray {
+        var sineTable = floatSineTables[n]
         if (sineTable == null) {
-            sineTable = new DoubleSineTable(n);
-            sineTables[n] = sineTable;
+            sineTable = FloatSineTable(n)
+            floatSineTables[n] = sineTable
         }
-        return sineTable.sineValues;
+        return sineTable.sineValues
     }
 
-    private static class FloatSineTable {
-        float[] sineValues;
-
-        FloatSineTable(int numBits) {
-            int len = 1 << numBits;
-            sineValues = new float[1 << numBits];
-            for (int i = 0; i < len; i++) {
-                sineValues[i] = (float) Math.sin((i * Math.PI * 2.0) / len);
-            }
-        }
-    }
-
-    private static float[] getFloatSineTable(int n) {
-        FloatSineTable sineTable = floatSineTables[n];
-        if (sineTable == null) {
-            sineTable = new FloatSineTable(n);
-            floatSineTables[n] = sineTable;
-        }
-        return sineTable.sineValues;
-    }
-
-    private static class BitReverseTable {
-        int[] reversedBits;
-
-        BitReverseTable(int numBits) {
-            reversedBits = new int[1 << numBits];
-            for (int i = 0; i < reversedBits.length; i++) {
-                reversedBits[i] = reverseBits(i, numBits);
-            }
-        }
-
-        static int reverseBits(int index, int numBits) {
-            int i, rev;
-
-            for (i = rev = 0; i < numBits; i++) {
-                rev = (rev << 1) | (index & 1);
-                index >>= 1;
-            }
-
-            return rev;
-        }
-    }
-
-    private static int[] getReverseTable(int n) {
-        BitReverseTable reverseTable = reverseTables[n];
+    private fun getReverseTable(n: Int): IntArray {
+        var reverseTable = reverseTables[n]
         if (reverseTable == null) {
-            reverseTable = new BitReverseTable(n);
-            reverseTables[n] = reverseTable;
+            reverseTable = BitReverseTable(n)
+            reverseTables[n] = reverseTable
         }
-        return reverseTable.reversedBits;
+        return reverseTable.reversedBits
     }
 
     /**
      * Calculate the amplitude of the sine wave associated with each bin of a complex FFT result.
-     * 
+     *
      * @param ar
      * @param ai
      * @param magnitudes
      */
-    public static void calculateMagnitudes(double ar[], double ai[], double[] magnitudes) {
-        for (int i = 0; i < magnitudes.length; ++i) {
-            magnitudes[i] = Math.sqrt((ar[i] * ar[i]) + (ai[i] * ai[i]));
+    fun calculateMagnitudes(ar: FloatArray, ai: FloatArray, magnitudes: FloatArray) {
+        for (i in magnitudes.indices) {
+            magnitudes[i] = sqrt((ar[i] * ar[i] + ai[i] * ai[i]).toDouble()).toFloat()
         }
     }
 
-    /**
-     * Calculate the amplitude of the sine wave associated with each bin of a complex FFT result.
-     * 
-     * @param ar
-     * @param ai
-     * @param magnitudes
-     */
-    public static void calculateMagnitudes(float ar[], float ai[], float[] magnitudes) {
-        for (int i = 0; i < magnitudes.length; ++i) {
-            magnitudes[i] = (float) Math.sqrt((ar[i] * ar[i]) + (ai[i] * ai[i]));
-        }
-    }
-
-    public static void transform(int sign, int n, double ar[], double ai[]) {
-        double scale = (sign > 0) ? (2.0 / n) : (0.5);
-
-        int numBits = FourierMath.numBits(n);
-        int[] reverseTable = getReverseTable(numBits);
-        double[] sineTable = getDoubleSineTable(numBits);
-        int mask = n - 1;
-        int cosineOffset = n / 4; // phase offset between cos and sin
-
-        int i, j;
-        for (i = 0; i < n; i++) {
-            j = reverseTable[i];
+    fun transform(sign: Int, n: Int, ar: FloatArray, ai: FloatArray) {
+        val scale = if (sign > 0) 2.0f / n else 0.5f
+        val numBits = numBits(n)
+        val reverseTable = getReverseTable(numBits)
+        val sineTable = getFloatSineTable(numBits)
+        val mask = n - 1
+        val cosineOffset = n / 4 // phase offset between cos and sin
+        var i: Int
+        var j: Int
+        i = 0
+        while (i < n) {
+            j = reverseTable[i]
             if (j >= i) {
-                double tempr = ar[j] * scale;
-                double tempi = ai[j] * scale;
-                ar[j] = ar[i] * scale;
-                ai[j] = ai[i] * scale;
-                ar[i] = tempr;
-                ai[i] = tempi;
+                val tempr = ar[j] * scale
+                val tempi = ai[j] * scale
+                ar[j] = ar[i] * scale
+                ai[j] = ai[i] * scale
+                ar[i] = tempr
+                ai[i] = tempi
             }
+            i++
         }
-
-        int mmax, stride;
-        int numerator = sign * n;
-        for (mmax = 1, stride = 2 * mmax; mmax < n; mmax = stride, stride = 2 * mmax) {
-            int phase = 0;
-            int phaseIncrement = numerator / (2 * mmax);
-            for (int m = 0; m < mmax; ++m) {
-                double wr = sineTable[(phase + cosineOffset) & mask]; // cosine
-                double wi = sineTable[phase];
-
-                for (i = m; i < n; i += stride) {
-                    j = i + mmax;
-                    double tr = (wr * ar[j]) - (wi * ai[j]);
-                    double ti = (wr * ai[j]) + (wi * ar[j]);
-                    ar[j] = ar[i] - tr;
-                    ai[j] = ai[i] - ti;
-                    ar[i] += tr;
-                    ai[i] += ti;
+        var mmax: Int
+        var stride: Int
+        val numerator = sign * n
+        mmax = 1
+        stride = 2 * mmax
+        while (mmax < n) {
+            var phase = 0
+            val phaseIncrement = numerator / (2 * mmax)
+            for (m in 0 until mmax) {
+                val wr = sineTable[phase + cosineOffset and mask] // cosine
+                val wi = sineTable[phase]
+                i = m
+                while (i < n) {
+                    j = i + mmax
+                    val tr = wr * ar[j] - wi * ai[j]
+                    val ti = wr * ai[j] + wi * ar[j]
+                    ar[j] = ar[i] - tr
+                    ai[j] = ai[i] - ti
+                    ar[i] += tr
+                    ai[i] += ti
+                    i += stride
                 }
-
-                phase = (phase + phaseIncrement) & mask;
+                phase = phase + phaseIncrement and mask
             }
-            mmax = stride;
-        }
-    }
-
-    public static void transform(int sign, int n, float ar[], float ai[]) {
-        float scale = (sign > 0) ? (2.0f / n) : (0.5f);
-
-        int numBits = FourierMath.numBits(n);
-        int[] reverseTable = getReverseTable(numBits);
-        float[] sineTable = getFloatSineTable(numBits);
-        int mask = n - 1;
-        int cosineOffset = n / 4; // phase offset between cos and sin
-
-        int i, j;
-        for (i = 0; i < n; i++) {
-            j = reverseTable[i];
-            if (j >= i) {
-                float tempr = ar[j] * scale;
-                float tempi = ai[j] * scale;
-                ar[j] = ar[i] * scale;
-                ai[j] = ai[i] * scale;
-                ar[i] = tempr;
-                ai[i] = tempi;
-            }
-        }
-
-        int mmax, stride;
-        int numerator = sign * n;
-        for (mmax = 1, stride = 2 * mmax; mmax < n; mmax = stride, stride = 2 * mmax) {
-            int phase = 0;
-            int phaseIncrement = numerator / (2 * mmax);
-            for (int m = 0; m < mmax; ++m) {
-                float wr = sineTable[(phase + cosineOffset) & mask]; // cosine
-                float wi = sineTable[phase];
-
-                for (i = m; i < n; i += stride) {
-                    j = i + mmax;
-                    float tr = (wr * ar[j]) - (wi * ai[j]);
-                    float ti = (wr * ai[j]) + (wi * ar[j]);
-                    ar[j] = ar[i] - tr;
-                    ai[j] = ai[i] - ti;
-                    ar[i] += tr;
-                    ai[i] += ti;
-                }
-
-                phase = (phase + phaseIncrement) & mask;
-            }
-            mmax = stride;
+            mmax = stride
+            stride = 2 * mmax
         }
     }
 
     /**
      * Calculate log2(n)
-     * 
-     * @param powerOf2 must be a power of two, for example 512 or 1024
+     *
+     * @param powerOf2 must be a power of two, for example, 512 or 1024
      * @return for example, 9 for an input value of 512
      */
-    public static int numBits(int powerOf2) {
-        int i;
-        assert ((powerOf2 & (powerOf2 - 1)) == 0); // is it a power of 2?
-        for (i = -1; powerOf2 > 0; powerOf2 = powerOf2 >> 1, i++)
-            ;
-        return i;
+    private fun numBits(powerOf2: Int): Int {
+        var of2 = powerOf2
+        assert(
+            of2 and of2 - 1 == 0 // is it a power of 2?
+        )
+        var i: Int = -1
+        while (of2 > 0) {
+            of2 = of2 shr 1
+            i++
+        }
+        return i
     }
 
-    /**
-     * Calculate an FFT in place, modifying the input arrays.
-     * 
-     * @param n
-     * @param ar
-     * @param ai
-     */
-    public static void fft(int n, double ar[], double ai[]) {
-        transform(1, n, ar, ai);
+    class FloatSineTable internal constructor(numBits: Int) {
+        var sineValues: FloatArray
+
+        init {
+            val len = 1 shl numBits
+            sineValues = FloatArray(1 shl numBits)
+            for (i in 0 until len) {
+                sineValues[i] = sin(i * Math.PI * 2.0 / len).toFloat()
+            }
+        }
     }
 
-    /**
-     * Calculate an inverse FFT in place, modifying the input arrays.
-     * 
-     * @param n
-     * @param ar
-     * @param ai
-     */
-    public static void ifft(int n, double ar[], double ai[]) {
-        transform(-1, n, ar, ai);
+    class BitReverseTable internal constructor(numBits: Int) {
+        var reversedBits: IntArray
+
+        init {
+            reversedBits = IntArray(1 shl numBits)
+            for (i in reversedBits.indices) {
+                reversedBits[i] = reverseBits(i, numBits)
+            }
+        }
+
+        companion object {
+            fun reverseBits(index: Int, numBits: Int): Int {
+                var index1 = index
+                var i: Int
+                var rev: Int
+                i = 0.also { rev = it }
+                while (i < numBits) {
+                    rev = rev shl 1 or (index1 and 1)
+                    index1 = index1 shr 1
+                    i++
+                }
+                return rev
+            }
+        }
     }
 }
