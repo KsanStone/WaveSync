@@ -1,9 +1,10 @@
 package me.ksanstone.wavesync.wavesync.service
 
 import javafx.util.Duration
+import me.ksanstone.wavesync.wavesync.service.FourierMath.maxFrequencyForRate
+import me.ksanstone.wavesync.wavesync.service.FourierMath.trimResultBufferTo
 import xt.audio.Structs
 import xt.audio.XtDevice
-import kotlin.math.ceil
 import kotlin.math.round
 
 data class SupportedCaptureSource(
@@ -17,7 +18,7 @@ data class SupportedCaptureSource(
     }
 
     fun getMaxFrequency(): Int {
-        return getMaxFrequencyForRate(format.mix.rate)
+        return maxFrequencyForRate(format.mix.rate)
     }
 
     fun trimResultTo(size: Int, frequency: Int): Int {
@@ -41,27 +42,4 @@ data class SupportedCaptureSource(
     fun getUpdateInterval(samples: Int): Duration {
         return Duration.seconds(1.0 / format.mix.rate * samples)
     }
-
-    companion object {
-        fun getMinimumSamples(frequency: Int, rate: Int): Int {
-            return (1.0 / frequency * rate).toInt().closestPowerOf2()
-        }
-
-        fun getMaxFrequencyForRate(rate: Int): Int {
-            return rate / 2
-        }
-
-        fun trimResultBufferTo(bufferSize: Int, rate: Int, frequency: Int): Int {
-            val factor = rate.toDouble() / bufferSize.toDouble()
-            return ceil(frequency.toDouble() / factor).toInt().coerceAtMost(bufferSize / 2)
-        }
-    }
-}
-
-fun Int.closestPowerOf2(): Int {
-    var pow = 1
-    while (pow < this && pow > 0) {
-        pow = pow shl 1
-    }
-    return pow
 }

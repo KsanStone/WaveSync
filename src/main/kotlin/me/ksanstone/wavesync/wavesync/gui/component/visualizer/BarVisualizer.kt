@@ -10,6 +10,7 @@ import javafx.collections.ListChangeListener
 import javafx.scene.Node
 import javafx.scene.canvas.Canvas
 import javafx.scene.chart.NumberAxis
+import javafx.scene.control.Tooltip
 import javafx.scene.layout.AnchorPane
 import javafx.scene.paint.Color
 import javafx.scene.text.Text
@@ -20,15 +21,13 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.REFRESH_RATE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
+import me.ksanstone.wavesync.wavesync.service.FourierMath
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import java.text.DecimalFormat
-import kotlin.math.floor
-import kotlin.math.ln
-import kotlin.math.max
-import kotlin.math.roundToInt
+import kotlin.math.*
 
 
 class BarVisualizer : AnchorPane() {
@@ -37,6 +36,7 @@ class BarVisualizer : AnchorPane() {
     private var frequencyAxis: NumberAxis
     private var smoother: MagnitudeSmoother
     private var canvasHeightProperty: DoubleBinding
+    private val tooltip: Tooltip = Tooltip("---")
 
     val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
     val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255,120, 246))
@@ -46,6 +46,7 @@ class BarVisualizer : AnchorPane() {
     val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(TARGET_BAR_WIDTH)
     val framerate: IntegerProperty = SimpleIntegerProperty(REFRESH_RATE)
+    val gap: IntegerProperty = SimpleIntegerProperty(0)
 
     init {
         stylesheets.add("/styles/bar-visualizer.css")
@@ -113,6 +114,26 @@ class BarVisualizer : AnchorPane() {
         }
         cutoff.addListener { _ -> sizeFrequencyAxis() }
         lowPass.addListener { _ -> sizeFrequencyAxis() }
+
+        setOnMouseMoved {
+            if (source == null) {
+                tooltip.text = "---"
+            } else {
+                val x = it.x
+                val bufferLength = smoother.dataSize
+                val step = calculateStep(targetBarWidth.get(), bufferLength, width)
+                val totalBars = floor(bufferLength.toDouble() / step)
+                val barWidth = (width - (totalBars - 1) * gap.get()) / totalBars
+                val bar = floor(x / barWidth)
+                val binStart = floor(bar * step).toInt()
+                val binEnd = floor((bar+1) * step).toInt()
+                val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
+                val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
+                tooltip.text = "Bar: $bar \nFFT: $binStart - $binEnd\nFreq: ${minFreq}Hz - ${maxFreq}Hz"
+            }
+        }
+
+        Tooltip.install(this, tooltip)
     }
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
@@ -127,8 +148,8 @@ class BarVisualizer : AnchorPane() {
         if (source == null) return
         val upper = source!!.trimResultTo(fftSize, cutoff.get())
         val lower = source!!.bufferBeginningSkipFor(lowPass.get(), fftSize)
-        frequencyAxis.lowerBound = (lower * (source!!.format.mix.rate.toDouble() / fftSize)).roundToInt().toDouble()
-        frequencyAxis.upperBound = (upper * (source!!.format.mix.rate.toDouble() / fftSize)).roundToInt().toDouble()
+        frequencyAxis.lowerBound = FourierMath.frequencyOfBin(lower, source!!.format.mix.rate, fftSize).toDouble()
+        frequencyAxis.upperBound = FourierMath.frequencyOfBin(upper, source!!.format.mix.rate, fftSize).toDouble()
     }
 
     private var source: SupportedCaptureSource? = null
@@ -171,11 +192,11 @@ class BarVisualizer : AnchorPane() {
         val gc = canvas.graphicsContext2D
         gc.clearRect(0.0, 0.0, width, canvasHeight)
 
-        val gap = 0
+        val localGap = gap.get()
         val bufferLength = smoother.dataSize
         val step = calculateStep(targetBarWidth.get(), bufferLength, width)
         val totalBars = floor(bufferLength.toDouble() / step)
-        val barWidth = (width - (totalBars - 1) * gap) / totalBars
+        val barWidth = (width - (totalBars - 1) * localGap) / totalBars
         val buffer = smoother.data
         val padding = (barWidth * 0.3).coerceAtMost(1.0)
 
@@ -195,7 +216,7 @@ class BarVisualizer : AnchorPane() {
 
             gc.fill = color
             gc.fillRect(x, canvasHeight - barHeight, barWidth + padding, barHeight)
-            x += barWidth + gap
+            x += barWidth + localGap
             y = 0.0
         }
     }

@@ -1,5 +1,7 @@
 package me.ksanstone.wavesync.wavesync.service
 
+import kotlin.math.ceil
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
 
@@ -88,6 +90,19 @@ object FourierMath {
             mmax = stride
             stride = 2 * mmax
         }
+    }
+
+    fun frequencyOfBin(bin: Int, rate: Int, fftSize: Int): Int {
+        return (bin * (rate.toDouble() / fftSize)).roundToInt()
+    }
+
+    fun maxFrequencyForRate(rate: Int): Int {
+        return rate / 2
+    }
+
+    fun trimResultBufferTo(fftSize: Int, rate: Int, frequency: Int): Int {
+        val factor = rate.toDouble() / fftSize.toDouble()
+        return ceil(frequency.toDouble() / factor).toInt().coerceAtMost(fftSize / 2)
     }
 
     /**
