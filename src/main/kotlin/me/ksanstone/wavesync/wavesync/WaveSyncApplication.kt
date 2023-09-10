@@ -37,5 +37,6 @@ class WaveSyncApplication : Application() {
 }
 
 fun main(args: Array<String>) {
+    System.setProperty("java.awt.headless", "false")
     Application.launch(WaveSyncApplication::class.java, *args)
 }

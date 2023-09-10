@@ -3,7 +3,6 @@ package me.ksanstone.wavesync.wavesync.service.windowing
 abstract class WindowFunction(private var windowSize: Int) {
 
     private var factors: FloatArray? = null
-    protected val TWO_PI = 2 * Math.PI
 
     init {
         factors = getPrecomputedFactors(windowSize)
@@ -17,11 +16,15 @@ abstract class WindowFunction(private var windowSize: Int) {
         } else {
             throw IllegalArgumentException(
                 ("Incompatible window size for this WindowFunction instance : " +
-                        "expected " + windowSize).toString() + ", received " + window.size
+                        "expected " + windowSize) + ", received " + window.size
             )
         }
     }
 
     protected abstract fun getPrecomputedFactors(windowSize: Int): FloatArray
+
+    companion object {
+        const val TWO_PI = 2 * Math.PI
+    }
 
 }

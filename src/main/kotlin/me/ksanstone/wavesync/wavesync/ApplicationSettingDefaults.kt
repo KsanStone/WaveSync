@@ -9,4 +9,5 @@ object ApplicationSettingDefaults {
     const val FFT_SIZE = 1024
     const val MIN_UI_VISUALIZER_WINDOW = 500
     const val THEME = "Primer Dark"
+    const val REFRESH_RATE = 60
 }

@@ -14,4 +14,6 @@ open module wavesync {
     requires kotlin.reflect;
     requires java.prefs;
     requires com.sun.jna.platform;
+    requires spring.boot.autoconfigure;
+    requires java.desktop;
 }

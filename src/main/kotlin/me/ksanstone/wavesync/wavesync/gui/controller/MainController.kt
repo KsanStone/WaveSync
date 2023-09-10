@@ -116,16 +116,9 @@ class MainController() : Initializable {
         audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
         visualizer.cutoff.addListener { _ -> refreshInfoLabel() }
         visualizer.lowPass.addListener { _ -> refreshInfoLabel() }
+        visualizer.framerate.set(WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java).findHighestRefreshRate())
 
         visualizer.registerPreferences("mainBarVisualizer", preferenceService)
-    }
-
-    /**
-     * WIll be used to refresh the ui once the audio interface is changed
-     */
-    fun deepRefresh() {
-        refreshDeviceList()
-        lastDeviceId = null
     }
 
     companion object {

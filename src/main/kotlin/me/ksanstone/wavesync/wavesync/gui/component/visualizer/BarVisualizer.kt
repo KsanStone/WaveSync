@@ -18,40 +18,45 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.REFRESH_RATE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
-import me.ksanstone.wavesync.wavesync.service.smoothing.IMagnitudeSmoother
+import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import java.text.DecimalFormat
 import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 
 class BarVisualizer : AnchorPane() {
 
     private var canvas: Canvas
     private var frequencyAxis: NumberAxis
-    private var smoother: IMagnitudeSmoother
+    private var smoother: MagnitudeSmoother
     private var canvasHeightProperty: DoubleBinding
 
     val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
-    val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.LIGHTPINK)
+    val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255,120, 246))
     val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val scaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
     val cutoff: IntegerProperty = SimpleIntegerProperty(BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(TARGET_BAR_WIDTH)
+    val framerate: IntegerProperty = SimpleIntegerProperty(REFRESH_RATE)
 
     init {
         stylesheets.add("/styles/bar-visualizer.css")
 
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
+
         val drawLoop = Timeline(
-            KeyFrame(Duration.millis(6.0), { draw() })
+            KeyFrame(Duration.seconds(1.0 / framerate.get()), { draw() })
         )
+
         drawLoop.cycleCount = Timeline.INDEFINITE
         drawLoop.play()
 
@@ -60,6 +65,12 @@ class BarVisualizer : AnchorPane() {
                 drawLoop.play()
             else if (newValue == null && drawLoop.status == Animation.Status.RUNNING)
                 drawLoop.pause()
+        }
+
+        framerate.addListener { _ ->
+            drawLoop.pause()
+            drawLoop.keyFrames[0] = KeyFrame(Duration.seconds(1.0 / framerate.get()), { draw() })
+            drawLoop.playFromStart()
         }
 
         frequencyAxis = NumberAxis(0.0, 20000.0, 1000.0)
@@ -116,8 +127,8 @@ class BarVisualizer : AnchorPane() {
         if (source == null) return
         val upper = source!!.trimResultTo(fftSize, cutoff.get())
         val lower = source!!.bufferBeginningSkipFor(lowPass.get(), fftSize)
-        frequencyAxis.lowerBound = lower * (source!!.format.mix.rate.toDouble() / fftSize)
-        frequencyAxis.upperBound = upper * (source!!.format.mix.rate.toDouble() / fftSize)
+        frequencyAxis.lowerBound = (lower * (source!!.format.mix.rate.toDouble() / fftSize)).roundToInt().toDouble()
+        frequencyAxis.upperBound = (upper * (source!!.format.mix.rate.toDouble() / fftSize)).roundToInt().toDouble()
     }
 
     private var source: SupportedCaptureSource? = null

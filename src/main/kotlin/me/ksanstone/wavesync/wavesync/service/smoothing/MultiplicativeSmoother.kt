@@ -1,6 +1,6 @@
 package me.ksanstone.wavesync.wavesync.service.smoothing
 
-class MultiplicativeSmoother : IMagnitudeSmoother {
+class MultiplicativeSmoother : MagnitudeSmoother {
 
     private lateinit var dataTarget: FloatArray
     private lateinit var dataArray: FloatArray

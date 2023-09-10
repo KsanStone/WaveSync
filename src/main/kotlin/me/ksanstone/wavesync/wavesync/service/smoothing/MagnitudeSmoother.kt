@@ -1,6 +1,6 @@
 package me.ksanstone.wavesync.wavesync.service.smoothing
 
-interface IMagnitudeSmoother {
+interface MagnitudeSmoother {
     var dataSize: Int
     var data: FloatArray
     var factor: Double
