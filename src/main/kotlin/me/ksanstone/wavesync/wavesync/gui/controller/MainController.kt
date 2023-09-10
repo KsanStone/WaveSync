@@ -69,7 +69,7 @@ class MainController() : Initializable {
             if (source == null) {
                 deviceInfoLabel.text = localizationService.get("dialog.deviceOptions.noDevice")
             } else {
-                deviceInfoLabel.text = source.getPropertyDescriptor(audioCaptureService.fftSize.get(), visualizer.lowPass.get(), visualizer.cutoff.get())
+                deviceInfoLabel.text = source.getPropertyDescriptor(audioCaptureService.fftSize.get(), visualizer.lowPass.get(), visualizer.cutoff.get(), localizationService.numberFormat)
             }
         }
     }

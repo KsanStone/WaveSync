@@ -18,6 +18,9 @@ import kotlin.math.round
 class VisualizerOptionsController : Initializable {
 
     @FXML
+    lateinit var gapSlider: Slider
+
+    @FXML
     lateinit var audioServerChoiceBox: ChoiceBox<String>
 
     @FXML
@@ -95,12 +98,14 @@ class VisualizerOptionsController : Initializable {
         scalingSlider.value = MainController.instance.visualizer.scaling.get().toDouble()
         dropRateSlider.value = MainController.instance.visualizer.smoothing.get().toDouble()
         barWidthSlider.value = MainController.instance.visualizer.targetBarWidth.get().toDouble()
+        gapSlider.value = MainController.instance.visualizer.gap.get().toDouble()
 
         MainController.instance.visualizer.scaling.bind(scalingSlider.valueProperty())
         MainController.instance.visualizer.smoothing.bind(dropRateSlider.valueProperty())
         MainController.instance.visualizer.targetBarWidth.bind(barWidthSlider.valueProperty())
         MainController.instance.visualizer.cutoff.bind(maxFreqSpinner.valueProperty())
         MainController.instance.visualizer.lowPass.bind(minFreqSpinner.valueProperty())
+        MainController.instance.visualizer.gap.bind(gapSlider.valueProperty())
 
         fftSizeChoiceBox.valueProperty().addListener { _, _, v ->
             if (v != audioCaptureService.fftSize.get()) {

@@ -5,6 +5,7 @@ import me.ksanstone.wavesync.wavesync.service.FourierMath.maxFrequencyForRate
 import me.ksanstone.wavesync.wavesync.service.FourierMath.trimResultBufferTo
 import xt.audio.Structs
 import xt.audio.XtDevice
+import java.text.NumberFormat
 import kotlin.math.round
 
 data class SupportedCaptureSource(
@@ -25,9 +26,13 @@ data class SupportedCaptureSource(
         return trimResultBufferTo(size, format.mix.rate, frequency)
     }
 
-    fun getPropertyDescriptor(fftSize: Int, targetMin: Int, targetMax: Int): String {
+    fun getPropertyDescriptor(fftSize: Int, targetMin: Int, targetMax: Int, numberFormat: NumberFormat): String {
         val resultingSamples = trimResultTo(fftSize * 2, targetMax) - bufferBeginningSkipFor(targetMin, fftSize * 2)
-        return "${format.mix.rate}Hz • ${format.mix.sample} • $fftSize [$resultingSamples] • ${targetMin}Hz - ${targetMax}Hz"
+        return "${numberFormat.format(format.mix.rate)}Hz • ${format.mix.sample} • ${numberFormat.format(fftSize)} [${
+            numberFormat.format(
+                resultingSamples
+            )
+        }] • ${numberFormat.format(targetMin)}Hz - ${numberFormat.format(targetMax)}Hz"
     }
 
     fun getMinimumFrequency(samples: Int): Int {

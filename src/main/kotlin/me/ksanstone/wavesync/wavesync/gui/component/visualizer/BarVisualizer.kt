@@ -19,9 +19,12 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.REFRESH_RATE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
+import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.service.FourierMath
+import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
@@ -36,19 +39,21 @@ class BarVisualizer : AnchorPane() {
     private var frequencyAxis: NumberAxis
     private var smoother: MagnitudeSmoother
     private var canvasHeightProperty: DoubleBinding
+    private var localizationService: LocalizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     private val tooltip: Tooltip = Tooltip("---")
 
     val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
-    val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255,120, 246))
+    val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
     val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val scaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
     val cutoff: IntegerProperty = SimpleIntegerProperty(BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(TARGET_BAR_WIDTH)
     val framerate: IntegerProperty = SimpleIntegerProperty(REFRESH_RATE)
-    val gap: IntegerProperty = SimpleIntegerProperty(0)
+    val gap: IntegerProperty = SimpleIntegerProperty(GAP)
 
     init {
+
         stylesheets.add("/styles/bar-visualizer.css")
 
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
@@ -83,9 +88,11 @@ class BarVisualizer : AnchorPane() {
                             if (mark is Text) {
                                 val parsed = DecimalFormat("###,###.###").parse(mark.text).toDouble()
                                 if (parsed == frequencyAxis.lowerBound) {
-                                    mark.text = if(mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
+                                    mark.text =
+                                        if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
                                 } else if (parsed == frequencyAxis.upperBound) {
-                                    mark.text = if(mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
+                                    mark.text =
+                                        if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
                                 }
                             }
                         }
@@ -126,10 +133,12 @@ class BarVisualizer : AnchorPane() {
                 val barWidth = (width - (totalBars - 1) * gap.get()) / totalBars
                 val bar = floor(x / barWidth)
                 val binStart = floor(bar * step).toInt()
-                val binEnd = floor((bar+1) * step).toInt()
+                val binEnd = floor((bar + 1) * step).toInt()
                 val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
                 val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
-                tooltip.text = "Bar: $bar \nFFT: $binStart - $binEnd\nFreq: ${minFreq}Hz - ${maxFreq}Hz"
+                tooltip.text = "Bar: ${localizationService.formatNumber(bar)} \nFFT: ${localizationService.formatNumber(binStart)} - ${
+                    localizationService.formatNumber(binEnd)
+                }\nFreq: ${localizationService.formatNumber(minFreq, "Hz")} - ${localizationService.formatNumber(maxFreq, "Hz")}"
             }
         }
 
@@ -142,6 +151,7 @@ class BarVisualizer : AnchorPane() {
         preferenceService.registerProperty(cutoff, "$id-cutoff")
         preferenceService.registerProperty(lowPass, "$id-lowPass")
         preferenceService.registerProperty(targetBarWidth, "$id-targetBarWidth")
+        preferenceService.registerProperty(gap, "$id-gap")
     }
 
     private fun sizeFrequencyAxis() {
