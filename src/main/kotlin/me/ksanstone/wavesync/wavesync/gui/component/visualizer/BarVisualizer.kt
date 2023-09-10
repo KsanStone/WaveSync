@@ -42,9 +42,9 @@ class BarVisualizer : AnchorPane() {
     private var localizationService: LocalizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     private val tooltip: Tooltip = Tooltip("---")
 
+    private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
+    private val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
-    val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
-    val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val scaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
     val cutoff: IntegerProperty = SimpleIntegerProperty(BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
