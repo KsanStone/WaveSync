@@ -3,7 +3,10 @@ package me.ksanstone.wavesync.wavesync.gui.controller
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
+import javafx.scene.control.Alert.AlertType
 import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory
+import javafx.scene.image.Image
+import javafx.stage.Stage
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
@@ -14,6 +17,7 @@ import java.net.URL
 import java.util.*
 import kotlin.math.pow
 import kotlin.math.round
+
 
 class VisualizerOptionsController : Initializable {
 
@@ -125,6 +129,22 @@ class VisualizerOptionsController : Initializable {
         }
 
         updateFftInfoLabel()
+    }
+
+    fun showResetToDefaultsDialog() {
+        val reset = ButtonType(localizationService.get("confirmation.yes"), ButtonBar.ButtonData.OK_DONE)
+        val cancel = ButtonType(localizationService.get("confirmation.no"), ButtonBar.ButtonData.CANCEL_CLOSE)
+
+        val alert = Alert(
+            AlertType.CONFIRMATION,
+            localizationService.get("confirmation.deviceOptions.defaults"),
+            reset,
+            cancel
+        )
+        (alert.dialogPane.scene.window as Stage).icons.add(Image("icon.png"))
+
+        val result = alert.showAndWait()
+        println(result)
     }
 
     private fun updateFftInfoLabel() {  

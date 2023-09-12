@@ -21,6 +21,7 @@
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS" />
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS" />
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS" />
+            <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS" />
             </rowConstraints>
             <children>
                 <Slider fx:id="barWidthSlider" blockIncrement="5.0" majorTickUnit="5.0" max="51.0" min="1.0" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="5.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
@@ -108,6 +109,7 @@
                     </graphic>
                 </Label>
             <Slider fx:id="gapSlider" blockIncrement="5.0" layoutX="241.0" layoutY="60.0" majorTickUnit="5.0" max="50.0" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="5.0" GridPane.columnIndex="1" />
+            <Button mnemonicParsing="false" onAction="#showResetToDefaultsDialog" text="%dialog.deviceOptions.defaults" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="8" />
             </children>
             <opaqueInsets>
                 <Insets />
