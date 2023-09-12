@@ -143,8 +143,10 @@ class VisualizerOptionsController : Initializable {
         )
         (alert.dialogPane.scene.window as Stage).icons.add(Image("icon.png"))
 
-        val result = alert.showAndWait()
-        println(result)
+        if (alert.showAndWait().get() == reset) {
+
+        }
+
     }
 
     private fun updateFftInfoLabel() {  
