@@ -8,7 +8,14 @@ import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory
 import javafx.scene.image.Image
 import javafx.stage.Stage
 import javafx.util.Duration
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -144,7 +151,14 @@ class VisualizerOptionsController : Initializable {
         (alert.dialogPane.scene.window as Stage).icons.add(Image("icon.png"))
 
         if (alert.showAndWait().get() == reset) {
-
+            scalingSlider.value = BAR_SCALING.toDouble()
+            dropRateSlider.value = BAR_SMOOTHING.toDouble()
+            barWidthSlider.value = TARGET_BAR_WIDTH.toDouble()
+            maxFreqSpinner.valueFactory.value = BAR_CUTOFF
+            minFreqSpinner.valueFactory.value = BAR_LOW_PASS
+            gapSlider.value = GAP.toDouble()
+            fftSizeChoiceBox.value = FFT_SIZE
+            applyFreqSettings()
         }
 
     }
