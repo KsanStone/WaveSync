@@ -9,6 +9,7 @@ import javafx.beans.value.ObservableValue
 import javafx.collections.ListChangeListener
 import javafx.scene.Node
 import javafx.scene.canvas.Canvas
+import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
 import javafx.scene.control.Tooltip
 import javafx.scene.layout.AnchorPane
@@ -23,6 +24,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.REFRESH_RATE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.FourierMath
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
@@ -33,9 +35,8 @@ import java.text.DecimalFormat
 import kotlin.math.*
 
 
-class BarVisualizer : AnchorPane() {
+class BarVisualizer : AutoCanvas() {
 
-    private var canvas: Canvas
     private var frequencyAxis: NumberAxis
     private var smoother: MagnitudeSmoother
     private var canvasHeightProperty: DoubleBinding
@@ -49,35 +50,10 @@ class BarVisualizer : AnchorPane() {
     val cutoff: IntegerProperty = SimpleIntegerProperty(BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(TARGET_BAR_WIDTH)
-    val framerate: IntegerProperty = SimpleIntegerProperty(REFRESH_RATE)
     val gap: IntegerProperty = SimpleIntegerProperty(GAP)
 
     init {
-
         stylesheets.add("/styles/bar-visualizer.css")
-
-        heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
-        widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> draw() }
-
-        val drawLoop = Timeline(
-            KeyFrame(Duration.seconds(1.0 / framerate.get()), { draw() })
-        )
-
-        drawLoop.cycleCount = Timeline.INDEFINITE
-        drawLoop.play()
-
-        parentProperty().addListener { _, _, newValue ->
-            if (newValue != null && drawLoop.status != Animation.Status.RUNNING)
-                drawLoop.play()
-            else if (newValue == null && drawLoop.status == Animation.Status.RUNNING)
-                drawLoop.pause()
-        }
-
-        framerate.addListener { _ ->
-            drawLoop.pause()
-            drawLoop.keyFrames[0] = KeyFrame(Duration.seconds(1.0 / framerate.get()), { draw() })
-            drawLoop.playFromStart()
-        }
 
         frequencyAxis = NumberAxis(0.0, 20000.0, 1000.0)
         frequencyAxis.childrenUnmodifiable
@@ -184,22 +160,15 @@ class BarVisualizer : AnchorPane() {
         }.toFloatArray()
     }
 
-    private var lastDraw = System.nanoTime()
-
     private fun calculateStep(targetWidth: Int, bufferLength: Int, width: Double): Double {
         val estimatedWidth = width / bufferLength
         return (targetWidth.toDouble() / estimatedWidth).coerceAtLeast(1.0)
     }
 
-    private fun draw() {
-        val now = System.nanoTime()
-        val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0
-        lastDraw = now
-
+    override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         smoother.applySmoothing(deltaT)
 
         val canvasHeight = canvasHeightProperty.doubleValue()
-        val gc = canvas.graphicsContext2D
         gc.clearRect(0.0, 0.0, width, canvasHeight)
 
         val localGap = gap.get()
