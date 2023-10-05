@@ -105,6 +105,10 @@ object FourierMath {
         return ceil(frequency.toDouble() / factor).toInt().coerceAtMost(fftSize / 2)
     }
 
+    fun frequencySamplesAtRate(frequency: Int, rate: Int): Int {
+        return (1.0 / frequency * rate).roundToInt()
+    }
+
     /**
      * Calculate log2(n)
      *

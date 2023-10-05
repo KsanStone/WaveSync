@@ -135,6 +135,10 @@ class MainController : Initializable {
             WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
                 .findHighestRefreshRate()
         )
+        waveformVisualizer.framerate.set(
+             WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
+                .findHighestRefreshRate()
+        )
 
         barVisualizer.registerPreferences("mainBarVisualizer", preferenceService)
 

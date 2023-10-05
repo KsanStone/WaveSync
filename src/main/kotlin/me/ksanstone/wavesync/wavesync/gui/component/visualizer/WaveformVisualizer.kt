@@ -6,6 +6,7 @@ import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.RollingBuffer
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 
 class WaveformVisualizer : AutoCanvas() {
@@ -27,5 +28,13 @@ class WaveformVisualizer : AutoCanvas() {
 
     fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
         buffer.insert(samples.toTypedArray())
+    }
+
+    companion object {
+        fun alignSampleCount(target: Int, rate: Int, samples: Int): Int {
+            val targetSamples = frequencySamplesAtRate(target, rate)
+            val fitWaves = (samples.toDouble() / targetSamples).toInt()
+            return (fitWaves * targetSamples).coerceIn(100, samples)
+        }
     }
 }
