@@ -11,4 +11,5 @@ object ApplicationSettingDefaults {
     const val THEME = "Primer Dark"
     const val REFRESH_RATE = 60
     const val GAP = 0
+    const val INFO_SHOWN = false
 }

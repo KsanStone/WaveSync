@@ -3,10 +3,7 @@ package me.ksanstone.wavesync.wavesync.gui.utility
 import javafx.animation.Animation
 import javafx.animation.KeyFrame
 import javafx.animation.Timeline
-import javafx.beans.property.IntegerProperty
-import javafx.beans.property.SimpleDoubleProperty
-import javafx.beans.property.SimpleIntegerProperty
-import javafx.beans.property.SimpleLongProperty
+import javafx.beans.property.*
 import javafx.beans.value.ObservableValue
 import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.Canvas
@@ -15,19 +12,22 @@ import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.Pane
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.INFO_SHOWN
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
-import org.springframework.beans.factory.getBean
+import me.ksanstone.wavesync.wavesync.utility.FPSCounter
 
 abstract class AutoCanvas : AnchorPane() {
 
     protected var canvas: Canvas = Canvas()
 
     val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.REFRESH_RATE)
+    val info: BooleanProperty = SimpleBooleanProperty(INFO_SHOWN)
 
     private var lastDraw = System.nanoTime()
     private val frameTime = SimpleDoubleProperty(0.0)
+    private val fpsCounter = FPSCounter()
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
@@ -78,10 +78,11 @@ abstract class AutoCanvas : AnchorPane() {
             val pane: Pane = loader.load(javaClass.classLoader.getResourceAsStream("layout/autoCanvasInfo.fxml"),)
             val controller: AutoCanvasInfoPaneController = loader.getController()
 
-            print(this.frameTime)
-
             controller.targetFpsLabel.textProperty().bind(framerate.asString())
             controller.frameTimeLabel.textProperty().bind(frameTime.map { Duration.seconds(it.toDouble()).toString() })
+            controller.fpsLabel.textProperty().bind(fpsCounter.current.asString("%.2f"))
+
+            pane.visibleProperty().bind(info)
 
             setTopAnchor(pane, 5.0)
             setRightAnchor(pane, 5.0)
@@ -96,6 +97,7 @@ abstract class AutoCanvas : AnchorPane() {
         lastDraw = now
 
         frameTime.set(deltaT)
+        fpsCounter.tick()
         this.draw(canvas.graphicsContext2D, deltaT, now, canvas.width, canvas.height)
     }
 

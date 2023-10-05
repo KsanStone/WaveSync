@@ -4,10 +4,10 @@ import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
-import me.ksanstone.wavesync.wavesync.RollingBuffer
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
+import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 
 class WaveformVisualizer : AutoCanvas() {
 

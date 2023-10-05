@@ -1,6 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.controller
 
 import javafx.application.Platform
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.ChoiceBox
@@ -39,6 +40,7 @@ class MainController : Initializable {
     var barVisualizer: BarVisualizer
     var waveformVisualizer: WaveformVisualizer
     private lateinit var resources: ResourceBundle
+    val infoShown = SimpleBooleanProperty(false)
 
     init {
         instance = this
@@ -135,12 +137,15 @@ class MainController : Initializable {
             WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
                 .findHighestRefreshRate()
         )
+        barVisualizer.info.bind(infoShown)
         waveformVisualizer.framerate.set(
              WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
                 .findHighestRefreshRate()
         )
+        waveformVisualizer.info.bind(infoShown)
 
         barVisualizer.registerPreferences("mainBarVisualizer", preferenceService)
+        preferenceService.registerProperty(infoShown, "graphInfoShown")
 
         SplitPane.setResizableWithParent(barVisualizer, true)
         SplitPane.setResizableWithParent(waveformVisualizer, true)

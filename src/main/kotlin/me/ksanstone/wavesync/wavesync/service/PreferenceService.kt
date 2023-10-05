@@ -16,6 +16,15 @@ class PreferenceService {
         preferences = Preferences.userNodeForPackage(this.javaClass)
     }
 
+    fun registerProperty(property: BooleanProperty, name: String) {
+        property.value = preferences.getBoolean(name, property.get())
+        property.addListener { _ ->
+            preferences.putBoolean(name, property.get())
+        }
+        properties.add(property)
+    }
+
+
     fun registerProperty(property: IntegerProperty, name: String) {
         property.value = preferences.getInt(name, property.get())
         property.addListener { _ ->

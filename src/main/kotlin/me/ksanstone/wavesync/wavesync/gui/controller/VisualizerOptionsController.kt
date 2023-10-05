@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.controller
 
+import atlantafx.base.controls.ToggleSwitch
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
@@ -27,6 +28,9 @@ import kotlin.math.round
 
 
 class VisualizerOptionsController : Initializable {
+
+    @FXML
+    lateinit var debugToggleSwitch: ToggleSwitch
 
     @FXML
     lateinit var gapSlider: Slider
@@ -143,6 +147,9 @@ class VisualizerOptionsController : Initializable {
             if (minFreqSpinner.value + MIN_UI_VISUALIZER_WINDOW > maxFreqSpinner.value)
                 maxFreqSpinner.valueFactory.value = minFreqSpinner.value + MIN_UI_VISUALIZER_WINDOW
         }
+
+        debugToggleSwitch.selectedProperty().set(MainController.instance.infoShown.get())
+        MainController.instance.infoShown.bind(debugToggleSwitch.selectedProperty())
 
         updateFftInfoLabel()
     }

@@ -1,4 +1,4 @@
-package me.ksanstone.wavesync.wavesync
+package me.ksanstone.wavesync.wavesync.utility
 
 import java.lang.Integer.max
 
