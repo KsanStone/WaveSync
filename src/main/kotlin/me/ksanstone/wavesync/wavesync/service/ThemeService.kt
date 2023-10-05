@@ -13,9 +13,10 @@ class ThemeService(
     private val preferenceService: PreferenceService
 ) {
 
-    val themes = listOf(CupertinoDark(), CupertinoLight(), NordDark(), NordLight(), PrimerDark(), PrimerLight(), Dracula())
-        .map {return@map Pair(it.name, it)}.toMap()
-    
+    val themes =
+        listOf(CupertinoDark(), CupertinoLight(), NordDark(), NordLight(), PrimerDark(), PrimerLight(), Dracula())
+            .map { return@map Pair(it.name, it) }.toMap()
+
     private var current: String = ""
     final val selectedTheme: StringProperty = SimpleStringProperty(THEME)
 
@@ -25,14 +26,14 @@ class ThemeService(
             val theme = themes[selectedTheme.value]
             if (theme == null) {
                 selectedTheme.value = current
-            } else if (theme.name != current){
+            } else if (theme.name != current) {
                 Application.setUserAgentStylesheet(theme.userAgentStylesheet)
                 current = theme.name
             }
         }
         preferenceService.registerProperty(selectedTheme, "theme")
     }
-    
+
     fun applyTheme(name: String) {
         themes[name] ?: throw IllegalArgumentException("Invalid theme name $name")
         selectedTheme.set(name)

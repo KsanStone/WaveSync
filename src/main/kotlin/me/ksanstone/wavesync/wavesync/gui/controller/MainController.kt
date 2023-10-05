@@ -5,9 +5,11 @@ import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
+import javafx.scene.control.SplitPane
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.event.FXMLInitializeEvent
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
+import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -17,12 +19,14 @@ import java.net.URL
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
-class MainController() : Initializable {
+class MainController : Initializable {
 
     @FXML
     lateinit var audioDeviceListComboBox: ChoiceBox<String>
+
     @FXML
-    lateinit var visualizer: BarVisualizer
+    lateinit var visualizerPane: SplitPane
+
     @FXML
     lateinit var deviceInfoLabel: Label
 
@@ -32,6 +36,8 @@ class MainController() : Initializable {
     private var menuInitializer: MenuInitializer
     private var preferenceService: PreferenceService
     private var lastDeviceId: String? = null
+    var barVisualizer: BarVisualizer
+    var waveformVisualizer: WaveformVisualizer
     private lateinit var resources: ResourceBundle
 
     init {
@@ -41,6 +47,8 @@ class MainController() : Initializable {
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
+        barVisualizer = BarVisualizer()
+        waveformVisualizer = WaveformVisualizer()
     }
 
     @FXML
@@ -49,7 +57,7 @@ class MainController() : Initializable {
     }
 
     private fun setByName(name: String) {
-        val source = deviceList.find { it.name == name} ?: return
+        val source = deviceList.find { it.name == name } ?: return
         CompletableFuture.runAsync {
             lastDeviceId = source.id
             audioCaptureService.changeSource(source)
@@ -69,7 +77,12 @@ class MainController() : Initializable {
             if (source == null) {
                 deviceInfoLabel.text = localizationService.get("dialog.deviceOptions.noDevice")
             } else {
-                deviceInfoLabel.text = source.getPropertyDescriptor(audioCaptureService.fftSize.get(), visualizer.lowPass.get(), visualizer.cutoff.get(), localizationService.numberFormat)
+                deviceInfoLabel.text = source.getPropertyDescriptor(
+                    audioCaptureService.fftSize.get(),
+                    barVisualizer.lowPass.get(),
+                    barVisualizer.cutoff.get(),
+                    localizationService.numberFormat
+                )
             }
         }
     }
@@ -84,7 +97,7 @@ class MainController() : Initializable {
         refreshInfoLabel()
 
         if (lastDeviceId != null) {
-            val similarDevice = audioCaptureService.findSimilarAudioSource(lastDeviceId!!, deviceList)?: return
+            val similarDevice = audioCaptureService.findSimilarAudioSource(lastDeviceId!!, deviceList) ?: return
 
             setByName(similarDevice.name)
         }
@@ -112,13 +125,23 @@ class MainController() : Initializable {
         refreshDeviceList()
         selectDefaultDevice()
 
-        audioCaptureService.registerObserver(visualizer::handleFFT)
-        audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
-        visualizer.cutoff.addListener { _ -> refreshInfoLabel() }
-        visualizer.lowPass.addListener { _ -> refreshInfoLabel() }
-        visualizer.framerate.set(WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java).findHighestRefreshRate())
+        audioCaptureService.registerFFTObserver(barVisualizer::handleFFT)
+        audioCaptureService.registerSampleObserver(waveformVisualizer::handleSamples)
 
-        visualizer.registerPreferences("mainBarVisualizer", preferenceService)
+        audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
+        barVisualizer.cutoff.addListener { _ -> refreshInfoLabel() }
+        barVisualizer.lowPass.addListener { _ -> refreshInfoLabel() }
+        barVisualizer.framerate.set(
+            WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
+                .findHighestRefreshRate()
+        )
+
+        barVisualizer.registerPreferences("mainBarVisualizer", preferenceService)
+
+        SplitPane.setResizableWithParent(barVisualizer, true)
+        SplitPane.setResizableWithParent(waveformVisualizer, true)
+        visualizerPane.items.add(waveformVisualizer)
+        visualizerPane.items.add(barVisualizer)
     }
 
     companion object {

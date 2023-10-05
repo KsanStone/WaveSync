@@ -12,7 +12,7 @@ import javafx.scene.layout.AnchorPane
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 
-abstract class AutoCanvas() : AnchorPane() {
+abstract class AutoCanvas : AnchorPane() {
 
     protected var canvas: Canvas = Canvas()
 
@@ -31,6 +31,11 @@ abstract class AutoCanvas() : AnchorPane() {
         children.add(canvas)
 
         initializeDrawLoop()
+
+        minWidth = 1.0
+        minHeight = 1.0
+        maxWidth = Double.MAX_VALUE
+        maxHeight = Double.MAX_VALUE
     }
 
     private fun initializeDrawLoop() {

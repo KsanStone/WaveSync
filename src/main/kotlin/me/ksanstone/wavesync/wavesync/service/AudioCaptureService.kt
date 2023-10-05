@@ -39,9 +39,11 @@ class AudioCaptureService(
     private var lock: CountDownLatch = CountDownLatch(0)
     private var recordingFuture: CompletableFuture<Void>? = null
     private var fftObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
+    private var sampleObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
     private var windowFunction: WindowFunction? = null
 
     lateinit var fftResult: FloatArray
+    lateinit var samples: FloatArray
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
@@ -92,13 +94,14 @@ class AudioCaptureService(
             for (channel in 0 until channels) {
                 sample += audio[sampleIndex + channel] * sampleFactor
             }
-            sampleBufferArray[sampleBufferArrayIndex++] = audio[sampleIndex]
+            sampleBufferArray[sampleBufferArrayIndex++] = sample
+            samples[frame] = sample
             if (sampleBufferArrayIndex == sampleBufferArray.size) {
                 doFFT(sampleBufferArray, source.get().format.mix.rate)
                 sampleBufferArrayIndex = 0
             }
         }
-
+        sampleObservers.forEach { it.accept(samples.sliceArray(0 until frames), source.get()) }
     }
 
     fun doFFT(samples: FloatArray, rate: Int) {
@@ -109,8 +112,12 @@ class AudioCaptureService(
         fftObservers.forEach { it.accept(fftResult, source.get()) }
     }
 
-    fun registerObserver(observer: BiConsumer<FloatArray, SupportedCaptureSource>) {
+    fun registerFFTObserver(observer: BiConsumer<FloatArray, SupportedCaptureSource>) {
         fftObservers.add(observer)
+    }
+
+    fun registerSampleObserver(observer: BiConsumer<FloatArray, SupportedCaptureSource>) {
+        sampleObservers.add(observer)
     }
 
     fun startCapture(source: SupportedCaptureSource) {
@@ -137,6 +144,7 @@ class AudioCaptureService(
                             bufferArray = ByteArray(
                                 stream.frames * format.channels.inputs * XtAudio.getSampleAttributes(format.mix.sample).size
                             )
+                            samples = FloatArray(stream.frames)
                             stream.start()
                             logger.info("Capture started")
                             lock.await()

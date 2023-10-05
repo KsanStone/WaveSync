@@ -25,7 +25,7 @@ class ThemeSelectorController : Initializable {
             this.themeService = WaveSyncBootApplication.applicationContext.getBean(ThemeService::class.java)
             themeChoiceBox.items.addAll(themeService.themes.keys)
             themeChoiceBox.valueProperty().bindBidirectional(themeService.selectedTheme)
-        } catch(e: Exception) {
+        } catch (e: Exception) {
             System.err.println("Apparently we are running in scene builder")
         }
     }

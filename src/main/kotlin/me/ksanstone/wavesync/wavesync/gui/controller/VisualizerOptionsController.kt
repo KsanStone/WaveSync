@@ -94,29 +94,38 @@ class VisualizerOptionsController : Initializable {
         }
 
         fftSizeChoiceBox.items.clear()
-        fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14, 15).map { 2.0.pow(it.toDouble()).toInt() }.toList())
+        fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14, 15).map { 2.0.pow(it.toDouble()).toInt() }
+            .toList())
         fftSizeChoiceBox.value = audioCaptureService.fftSize.get()
         fftSizeChoiceBox.valueProperty().addListener { _ -> updateFftInfoLabel() }
         audioCaptureService.source.addListener { _ -> updateFftInfoLabel() }
 
-        val tw = MainController.instance.visualizer.targetBarWidth.get()
+        val tw = MainController.instance.barVisualizer.targetBarWidth.get()
         val maxFreq = audioCaptureService.source.get()?.getMaxFrequency() ?: 96000
 
-        maxFreqSpinner.valueFactory = IntegerSpinnerValueFactory(MIN_UI_VISUALIZER_WINDOW, maxFreq, MainController.instance.visualizer.cutoff.get())
-        minFreqSpinner.valueFactory = IntegerSpinnerValueFactory(0, maxFreq - MIN_UI_VISUALIZER_WINDOW, MainController.instance.visualizer.lowPass.get())
+        maxFreqSpinner.valueFactory = IntegerSpinnerValueFactory(
+            MIN_UI_VISUALIZER_WINDOW,
+            maxFreq,
+            MainController.instance.barVisualizer.cutoff.get()
+        )
+        minFreqSpinner.valueFactory = IntegerSpinnerValueFactory(
+            0,
+            maxFreq - MIN_UI_VISUALIZER_WINDOW,
+            MainController.instance.barVisualizer.lowPass.get()
+        )
         barWidthSlider.value = tw.toDouble()
 
-        scalingSlider.value = MainController.instance.visualizer.scaling.get().toDouble()
-        dropRateSlider.value = MainController.instance.visualizer.smoothing.get().toDouble()
-        barWidthSlider.value = MainController.instance.visualizer.targetBarWidth.get().toDouble()
-        gapSlider.value = MainController.instance.visualizer.gap.get().toDouble()
+        scalingSlider.value = MainController.instance.barVisualizer.scaling.get().toDouble()
+        dropRateSlider.value = MainController.instance.barVisualizer.smoothing.get().toDouble()
+        barWidthSlider.value = MainController.instance.barVisualizer.targetBarWidth.get().toDouble()
+        gapSlider.value = MainController.instance.barVisualizer.gap.get().toDouble()
 
-        MainController.instance.visualizer.scaling.bind(scalingSlider.valueProperty())
-        MainController.instance.visualizer.smoothing.bind(dropRateSlider.valueProperty())
-        MainController.instance.visualizer.targetBarWidth.bind(barWidthSlider.valueProperty())
-        MainController.instance.visualizer.cutoff.bind(maxFreqSpinner.valueProperty())
-        MainController.instance.visualizer.lowPass.bind(minFreqSpinner.valueProperty())
-        MainController.instance.visualizer.gap.bind(gapSlider.valueProperty())
+        MainController.instance.barVisualizer.scaling.bind(scalingSlider.valueProperty())
+        MainController.instance.barVisualizer.smoothing.bind(dropRateSlider.valueProperty())
+        MainController.instance.barVisualizer.targetBarWidth.bind(barWidthSlider.valueProperty())
+        MainController.instance.barVisualizer.cutoff.bind(maxFreqSpinner.valueProperty())
+        MainController.instance.barVisualizer.lowPass.bind(minFreqSpinner.valueProperty())
+        MainController.instance.barVisualizer.gap.bind(gapSlider.valueProperty())
 
         fftSizeChoiceBox.valueProperty().addListener { _, _, v ->
             if (v != audioCaptureService.fftSize.get()) {
@@ -163,11 +172,11 @@ class VisualizerOptionsController : Initializable {
 
     }
 
-    private fun updateFftInfoLabel() {  
+    private fun updateFftInfoLabel() {
         if (audioCaptureService.source.get() != null) {
             val freq = audioCaptureService.source.get().getMinimumFrequency(fftSizeChoiceBox.value)
             var updateInterval = audioCaptureService.source.get().getUpdateInterval(fftSizeChoiceBox.value)
-            updateInterval = Duration.millis(round(updateInterval.toMillis()*10.0)/10.0)
+            updateInterval = Duration.millis(round(updateInterval.toMillis() * 10.0) / 10.0)
             fftInfoLabel.text = localizationService.format("dialog.deviceOptions.windowSizeInfo", freq, updateInterval)
         } else {
             fftInfoLabel.text = localizationService.get("dialog.deviceOptions.noDevice")

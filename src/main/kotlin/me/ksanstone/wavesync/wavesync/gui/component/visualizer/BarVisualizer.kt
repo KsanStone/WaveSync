@@ -1,27 +1,20 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
-import javafx.animation.Animation
-import javafx.animation.KeyFrame
-import javafx.animation.Timeline
 import javafx.beans.binding.DoubleBinding
 import javafx.beans.property.*
-import javafx.beans.value.ObservableValue
 import javafx.collections.ListChangeListener
 import javafx.scene.Node
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
 import javafx.scene.control.Tooltip
-import javafx.scene.layout.AnchorPane
 import javafx.scene.paint.Color
 import javafx.scene.text.Text
-import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.REFRESH_RATE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
@@ -32,7 +25,9 @@ import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import java.text.DecimalFormat
-import kotlin.math.*
+import kotlin.math.floor
+import kotlin.math.ln
+import kotlin.math.max
 
 
 class BarVisualizer : AutoCanvas() {
@@ -40,7 +35,8 @@ class BarVisualizer : AutoCanvas() {
     private var frequencyAxis: NumberAxis
     private var smoother: MagnitudeSmoother
     private var canvasHeightProperty: DoubleBinding
-    private var localizationService: LocalizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
+    private var localizationService: LocalizationService =
+        WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     private val tooltip: Tooltip = Tooltip("---")
 
     private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
@@ -112,9 +108,15 @@ class BarVisualizer : AutoCanvas() {
                 val binEnd = floor((bar + 1) * step).toInt()
                 val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
                 val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
-                tooltip.text = "Bar: ${localizationService.formatNumber(bar)} \nFFT: ${localizationService.formatNumber(binStart)} - ${
-                    localizationService.formatNumber(binEnd)
-                }\nFreq: ${localizationService.formatNumber(minFreq, "Hz")} - ${localizationService.formatNumber(maxFreq, "Hz")}"
+                tooltip.text =
+                    "Bar: ${localizationService.formatNumber(bar)} \nFFT: ${localizationService.formatNumber(binStart)} - ${
+                        localizationService.formatNumber(binEnd)
+                    }\nFreq: ${localizationService.formatNumber(minFreq, "Hz")} - ${
+                        localizationService.formatNumber(
+                            maxFreq,
+                            "Hz"
+                        )
+                    }"
             }
         }
 

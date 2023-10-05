@@ -13,9 +13,9 @@ import java.awt.HeadlessException
 
 @SpringBootApplication
 class WaveSyncBootApplication(
-  applicationContext: ConfigurableApplicationContext
+    applicationContext: ConfigurableApplicationContext
 ) {
-    
+
     val logger: Logger = LoggerFactory.getLogger("Main")
     var targetRefreshRate: Int = REFRESH_RATE
 
@@ -33,7 +33,8 @@ class WaveSyncBootApplication(
         return try {
             val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
             val gs = ge.screenDevices
-            gs.map { it.displayMode.refreshRate }.filter { it != DisplayMode.REFRESH_RATE_UNKNOWN }.maxOrNull() ?: REFRESH_RATE
+            gs.map { it.displayMode.refreshRate }.filter { it != DisplayMode.REFRESH_RATE_UNKNOWN }.maxOrNull()
+                ?: REFRESH_RATE
         } catch (e: HeadlessException) {
             logger.warn("Headless exception")
             REFRESH_RATE
