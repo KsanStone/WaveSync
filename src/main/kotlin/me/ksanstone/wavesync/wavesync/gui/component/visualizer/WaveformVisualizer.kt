@@ -1,7 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
-import javafx.beans.property.ObjectProperty
-import javafx.beans.property.SimpleObjectProperty
+import javafx.beans.property.*
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
@@ -13,6 +12,9 @@ class WaveformVisualizer : AutoCanvas() {
 
     private val buffer: RollingBuffer<Float> = RollingBuffer(10000, 0.0f)
     private val color: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
+    private val align: BooleanProperty = SimpleBooleanProperty(false)
+    private val alignFrequency: IntegerProperty = SimpleIntegerProperty(100)
+    private var sampleRate: Int = 48000
 
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         gc.clearRect(0.0, 0.0, width, height)
@@ -20,21 +22,24 @@ class WaveformVisualizer : AutoCanvas() {
         gc.stroke = color.get()
         gc.fill = color.get()
 
-        for ((i, sample) in buffer.withIndex()) {
-            gc.fillRect(i.toDouble() / buffer.size * width, (sample + 1.0f).toDouble() / 2.0 * height, 1.0, 1.0)
+        var iter: Iterable<Float> = buffer
+        var size = buffer.size
+
+        if(align.get()) {
+            val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate)
+            val drop = waveSize - (buffer.written % waveSize.toUInt()).toInt()
+            val take = (buffer.size - waveSize).coerceAtMost(waveSize * 15)
+            size = take
+            iter = iter.drop(drop).take(take)
         }
 
+        for ((i, sample) in iter.withIndex()) {
+            gc.fillRect(i.toDouble() / size * width, (sample + 1.0f).toDouble() / 2.0 * height, 1.0, 1.0)
+        }
     }
 
     fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
+        sampleRate = source.format.mix.rate
         buffer.insert(samples.toTypedArray())
-    }
-
-    companion object {
-        fun alignSampleCount(target: Int, rate: Int, samples: Int): Int {
-            val targetSamples = frequencySamplesAtRate(target, rate)
-            val fitWaves = (samples.toDouble() / targetSamples).toInt()
-            return (fitWaves * targetSamples).coerceIn(100, samples)
-        }
     }
 }

@@ -4,8 +4,12 @@ import java.lang.Integer.max
 
 class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Iterable<T> {
 
+    val written: ULong
+        get() = _written
+
     private var data: Array<Any> = Array(size) { default }
     private var dataIndex = 0
+    private var _written: ULong = 0u
 
     fun insert(elems: Array<T>) {
         val start = max(elems.size - size, 0)
@@ -14,9 +18,11 @@ class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Ite
         }
     }
 
+    @Synchronized
     fun insert(elem: T) {
         dataIndex = (dataIndex + 1) % size
         data[dataIndex] = elem
+        _written++
     }
 
     @Suppress("UNCHECKED_CAST")
