@@ -92,6 +92,10 @@ object FourierMath {
         }
     }
 
+    fun frequencyOfBin(rate: Int, fftSize: Int): Int {
+        return frequencyOfBin(1, rate, fftSize)
+    }
+
     fun frequencyOfBin(bin: Int, rate: Int, fftSize: Int): Int {
         return (bin * (rate.toDouble() / fftSize)).roundToInt()
     }
@@ -107,6 +111,10 @@ object FourierMath {
 
     fun frequencySamplesAtRate(frequency: Int, rate: Int): Int {
         return (1.0 / frequency * rate).roundToInt()
+    }
+
+    fun frequencySamplesAtRate(frequency: Double, rate: Int): Double {
+        return 1.0 / frequency * rate
     }
 
     /**

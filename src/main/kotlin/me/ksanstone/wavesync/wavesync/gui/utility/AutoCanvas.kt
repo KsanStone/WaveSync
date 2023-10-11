@@ -9,7 +9,7 @@ import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.layout.AnchorPane
-import javafx.scene.layout.Pane
+import javafx.scene.layout.GridPane
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.INFO_SHOWN
@@ -21,6 +21,7 @@ import me.ksanstone.wavesync.wavesync.utility.FPSCounter
 abstract class AutoCanvas : AnchorPane() {
 
     protected var canvas: Canvas = Canvas()
+    protected lateinit var infoPane: GridPane
 
     val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.REFRESH_RATE)
     val info: BooleanProperty = SimpleBooleanProperty(INFO_SHOWN)
@@ -70,24 +71,26 @@ abstract class AutoCanvas : AnchorPane() {
         }
     }
 
+
+
     private fun initializeInfoPane() {
         try {
             val loader = FXMLLoader()
             loader.resources =
                 WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java).getDefault()
-            val pane: Pane = loader.load(javaClass.classLoader.getResourceAsStream("layout/autoCanvasInfo.fxml"),)
+            infoPane = loader.load(javaClass.classLoader.getResourceAsStream("layout/autoCanvasInfo.fxml"),)
             val controller: AutoCanvasInfoPaneController = loader.getController()
 
             controller.targetFpsLabel.textProperty().bind(framerate.asString())
             controller.frameTimeLabel.textProperty().bind(frameTime.map { Duration.seconds(it.toDouble()).toString() })
             controller.fpsLabel.textProperty().bind(fpsCounter.current.asString("%.2f"))
 
-            pane.visibleProperty().bind(info)
+            infoPane.visibleProperty().bind(info)
 
-            setTopAnchor(pane, 5.0)
-            setRightAnchor(pane, 5.0)
+            setTopAnchor(infoPane, 5.0)
+            setRightAnchor(infoPane, 5.0)
 
-            children.add(pane)
+            children.add(infoPane)
         } catch(e: Exception) {e.printStackTrace()}
     }
 

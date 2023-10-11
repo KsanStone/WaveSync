@@ -1,39 +1,66 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
+import javafx.application.Platform
 import javafx.beans.property.*
 import javafx.scene.canvas.GraphicsContext
+import javafx.scene.control.Label
 import javafx.scene.paint.Color
+import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class WaveformVisualizer : AutoCanvas() {
 
     private val buffer: RollingBuffer<Float> = RollingBuffer(10000, 0.0f)
-    private val color: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
+    private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
+    private val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     private val align: BooleanProperty = SimpleBooleanProperty(false)
-    private val alignFrequency: IntegerProperty = SimpleIntegerProperty(100)
+    private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     private var sampleRate: Int = 48000
+
+    init {
+        val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
+        alignFrequency.bind(acs.peakFrequency)
+        align.bind(acs.peakValue.greaterThan(0.05f))
+
+        val alignInfo = Label()
+        alignFrequency.addListener { _ -> info(alignInfo)}
+        align.addListener { _ -> info(alignInfo)}
+
+        infoPane.add(Label("Pred. Peak"), 0, 3)
+        infoPane.add(alignInfo, 1, 3)
+    }
+
+    private fun info(label: Label) {
+        Platform.runLater {
+            label.text = "${alignFrequency.value}Hz ${align.value}"
+        }
+    }
 
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         gc.clearRect(0.0, 0.0, width, height)
 
-        gc.stroke = color.get()
-        gc.fill = color.get()
-
         var iter: Iterable<Float> = buffer
         var size = buffer.size
 
-        if(align.get()) {
+        if(align.get() && alignFrequency.value > 0 && alignFrequency.value < 20000) {
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate)
             val drop = waveSize - (buffer.written % waveSize.toUInt()).toInt()
-            val take = (buffer.size - waveSize).coerceAtMost(waveSize * 15)
-            size = take
-            iter = iter.drop(drop).take(take)
+            val take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15)
+            size = take.roundToInt()
+            iter = iter.drop(drop.roundToInt()).take(take.roundToInt())
         }
 
         for ((i, sample) in iter.withIndex()) {
+
+            val color = startColor.get().interpolate(endColor.get(), abs(sample).toDouble().coerceIn(0.0, 1.0))
+            gc.fill = color
+
             gc.fillRect(i.toDouble() / size * width, (sample + 1.0f).toDouble() / 2.0 * height, 1.0, 1.0)
         }
     }

@@ -6,9 +6,12 @@ import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import javafx.beans.property.IntegerProperty
 import javafx.beans.property.ObjectProperty
+import javafx.beans.property.SimpleDoubleProperty
+import javafx.beans.property.SimpleFloatProperty
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleObjectProperty
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
+import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencyOfBin
 import me.ksanstone.wavesync.wavesync.service.windowing.HammingWindowFunction
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunction
 import org.slf4j.Logger
@@ -45,6 +48,8 @@ class AudioCaptureService(
     lateinit var fftResult: FloatArray
     lateinit var samples: FloatArray
 
+    val peakFrequency = SimpleDoubleProperty(0.0)
+    val peakValue = SimpleFloatProperty(0.0f)
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
     val usedAudioSystem: ObjectProperty<XtSystem> = SimpleObjectProperty()
@@ -109,7 +114,29 @@ class AudioCaptureService(
         val imag = FloatArray(samples.size)
         FourierMath.transform(1, samples.size, samples, imag)
         FourierMath.calculateMagnitudes(samples, imag, fftResult)
+        calcPeak(fftResult)
         fftObservers.forEach { it.accept(fftResult, source.get()) }
+    }
+
+    private fun calcPeak(fftResult: FloatArray) {
+        val maxIdx = fftResult.indices.maxBy { fftResult[it] } ?: 0
+
+        val peakV = fftResult[maxIdx]
+
+        if(peakV < 0.001f) return
+
+        val n1 = (fftResult.getOrNull(maxIdx - 1) ?: 0.0f).toDouble()
+        val n2 = (fftResult.getOrNull(maxIdx + 1) ?: 0.0f).toDouble()
+
+        val n1r = n1 / peakV
+        val n2r = n2 / peakV
+
+        val factor = n2r - n1r
+        var offset = frequencyOfBin(source.get().format.mix.rate, fftResult.size * 2) * factor
+        offset = offset.coerceIn(-1.0, 1.0)
+
+        peakFrequency.value = frequencyOfBin(maxIdx, source.get().format.mix.rate, fftResult.size * 2).toDouble() + offset
+        peakValue.value = peakV
     }
 
     fun registerFFTObserver(observer: BiConsumer<FloatArray, SupportedCaptureSource>) {

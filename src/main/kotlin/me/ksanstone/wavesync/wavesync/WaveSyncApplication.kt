@@ -20,8 +20,13 @@ class WaveSyncApplication : Application() {
     }
 
     override fun start(stage: Stage) {
-        primaryStage = stage
-        applicationContext.publishEvent(StageReadyEvent(stage))
+        try {
+            primaryStage = stage
+            applicationContext.publishEvent(StageReadyEvent(stage))
+        } catch (t: Throwable) {
+            t.printStackTrace()
+            exitProcess(1)
+        }
     }
 
     override fun stop() {
