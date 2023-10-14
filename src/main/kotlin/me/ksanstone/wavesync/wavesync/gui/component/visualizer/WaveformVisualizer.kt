@@ -15,8 +15,6 @@ import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
-import me.ksanstone.wavesync.wavesync.service.downsampling.DownSampler
-import me.ksanstone.wavesync.wavesync.service.downsampling.UniformDownSampler
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.roundToInt
 
@@ -30,7 +28,6 @@ class WaveformVisualizer : AutoCanvas() {
     private val align: BooleanProperty = SimpleBooleanProperty(false)
     private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     private var sampleRate: Int = 48000
-    private var downSampler: DownSampler<Float> = UniformDownSampler()
     private val downSampledSize: IntegerProperty = SimpleIntegerProperty(buffer.size)
 
     init {
@@ -83,25 +80,31 @@ class WaveformVisualizer : AutoCanvas() {
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         gc.clearRect(0.0, 0.0, width, height)
 
-        var iter: Iterable<Float> = buffer
-        val size: Int
+        var drop = 0
+        var take = buffer.size
 
         if (align.get() && alignFrequency.value > 0 && alignFrequency.value < 20000) {
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate)
-            val drop = waveSize - (buffer.written % waveSize.toUInt()).toInt()
-            val take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15)
-            iter = iter.drop(drop.roundToInt()).take(take.roundToInt())
+            drop = (waveSize - (buffer.written % waveSize.toUInt()).toInt()).toInt()
+            take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15).roundToInt()
         }
 
-        val points = downSampler.downSample(iter.toList(), width.roundToInt())
-        size = points.size
-        downSampledSize.set(size)
+        var stepAccumulator = 0.0
+        val step = take.toDouble() / width.roundToInt()
 
         gc.stroke = endColor.get()
         gc.beginPath()
-        for ((i, sample) in points.withIndex()) {
-            gc.lineTo(i.toDouble() / size * width, (sample + 1.0f).toDouble() / 2.0 * height)
+
+        var acc = 0
+        for (i in drop until drop + take) {
+            val ai = i - drop
+            if (++stepAccumulator < step) continue
+                stepAccumulator -= step
+            gc.lineTo(ai.toDouble() / take * width, (buffer[i] + 1.0f).toDouble() / 2.0 * height)
+            acc++
         }
+
+        downSampledSize.set(acc)
         gc.stroke()
     }
 
