@@ -37,8 +37,8 @@ class MainController : Initializable {
     private var menuInitializer: MenuInitializer
     private var preferenceService: PreferenceService
     private var lastDeviceId: String? = null
-    var barVisualizer: BarVisualizer
-    var waveformVisualizer: WaveformVisualizer
+    private var barVisualizer: BarVisualizer
+    private var waveformVisualizer: WaveformVisualizer
     private lateinit var resources: ResourceBundle
     val infoShown = SimpleBooleanProperty(false)
 
@@ -49,8 +49,8 @@ class MainController : Initializable {
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
-        barVisualizer = BarVisualizer()
         waveformVisualizer = WaveformVisualizer()
+        barVisualizer = BarVisualizer()
     }
 
     @FXML
@@ -145,12 +145,11 @@ class MainController : Initializable {
         waveformVisualizer.info.bind(infoShown)
 
         barVisualizer.registerPreferences("mainBarVisualizer", preferenceService)
+        barVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown")
 
-        SplitPane.setResizableWithParent(barVisualizer, true)
-        SplitPane.setResizableWithParent(waveformVisualizer, true)
-        visualizerPane.items.add(waveformVisualizer)
         visualizerPane.items.add(barVisualizer)
+        visualizerPane.items.add(waveformVisualizer)
     }
 
     companion object {

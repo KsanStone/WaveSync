@@ -3,11 +3,13 @@ package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 import javafx.beans.binding.DoubleBinding
 import javafx.beans.property.*
 import javafx.collections.ListChangeListener
+import javafx.fxml.FXMLLoader
 import javafx.scene.Node
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
 import javafx.scene.control.Tooltip
+import javafx.scene.layout.HBox
 import javafx.scene.paint.Color
 import javafx.scene.text.Text
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
@@ -17,6 +19,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.FourierMath
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -121,7 +124,22 @@ class BarVisualizer : AutoCanvas() {
         }
 
         Tooltip.install(this, tooltip)
+
+        controlPane.toFront()
     }
+
+    fun initializeSettingMenu() {
+        val loader = FXMLLoader()
+        loader.location = javaClass.classLoader.getResource("layout/bar")
+        loader.resources =
+            WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java).getDefault()
+        val controls: HBox = loader.load(javaClass.classLoader.getResourceAsStream("layout/bar/barSettings.fxml"))
+        val controller: BarSettingsController = loader.getController()
+        controller.chartSettingsController.initialize(this)
+
+        controlPane.children.add(controls)
+    }
+
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerProperty(smoothing, "$id-smoothing")

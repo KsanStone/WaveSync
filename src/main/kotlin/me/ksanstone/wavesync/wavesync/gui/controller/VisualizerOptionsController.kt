@@ -5,18 +5,10 @@ import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
 import javafx.scene.control.Alert.AlertType
-import javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory
 import javafx.scene.image.Image
 import javafx.stage.Stage
 import javafx.util.Duration
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -32,8 +24,6 @@ class VisualizerOptionsController : Initializable {
     @FXML
     lateinit var debugToggleSwitch: ToggleSwitch
 
-    @FXML
-    lateinit var gapSlider: Slider
 
     @FXML
     lateinit var audioServerChoiceBox: ChoiceBox<String>
@@ -41,8 +31,6 @@ class VisualizerOptionsController : Initializable {
     @FXML
     lateinit var applyFreqButton: Button
 
-    @FXML
-    lateinit var minFreqSpinner: Spinner<Int>
 
     @FXML
     lateinit var fftInfoLabel: Label
@@ -50,36 +38,9 @@ class VisualizerOptionsController : Initializable {
     @FXML
     lateinit var fftSizeChoiceBox: ChoiceBox<Int>
 
-    @FXML
-    lateinit var barWidthSlider: Slider
-
-    @FXML
-    lateinit var dropRateSlider: Slider
-
-    @FXML
-    lateinit var scalingSlider: Slider
-
-    @FXML
-    lateinit var maxFreqSpinner: Spinner<Int>
 
     private lateinit var audioCaptureService: AudioCaptureService
     private lateinit var localizationService: LocalizationService
-
-    @FXML
-    fun setMinFreqOnVisualizer() {
-        minFreqSpinner.valueFactory.value = 0
-    }
-
-    @FXML
-    fun setMaxFreqOnVisualizer() {
-        val maxFreq = audioCaptureService.source.get()?.getMaxFrequency() ?: 96000
-        maxFreqSpinner.valueFactory.value = maxFreq
-    }
-
-    @FXML
-    fun set20khzFreqOnVisualizer() {
-        maxFreqSpinner.valueFactory.value = 20_000
-    }
 
     private fun changeAudioSystem() {
         audioCaptureService.usedAudioSystem.set(XtSystem.valueOf(audioServerChoiceBox.value))
@@ -104,48 +65,12 @@ class VisualizerOptionsController : Initializable {
         fftSizeChoiceBox.valueProperty().addListener { _ -> updateFftInfoLabel() }
         audioCaptureService.source.addListener { _ -> updateFftInfoLabel() }
 
-        val tw = MainController.instance.barVisualizer.targetBarWidth.get()
-        val maxFreq = audioCaptureService.source.get()?.getMaxFrequency() ?: 96000
-
-        maxFreqSpinner.valueFactory = IntegerSpinnerValueFactory(
-            MIN_UI_VISUALIZER_WINDOW,
-            maxFreq,
-            MainController.instance.barVisualizer.cutoff.get()
-        )
-        minFreqSpinner.valueFactory = IntegerSpinnerValueFactory(
-            0,
-            maxFreq - MIN_UI_VISUALIZER_WINDOW,
-            MainController.instance.barVisualizer.lowPass.get()
-        )
-        barWidthSlider.value = tw.toDouble()
-
-        scalingSlider.value = MainController.instance.barVisualizer.scaling.get().toDouble()
-        dropRateSlider.value = MainController.instance.barVisualizer.smoothing.get().toDouble()
-        barWidthSlider.value = MainController.instance.barVisualizer.targetBarWidth.get().toDouble()
-        gapSlider.value = MainController.instance.barVisualizer.gap.get().toDouble()
-
-        MainController.instance.barVisualizer.scaling.bind(scalingSlider.valueProperty())
-        MainController.instance.barVisualizer.smoothing.bind(dropRateSlider.valueProperty())
-        MainController.instance.barVisualizer.targetBarWidth.bind(barWidthSlider.valueProperty())
-        MainController.instance.barVisualizer.cutoff.bind(maxFreqSpinner.valueProperty())
-        MainController.instance.barVisualizer.lowPass.bind(minFreqSpinner.valueProperty())
-        MainController.instance.barVisualizer.gap.bind(gapSlider.valueProperty())
-
         fftSizeChoiceBox.valueProperty().addListener { _, _, v ->
             if (v != audioCaptureService.fftSize.get()) {
                 if (!applyFreqButton.styleClass.contains("accent")) applyFreqButton.styleClass.add("accent")
             } else {
                 applyFreqButton.styleClass.remove("accent")
             }
-        }
-
-        maxFreqSpinner.valueProperty().addListener { _ ->
-            if (minFreqSpinner.value > maxFreqSpinner.value - MIN_UI_VISUALIZER_WINDOW)
-                minFreqSpinner.valueFactory.value = maxFreqSpinner.value - MIN_UI_VISUALIZER_WINDOW
-        }
-        minFreqSpinner.valueProperty().addListener { _ ->
-            if (minFreqSpinner.value + MIN_UI_VISUALIZER_WINDOW > maxFreqSpinner.value)
-                maxFreqSpinner.valueFactory.value = minFreqSpinner.value + MIN_UI_VISUALIZER_WINDOW
         }
 
         debugToggleSwitch.selectedProperty().set(MainController.instance.infoShown.get())
@@ -167,12 +92,12 @@ class VisualizerOptionsController : Initializable {
         (alert.dialogPane.scene.window as Stage).icons.add(Image("icon.png"))
 
         if (alert.showAndWait().get() == reset) {
-            scalingSlider.value = BAR_SCALING.toDouble()
-            dropRateSlider.value = BAR_SMOOTHING.toDouble()
-            barWidthSlider.value = TARGET_BAR_WIDTH.toDouble()
-            maxFreqSpinner.valueFactory.value = BAR_CUTOFF
-            minFreqSpinner.valueFactory.value = BAR_LOW_PASS
-            gapSlider.value = GAP.toDouble()
+//            scalingSlider.value = BAR_SCALING.toDouble()
+//            dropRateSlider.value = BAR_SMOOTHING.toDouble()
+//            barWidthSlider.value = TARGET_BAR_WIDTH.toDouble()
+//            maxFreqSpinner.valueFactory.value = BAR_CUTOFF
+//            minFreqSpinner.valueFactory.value = BAR_LOW_PASS
+//            gapSlider.value = GAP.toDouble()
             fftSizeChoiceBox.value = FFT_SIZE
             applyFreqSettings()
         }

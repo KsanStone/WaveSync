@@ -2,19 +2,25 @@ package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
 import javafx.application.Platform
 import javafx.beans.property.*
+import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.control.Label
+import javafx.scene.layout.HBox
 import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
+import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class WaveformVisualizer : AutoCanvas() {
+
+    val enableAutoAlign: BooleanProperty = SimpleBooleanProperty(false)
 
     private val buffer: RollingBuffer<Float> = RollingBuffer(10000, 0.0f)
     private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
@@ -26,14 +32,27 @@ class WaveformVisualizer : AutoCanvas() {
     init {
         val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         alignFrequency.bind(acs.peakFrequency)
-        align.bind(acs.peakValue.greaterThan(0.05f))
+        align.bind(acs.peakValue.greaterThan(0.05f).and(enableAutoAlign))
 
         val alignInfo = Label()
-        alignFrequency.addListener { _ -> info(alignInfo)}
-        align.addListener { _ -> info(alignInfo)}
+        alignFrequency.addListener { _ -> info(alignInfo) }
+        align.addListener { _ -> info(alignInfo) }
 
         infoPane.add(Label("Pred. Peak"), 0, 3)
         infoPane.add(alignInfo, 1, 3)
+
+        initializeSettingMenu()
+    }
+
+    private fun initializeSettingMenu() {
+        val loader = FXMLLoader()
+        loader.location = javaClass.classLoader.getResource("layout/waveform")
+        loader.resources =
+            WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java).getDefault()
+        val controls: HBox = loader.load(javaClass.classLoader.getResourceAsStream("layout/waveform/waveformSettings.fxml"))
+        val controller: WaveformSettingsController = loader.getController()
+        controller.waveformChartSettingsController.initialize(this)
+        controlPane.children.add(controls)
     }
 
     private fun info(label: Label) {
@@ -48,7 +67,7 @@ class WaveformVisualizer : AutoCanvas() {
         var iter: Iterable<Float> = buffer
         var size = buffer.size
 
-        if(align.get() && alignFrequency.value > 0 && alignFrequency.value < 20000) {
+        if (align.get() && alignFrequency.value > 0 && alignFrequency.value < 20000) {
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate)
             val drop = waveSize - (buffer.written % waveSize.toUInt()).toInt()
             val take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15)
