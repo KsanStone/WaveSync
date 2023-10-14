@@ -146,6 +146,8 @@ class MainController : Initializable {
 
         barVisualizer.registerPreferences("mainBarVisualizer", preferenceService)
         barVisualizer.initializeSettingMenu()
+        waveformVisualizer.registerPreferences("main", preferenceService)
+        waveformVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown")
 
         visualizerPane.items.add(barVisualizer)

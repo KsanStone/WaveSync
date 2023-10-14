@@ -13,9 +13,11 @@ import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
+import me.ksanstone.wavesync.wavesync.service.downsampling.DownSampler
+import me.ksanstone.wavesync.wavesync.service.downsampling.UniformDownSampler
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 class WaveformVisualizer : AutoCanvas() {
@@ -28,9 +30,12 @@ class WaveformVisualizer : AutoCanvas() {
     private val align: BooleanProperty = SimpleBooleanProperty(false)
     private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     private var sampleRate: Int = 48000
+    private var downSampler: DownSampler<Float> = UniformDownSampler()
+    private val downSampledSize: IntegerProperty = SimpleIntegerProperty(buffer.size)
 
     init {
         val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
+        val ls = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         alignFrequency.bind(acs.peakFrequency)
         align.bind(acs.peakValue.greaterThan(0.05f).and(enableAutoAlign))
 
@@ -38,13 +43,21 @@ class WaveformVisualizer : AutoCanvas() {
         alignFrequency.addListener { _ -> info(alignInfo) }
         align.addListener { _ -> info(alignInfo) }
 
-        infoPane.add(Label("Pred. Peak"), 0, 3)
+        infoPane.add(Label(ls.get("visualizer.waveform.info.align")), 0, 3)
         infoPane.add(alignInfo, 1, 3)
 
-        initializeSettingMenu()
+        val downSampleInfoLabel = Label()
+        downSampledSize.addListener { _ -> downSampleInfo(downSampleInfoLabel) }
+
+        infoPane.add(Label(ls.get("visualizer.waveform.info.samples")), 0, 4)
+        infoPane.add(downSampleInfoLabel, 1, 4)
     }
 
-    private fun initializeSettingMenu() {
+    fun registerPreferences(id: String, preferenceService: PreferenceService) {
+        preferenceService.registerProperty(enableAutoAlign, "$id-waveformVisualizer-autoAlign")
+    }
+
+    fun initializeSettingMenu() {
         val loader = FXMLLoader()
         loader.location = javaClass.classLoader.getResource("layout/waveform")
         loader.resources =
@@ -61,28 +74,39 @@ class WaveformVisualizer : AutoCanvas() {
         }
     }
 
+    private fun downSampleInfo(label: Label) {
+        Platform.runLater {
+            label.text = "${downSampledSize.get()} \u2022 ${buffer.size}"
+        }
+    }
+
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         gc.clearRect(0.0, 0.0, width, height)
 
         var iter: Iterable<Float> = buffer
-        var size = buffer.size
+        val size: Int
 
         if (align.get() && alignFrequency.value > 0 && alignFrequency.value < 20000) {
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate)
             val drop = waveSize - (buffer.written % waveSize.toUInt()).toInt()
             val take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15)
-            size = take.roundToInt()
             iter = iter.drop(drop.roundToInt()).take(take.roundToInt())
         }
 
-        for ((i, sample) in iter.withIndex()) {
+        val points = downSampler.downSample(iter.toList(), width.roundToInt())
+        size = points.size
+        downSampledSize.set(size)
 
-            val color = startColor.get().interpolate(endColor.get(), abs(sample).toDouble().coerceIn(0.0, 1.0))
-            gc.fill = color
-
-            gc.fillRect(i.toDouble() / size * width, (sample + 1.0f).toDouble() / 2.0 * height, 1.0, 1.0)
+        gc.stroke = endColor.get()
+        gc.beginPath()
+        for ((i, sample) in points.withIndex()) {
+            gc.lineTo(i.toDouble() / size * width, (sample + 1.0f).toDouble() / 2.0 * height)
         }
+        gc.stroke()
     }
+
+    // val color = startColor.get().interpolate(endColor.get(), abs(sample).toDouble().coerceIn(0.0, 1.0))
+    // gc.fill = color
 
     fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
         sampleRate = source.format.mix.rate
