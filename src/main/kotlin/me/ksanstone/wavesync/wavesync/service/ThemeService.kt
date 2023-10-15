@@ -3,6 +3,7 @@ package me.ksanstone.wavesync.wavesync.service
 import atlantafx.base.theme.*
 import jakarta.annotation.PostConstruct
 import javafx.application.Application
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.property.StringProperty
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.THEME
@@ -13,9 +14,21 @@ class ThemeService(
     private val preferenceService: PreferenceService
 ) {
 
-    val themes =
+    final val themes =
         listOf(CupertinoDark(), CupertinoLight(), NordDark(), NordLight(), PrimerDark(), PrimerLight(), Dracula())
             .map { return@map Pair(it.name, it) }.toMap()
+    final var themePairs: List<Pair<Theme, Theme?>>
+    final val isDark = SimpleBooleanProperty(true)
+
+    init {
+        val pairs = mutableListOf<Pair<Theme, Theme?>>()
+        themes.forEach {
+            if (it.value.isDarkMode) {
+                pairs.add(it.value to if(it.value.name.contains("Dark")) themes[it.value.name.replace("Dark","Light")] else null)
+            }
+        }
+        themePairs = pairs
+    }
 
     private var current: String = ""
     final val selectedTheme: StringProperty = SimpleStringProperty(THEME)
@@ -29,6 +42,7 @@ class ThemeService(
             } else if (theme.name != current) {
                 Application.setUserAgentStylesheet(theme.userAgentStylesheet)
                 current = theme.name
+                isDark.set(theme.isDarkMode)
             }
         }
         preferenceService.registerProperty(selectedTheme, "theme")

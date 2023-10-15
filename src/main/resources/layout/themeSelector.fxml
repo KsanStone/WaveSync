@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.ChoiceBox?>
+<?import atlantafx.base.controls.*?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<AnchorPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.ThemeSelectorController">
-    <ChoiceBox fx:id="themeChoiceBox" onAction="#changeTheme" prefWidth="150.0" AnchorPane.bottomAnchor="0.0"
-               AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"/>
-</AnchorPane>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<HBox alignment="CENTER_LEFT" spacing="5.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.ThemeSelectorController">
+    <ChoiceBox fx:id="themeChoiceBox" prefWidth="150.0" HBox.hgrow="ALWAYS" />
+    <FontIcon iconLiteral="mdmz-wb_sunny" iconSize="25" />
+    <ToggleSwitch fx:id="darkLightSwitch" prefWidth="45.0" />
+    <FontIcon iconLiteral="mdmz-nights_stay" iconSize="25" />
+</HBox>

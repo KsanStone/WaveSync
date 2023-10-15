@@ -1,5 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.controller
 
+import atlantafx.base.controls.ToggleSwitch
+import atlantafx.base.theme.Theme
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.ChoiceBox
@@ -13,21 +15,45 @@ class ThemeSelectorController : Initializable {
     private lateinit var themeService: ThemeService
 
     @FXML
-    lateinit var themeChoiceBox: ChoiceBox<String>
+    lateinit var darkLightSwitch: ToggleSwitch
 
     @FXML
-    fun changeTheme() {
-        themeService.applyTheme(themeChoiceBox.value)
+    lateinit var themeChoiceBox: ChoiceBox<String>
+
+    private fun changeTheme() {
+        if (currentPair == null) return
+        themeService.applyTheme(if (darkLightSwitch.isSelected || currentPair!!.second == null) currentPair!!.first.name else currentPair!!.second!!.name)
     }
+
+    private var currentPair: Pair<Theme, Theme?>? = null
 
     override fun initialize(p0: URL?, p1: ResourceBundle?) {
         try {
             this.themeService = WaveSyncBootApplication.applicationContext.getBean(ThemeService::class.java)
-            themeChoiceBox.items.addAll(themeService.themes.keys)
-            themeChoiceBox.valueProperty().bindBidirectional(themeService.selectedTheme)
+            themeChoiceBox.items.addAll(themeService.themePairs.map { it.first.name.replace("Dark", "") })
+            themeChoiceBox.value = themeService.selectedTheme.value.replace("Dark", "")
+            darkLightSwitch.isSelected = themeService.isDark.get()
+
+            findPair(themeService.selectedTheme.value)
+
+            darkLightSwitch.selectedProperty().addListener { _ ->
+                changeTheme()
+            }
+
+            themeChoiceBox.valueProperty().addListener { _, _, v ->
+                findPair(v)
+                changeTheme()
+            }
         } catch (e: Exception) {
+            e.printStackTrace()
             System.err.println("Apparently we are running in scene builder")
         }
     }
 
+    private fun findPair(name: String) {
+        currentPair =
+            this.themeService.themePairs.find { it.first.name.contains(name) || it.second?.name?.contains(name) ?: false }!!
+        darkLightSwitch.isSelected = if (currentPair!!.second == null) true else darkLightSwitch.isSelected
+        darkLightSwitch.disableProperty().value = currentPair!!.second == null
+    }
 }
