@@ -19,6 +19,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.utility.FPSCounter
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 abstract class AutoCanvas : AnchorPane() {
@@ -119,14 +120,20 @@ abstract class AutoCanvas : AnchorPane() {
         children.add(infoPane)
     }
 
+    private val isDrawing = AtomicBoolean(false)
+
     private fun drawCall() {
+        if(isDrawing.get()) return
+
         val now = System.nanoTime()
         val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0
         lastDraw = now
 
         frameTime.set(deltaT)
-        fpsCounter.tick()
+        isDrawing.set(true)
         this.draw(canvas.graphicsContext2D, deltaT, now, canvas.width, canvas.height)
+        isDrawing.set(false)
+        fpsCounter.tick()
     }
 
     protected abstract fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double)

@@ -10,7 +10,7 @@
             <items>
                 <CustomMenuItem hideOnClick="false" mnemonicParsing="false" text="Unspecified Action">
                     <content>
-                        <fx:include source="waveformChartSettings.fxml" fx:id="waveformChartSettings"/>
+                        <fx:include source="/layout/waveform/waveformChartSettings.fxml" fx:id="waveformChartSettings"/>
                     </content>
                 </CustomMenuItem>
             </items>

@@ -10,7 +10,7 @@
             <items>
                 <CustomMenuItem hideOnClick="false" mnemonicParsing="false" text="Unspecified Action">
                     <content>
-                        <fx:include source="barChartSettings.fxml" fx:id="chartSettings"/>
+                        <fx:include source="/layout/bar/barChartSettings.fxml" fx:id="chartSettings"/>
                     </content>
                 </CustomMenuItem>
             </items>

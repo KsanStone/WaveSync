@@ -27,14 +27,17 @@ class WaveformVisualizer : AutoCanvas() {
     private val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     private val align: BooleanProperty = SimpleBooleanProperty(false)
     private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
-    private var sampleRate: Int = 48000
+    private val alignLowPass: DoubleProperty = SimpleDoubleProperty(20.0)
+    private var sampleRate: IntegerProperty = SimpleIntegerProperty(48000)
     private val downSampledSize: IntegerProperty = SimpleIntegerProperty(buffer.size)
 
     init {
         val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         val ls = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         alignFrequency.bind(acs.peakFrequency)
-        align.bind(acs.peakValue.greaterThan(0.05f).and(enableAutoAlign))
+        alignLowPass.set(calcAlignLowPass())
+        sampleRate.addListener { _ -> calcAlignLowPass() }
+        align.bind(acs.peakValue.greaterThan(0.05f).and(enableAutoAlign).and(acs.peakFrequency.greaterThan(alignLowPass)))
 
         val alignInfo = Label()
         alignFrequency.addListener { _ -> info(alignInfo) }
@@ -48,6 +51,10 @@ class WaveformVisualizer : AutoCanvas() {
 
         infoPane.add(Label(ls.get("visualizer.waveform.info.samples")), 0, 4)
         infoPane.add(downSampleInfoLabel, 1, 4)
+    }
+
+    private fun calcAlignLowPass(): Double {
+        return 1 / (buffer.size.toDouble() / sampleRate.get().toDouble()) * 1.5
     }
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
@@ -83,9 +90,9 @@ class WaveformVisualizer : AutoCanvas() {
         var drop = 0
         var take = buffer.size
 
-        if (align.get() && alignFrequency.value > 0 && alignFrequency.value < 20000) {
-            val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate)
-            drop = (waveSize - (buffer.written % waveSize.toUInt()).toInt()).toInt()
+        if (align.get() && alignFrequency.value < 20000) {
+            val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate.get())
+            drop = (waveSize - (buffer.written % waveSize.toULong()).toInt()).toInt()
             take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15).roundToInt()
         }
 
@@ -94,16 +101,14 @@ class WaveformVisualizer : AutoCanvas() {
 
         gc.stroke = endColor.get()
         gc.beginPath()
-
         var acc = 0
         for (i in drop until drop + take) {
             val ai = i - drop
             if (++stepAccumulator < step) continue
-                stepAccumulator -= step
+            stepAccumulator -= step
             gc.lineTo(ai.toDouble() / take * width, (buffer[i] + 1.0f).toDouble() / 2.0 * height)
             acc++
         }
-
         downSampledSize.set(acc)
         gc.stroke()
     }
@@ -112,7 +117,7 @@ class WaveformVisualizer : AutoCanvas() {
     // gc.fill = color
 
     fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
-        sampleRate = source.format.mix.rate
+        sampleRate.value = source.format.mix.rate
         buffer.insert(samples.toTypedArray())
     }
 }
