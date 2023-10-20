@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.*?>
@@ -14,7 +15,7 @@
     </rowConstraints>
     <columnConstraints>
         <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0" />
-        <ColumnConstraints minWidth="10.0" />
+        <ColumnConstraints maxWidth="1.7976931348623157E308" minWidth="300.0" prefWidth="400.0" />
     </columnConstraints>
     <children>
         <Label text="%visualizer.bar.settings.gap">
@@ -51,8 +52,26 @@
                 <RowConstraints minHeight="20.0" vgrow="NEVER" />
             </rowConstraints>
             <children>
-                <Spinner fx:id="minFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" />
-                <Spinner fx:id="maxFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
+            <HBox alignment="CENTER_LEFT" GridPane.hgrow="ALWAYS">
+               <children>
+                      <Spinner fx:id="minFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                  <Label layoutX="194.0" layoutY="22.0" text="Hz">
+                     <padding>
+                        <Insets left="5.0" />
+                     </padding>
+                  </Label>
+               </children>
+            </HBox>
+            <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS">
+               <children>
+                      <Spinner fx:id="maxFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                  <Label text="Hz">
+                     <padding>
+                        <Insets left="5.0" />
+                     </padding>
+                  </Label>
+               </children>
+            </HBox>
                 <HBox alignment="CENTER" spacing="5.0" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1">
                     <Hyperlink alignment="CENTER" onAction="#setMaxFreqOnVisualizer" text="%visualizer.bar.settings.max" />
                     <Label text="•" />
@@ -66,12 +85,20 @@
                 <FontIcon iconLiteral="mdral-linear_scale" />
             </graphic>
         </Label>
-        <TabPane fx:id="scalarTypeTabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="100.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" GridPane.columnIndex="1" GridPane.rowIndex="4">
+        <TabPane fx:id="scalarTypeTabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minWidth="300.0" prefHeight="150.0" prefWidth="300.0" tabClosingPolicy="UNAVAILABLE" GridPane.columnIndex="1" GridPane.rowIndex="4">
             <Tab text="%visualizer.bar.settings.fftScalarType.linear">
-
+                <VBox>
+                    <padding>
+                        <Insets top="5.0" />
+                    </padding>
+                    <Label text="%visualizer.bar.settings.fftScalarType.linear.description" wrapText="true" />
+                </VBox>
             </Tab>
             <Tab text="%visualizer.bar.settings.fftScalarType.exaggerated">
                 <VBox>
+                    <padding>
+                        <Insets top="5.0" />
+                    </padding>
                     <children>
                         <Label text="%visualizer.bar.settings.scaling">
                             <graphic>
@@ -79,11 +106,48 @@
                             </graphic>
                         </Label>
                         <Slider fx:id="scalingSlider" blockIncrement="5.0" majorTickUnit="10.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="20.0" />
+                        <Label text="%visualizer.bar.settings.fftScalarType.exaggerated.description" wrapText="true" />
                     </children>
                 </VBox>
             </Tab>
             <Tab text="%visualizer.bar.settings.fftScalarType.decibel">
-
+                <VBox>
+                    <GridPane hgap="5.0">
+                        <columnConstraints>
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                        </columnConstraints>
+                        <rowConstraints>
+                            <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                        </rowConstraints>
+                        <children>
+                     <HBox alignment="CENTER_LEFT">
+                        <children>
+                                  <Spinner maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                           <Label text="dB">
+                              <padding>
+                                 <Insets left="5.0" />
+                              </padding>
+                           </Label>
+                        </children>
+                     </HBox>
+                     <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1">
+                        <children>
+                                  <Spinner maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                           <Label text="dB">
+                              <padding>
+                                 <Insets left="5.0" />
+                              </padding>
+                           </Label>
+                        </children>
+                     </HBox>
+                        </children>
+                    </GridPane>
+                    <Label text="%visualizer.bar.settings.fftScalarType.decibel.description" wrapText="true" />
+                    <padding>
+                        <Insets top="5.0" />
+                    </padding>
+                </VBox>
             </Tab>
         </TabPane>
     </children>

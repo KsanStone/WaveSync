@@ -36,8 +36,8 @@ class WaveformVisualizer : AutoCanvas() {
         val ls = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         alignFrequency.bind(acs.peakFrequency)
         alignLowPass.set(calcAlignLowPass())
-        sampleRate.addListener { _ -> calcAlignLowPass() }
-        align.bind(acs.peakValue.greaterThan(0.05f).and(enableAutoAlign).and(acs.peakFrequency.greaterThan(alignLowPass)))
+        sampleRate.addListener { _ -> alignLowPass.value = calcAlignLowPass() }
+        align.bind(acs.peakValue.greaterThan(0.05f).and(enableAutoAlign).and(acs.peakFrequency.greaterThan(alignLowPass)).and(acs.peakFrequency.lessThanOrEqualTo(20000)))
 
         val alignInfo = Label()
         alignFrequency.addListener { _ -> info(alignInfo) }
@@ -90,10 +90,10 @@ class WaveformVisualizer : AutoCanvas() {
         var drop = 0
         var take = buffer.size
 
-        if (align.get() && alignFrequency.value < 20000) {
+        if (align.get()) {
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate.get())
-            drop = (waveSize - (buffer.written % waveSize.toULong()).toInt()).toInt()
-            take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15).roundToInt()
+            drop = (waveSize - (buffer.written % waveSize.toULong()).toInt()).toInt().coerceIn(0, buffer.size - 50)
+            take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15).roundToInt().coerceAtMost(buffer.size - drop)
         }
 
         var stepAccumulator = 0.0
