@@ -14,5 +14,7 @@ object ApplicationSettingDefaults {
     const val REFRESH_RATE = 60
     const val GAP = 0
     const val INFO_SHOWN = false
+    const val DB_MIN = -90.0f
+    const val DB_MAX = 5.0f
     val DEFAULT_SCALAR_TYPE = FFTScalarType.DECIBEL
 }

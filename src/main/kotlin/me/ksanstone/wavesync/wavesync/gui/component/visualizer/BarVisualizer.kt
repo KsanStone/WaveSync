@@ -16,6 +16,8 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MAX
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MIN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
@@ -52,6 +54,8 @@ class BarVisualizer : AutoCanvas() {
 
     val scalarType: ObjectProperty<FFTScalarType> = SimpleObjectProperty(DEFAULT_SCALAR_TYPE)
     val linearScaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
+    val dbMin: FloatProperty = SimpleFloatProperty(DB_MIN)
+    val dbMax: FloatProperty = SimpleFloatProperty(DB_MAX)
 
     private lateinit var fftScalar: FFTScalar<*>
 
@@ -104,6 +108,8 @@ class BarVisualizer : AutoCanvas() {
         changeScalar()
         scalarType.addListener { _ -> changeScalar() }
         linearScaling.addListener{ _ -> refreshScalar() }
+        dbMax.addListener{ _ -> refreshScalar() }
+        dbMin.addListener{ _ -> refreshScalar() }
 
         setOnMouseMoved {
             if (source == null) {
@@ -157,6 +163,8 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(targetBarWidth, "$id-targetBarWidth")
         preferenceService.registerProperty(gap, "$id-gap")
         preferenceService.registerProperty(scalarType, "$id-fftScalar", FFTScalarType::class.java)
+        preferenceService.registerProperty(dbMin, "$id-dbMin")
+        preferenceService.registerProperty(dbMax, "$id-dbMax")
     }
 
     private fun changeScalar() {
@@ -178,7 +186,7 @@ class BarVisualizer : AutoCanvas() {
                 (fftScalar as ExaggeratedFFTScalar).update(ExaggeratedFFTScalarParams(scaling = linearScaling.get()))
             }
             is DeciBelFFTScalar -> {
-                (fftScalar as DeciBelFFTScalar).update(DeciBelFFTScalarParameters(rangeMin = -80f, rangeMax = 5f))
+                (fftScalar as DeciBelFFTScalar).update(DeciBelFFTScalarParameters(rangeMin = dbMin.get(), rangeMax = dbMax.get()))
             }
         }
     }

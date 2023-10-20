@@ -55,7 +55,7 @@
             <HBox alignment="CENTER_LEFT" GridPane.hgrow="ALWAYS">
                <children>
                       <Spinner fx:id="minFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
-                  <Label layoutX="194.0" layoutY="22.0" text="Hz">
+                  <Label layoutX="194.0" layoutY="22.0" minWidth="30.0" text="Hz">
                      <padding>
                         <Insets left="5.0" />
                      </padding>
@@ -65,7 +65,7 @@
             <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS">
                <children>
                       <Spinner fx:id="maxFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
-                  <Label text="Hz">
+                  <Label minWidth="30.0" text="Hz">
                      <padding>
                         <Insets left="5.0" />
                      </padding>
@@ -123,8 +123,8 @@
                         <children>
                      <HBox alignment="CENTER_LEFT">
                         <children>
-                                  <Spinner maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
-                           <Label text="dB">
+                                  <Spinner fx:id="dbMinSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                           <Label minWidth="30.0" text="dB">
                               <padding>
                                  <Insets left="5.0" />
                               </padding>
@@ -133,8 +133,8 @@
                      </HBox>
                      <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1">
                         <children>
-                                  <Spinner maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
-                           <Label text="dB">
+                                  <Spinner fx:id="dbMaxSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                           <Label minWidth="30.0" text="dB">
                               <padding>
                                  <Insets left="5.0" />
                               </padding>

@@ -18,6 +18,12 @@ import java.util.*
 class BarChartSettingsController : Initializable {
 
     @FXML
+    lateinit var dbMinSpinner: Spinner<Double>
+
+    @FXML
+    lateinit var dbMaxSpinner: Spinner<Double>
+
+    @FXML
     lateinit var scalarTypeTabPane: TabPane
 
     @FXML
@@ -72,6 +78,16 @@ class BarChartSettingsController : Initializable {
             maxFreq - ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW,
             visualizer.lowPass.get()
         )
+        dbMinSpinner.valueFactory = SpinnerValueFactory.DoubleSpinnerValueFactory(
+            -150.0,
+            -40.0,
+            visualizer.dbMin.get().toDouble()
+        )
+        dbMaxSpinner.valueFactory = SpinnerValueFactory.DoubleSpinnerValueFactory(
+            -30.0,
+            20.0,
+            visualizer.dbMax.get().toDouble()
+        )
 
         maxFreqSpinner.valueProperty().addListener { _ ->
             if (minFreqSpinner.valueFactory.value > maxFreqSpinner.valueFactory.value - ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW)
@@ -103,6 +119,8 @@ class BarChartSettingsController : Initializable {
         visualizer.cutoff.bind(maxFreqSpinner.valueProperty())
         visualizer.lowPass.bind(minFreqSpinner.valueProperty())
         visualizer.gap.bind(gapSlider.valueProperty())
+        visualizer.dbMin.bind(dbMinSpinner.valueProperty().map { it.toFloat() })
+        visualizer.dbMax.bind(dbMaxSpinner.valueProperty().map { it.toFloat() })
         visualizer.scalarType.bind(scalarTypeTabPane.selectionModel.selectedIndexProperty().map {
             when (it) {
                 0 -> FFTScalarType.LINEAR
