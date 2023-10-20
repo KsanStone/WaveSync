@@ -5,15 +5,20 @@ import javafx.fxml.Initializable
 import javafx.scene.control.Slider
 import javafx.scene.control.Spinner
 import javafx.scene.control.SpinnerValueFactory
+import javafx.scene.control.TabPane
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalarType
 import java.net.URL
 import java.util.*
 
 class BarChartSettingsController : Initializable {
+
+    @FXML
+    lateinit var scalarTypeTabPane: TabPane
 
     @FXML
     lateinit var gapSlider: Slider
@@ -81,17 +86,31 @@ class BarChartSettingsController : Initializable {
 
         barWidthSlider.value = tw.toDouble()
 
-        scalingSlider.value = visualizer.scaling.get().toDouble()
+        scalingSlider.value = visualizer.linearScaling.get().toDouble()
         dropRateSlider.value = visualizer.smoothing.get().toDouble()
         barWidthSlider.value = visualizer.targetBarWidth.get().toDouble()
         gapSlider.value = visualizer.gap.get().toDouble()
+        scalarTypeTabPane.selectionModel.select(when(visualizer.scalarType.value) {
+            FFTScalarType.LINEAR -> 0
+            FFTScalarType.EXAGGERATED -> 1
+            FFTScalarType.DECIBEL -> 2
+            else -> 0
+        })
 
-        visualizer.scaling.bind(scalingSlider.valueProperty())
+        visualizer.linearScaling.bind(scalingSlider.valueProperty())
         visualizer.smoothing.bind(dropRateSlider.valueProperty())
         visualizer.targetBarWidth.bind(barWidthSlider.valueProperty())
         visualizer.cutoff.bind(maxFreqSpinner.valueProperty())
         visualizer.lowPass.bind(minFreqSpinner.valueProperty())
         visualizer.gap.bind(gapSlider.valueProperty())
+        visualizer.scalarType.bind(scalarTypeTabPane.selectionModel.selectedIndexProperty().map {
+            when (it) {
+                0 -> FFTScalarType.LINEAR
+                1 -> FFTScalarType.EXAGGERATED
+                2 -> FFTScalarType.DECIBEL
+                else -> FFTScalarType.DECIBEL
+            }
+        })
     }
 
     @FXML

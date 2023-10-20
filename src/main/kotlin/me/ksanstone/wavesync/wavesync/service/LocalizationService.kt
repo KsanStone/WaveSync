@@ -5,9 +5,9 @@ import javafx.beans.property.ObjectProperty
 import javafx.beans.property.SimpleObjectProperty
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.io.Resource
 import org.springframework.stereotype.Service
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.text.MessageFormat
 import java.text.NumberFormat
 import java.util.*
@@ -18,15 +18,15 @@ class LocalizationService {
 
     val logger: Logger = LoggerFactory.getLogger(javaClass)
 
+    @Value("\${:classpath:bundles/*.properties}")
+    lateinit var localeResources: Array<Resource>
     lateinit var locales: List<Locale>
-    val currentLocaleProperty: ObjectProperty<Locale> = SimpleObjectProperty(Locale.ENGLISH)
-
     lateinit var numberFormat: NumberFormat
+    val currentLocaleProperty: ObjectProperty<Locale> = SimpleObjectProperty(Locale.ENGLISH)
 
     @PostConstruct
     fun initialize() {
-        val detectedMessages = findLocales()
-        locales = detectedMessages.map { Locale.of(localeRegex.matchEntire(it)!!.groups["code"]!!.value) }
+        locales = localeResources.map { Locale.of(localeRegex.matchEntire(it.filename!!)!!.groups["code"]!!.value) }
         logger.info("Locales detected: $locales")
 
         currentLocaleProperty.set(locales[0])
@@ -58,20 +58,4 @@ class LocalizationService {
     }
 
     private val localeRegex = Regex("^messages_(?<code>[a-zA-Z#_]{1,50})\\.properties$")
-
-    fun findLocales(): List<String> {
-        val detectedLocales: MutableList<String> = mutableListOf()
-
-        javaClass.classLoader.getResourceAsStream("bundles").use { `in` ->
-            if (`in` == null) return detectedLocales
-            BufferedReader(InputStreamReader(`in`)).use { br ->
-                var resource: String? = null
-                while (br.readLine()?.also{ resource = it } != null) {
-                    detectedLocales.add(resource!!)
-                }
-            }
-        }
-
-        return detectedLocales.filter { localeRegex.matches(it) }
-    }
 }

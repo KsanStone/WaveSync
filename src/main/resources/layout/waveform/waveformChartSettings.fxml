@@ -3,6 +3,7 @@
 <?import atlantafx.base.controls.ToggleSwitch?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 <GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformChartSettingsController">
    <rowConstraints>
       <RowConstraints minHeight="30.0" />
@@ -12,7 +13,11 @@
       <ColumnConstraints minWidth="10.0" />
    </columnConstraints>
    <children>
-      <Label text="%visualizer.waveform.settings.autoAlign" />
+      <Label text="%visualizer.waveform.settings.autoAlign" >
+              <graphic>
+                 <FontIcon iconLiteral="mdmz-swap_calls" />
+              </graphic>
+      </Label>
       <ToggleSwitch GridPane.columnIndex="1" fx:id="autoAlignToggleSwitch"/>
    </children>
 </GridPane>

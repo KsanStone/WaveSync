@@ -16,6 +16,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
@@ -25,11 +26,11 @@ import me.ksanstone.wavesync.wavesync.service.FourierMath
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
+import me.ksanstone.wavesync.wavesync.service.fftScaling.*
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import java.text.DecimalFormat
 import kotlin.math.floor
-import kotlin.math.ln
 import kotlin.math.max
 
 
@@ -41,15 +42,18 @@ class BarVisualizer : AutoCanvas() {
     private var localizationService: LocalizationService =
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     private val tooltip: Tooltip = Tooltip("---")
-
     private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
     private val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
-    val scaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
     val cutoff: IntegerProperty = SimpleIntegerProperty(BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(TARGET_BAR_WIDTH)
     val gap: IntegerProperty = SimpleIntegerProperty(GAP)
+
+    val scalarType: ObjectProperty<FFTScalarType> = SimpleObjectProperty(DEFAULT_SCALAR_TYPE)
+    val linearScaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
+
+    private lateinit var fftScalar: FFTScalar<*>
 
     init {
         stylesheets.add("/styles/bar-visualizer.css")
@@ -97,6 +101,10 @@ class BarVisualizer : AutoCanvas() {
         cutoff.addListener { _ -> sizeFrequencyAxis() }
         lowPass.addListener { _ -> sizeFrequencyAxis() }
 
+        changeScalar()
+        scalarType.addListener { _ -> changeScalar() }
+        linearScaling.addListener{ _ -> refreshScalar() }
+
         setOnMouseMoved {
             if (source == null) {
                 tooltip.text = "---"
@@ -143,11 +151,36 @@ class BarVisualizer : AutoCanvas() {
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerProperty(smoothing, "$id-smoothing")
-        preferenceService.registerProperty(scaling, "$id-scaling")
+        preferenceService.registerProperty(linearScaling, "$id-scaling")
         preferenceService.registerProperty(cutoff, "$id-cutoff")
         preferenceService.registerProperty(lowPass, "$id-lowPass")
         preferenceService.registerProperty(targetBarWidth, "$id-targetBarWidth")
         preferenceService.registerProperty(gap, "$id-gap")
+        preferenceService.registerProperty(scalarType, "$id-fftScalar", FFTScalarType::class.java)
+    }
+
+    private fun changeScalar() {
+        this.fftScalar = when (scalarType.get()) {
+            FFTScalarType.LINEAR -> LinearFFTScalar()
+            FFTScalarType.DECIBEL -> DeciBelFFTScalar()
+            FFTScalarType.EXAGGERATED -> ExaggeratedFFTScalar()
+            else -> throw IllegalArgumentException("Invalid fft scalar type ${scalarType.get()}")
+        }
+        refreshScalar()
+    }
+
+    private fun refreshScalar() {
+        when (fftScalar) {
+            is LinearFFTScalar -> {
+                (fftScalar as LinearFFTScalar).update(LinearFFTScalarParams())
+            }
+            is ExaggeratedFFTScalar -> {
+                (fftScalar as ExaggeratedFFTScalar).update(ExaggeratedFFTScalarParams(scaling = linearScaling.get()))
+            }
+            is DeciBelFFTScalar -> {
+                (fftScalar as DeciBelFFTScalar).update(DeciBelFFTScalarParameters(rangeMin = -80f, rangeMax = 5f))
+            }
+        }
     }
 
     private fun sizeFrequencyAxis() {
@@ -176,7 +209,7 @@ class BarVisualizer : AutoCanvas() {
         }
 
         smoother.data = array.slice(frequencyBinSkip until size).map { fl ->
-            (fl * (scaling.get() * (1.0f - ln(fl + 0.2f) - 0.813f) + 1)).coerceAtMost(1.0f)
+            fftScalar.scale(fl)
         }.toFloatArray()
     }
 
