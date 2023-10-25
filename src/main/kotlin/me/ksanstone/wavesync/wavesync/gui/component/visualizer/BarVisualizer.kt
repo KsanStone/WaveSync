@@ -156,15 +156,15 @@ class BarVisualizer : AutoCanvas() {
 
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
-        preferenceService.registerProperty(smoothing, "$id-smoothing")
-        preferenceService.registerProperty(linearScaling, "$id-scaling")
-        preferenceService.registerProperty(cutoff, "$id-cutoff")
-        preferenceService.registerProperty(lowPass, "$id-lowPass")
-        preferenceService.registerProperty(targetBarWidth, "$id-targetBarWidth")
-        preferenceService.registerProperty(gap, "$id-gap")
-        preferenceService.registerProperty(scalarType, "$id-fftScalar", FFTScalarType::class.java)
-        preferenceService.registerProperty(dbMin, "$id-dbMin")
-        preferenceService.registerProperty(dbMax, "$id-dbMax")
+        preferenceService.registerProperty(smoothing, "smoothing", this.javaClass, id)
+        preferenceService.registerProperty(linearScaling, "scaling", this.javaClass, id)
+        preferenceService.registerProperty(cutoff, "cutoff", this.javaClass, id)
+        preferenceService.registerProperty(lowPass, "lowPass", this.javaClass, id)
+        preferenceService.registerProperty(targetBarWidth, "targetBarWidth", this.javaClass, id)
+        preferenceService.registerProperty(gap, "gap", this.javaClass, id)
+        preferenceService.registerProperty(scalarType, "fftScalar", FFTScalarType::class.java, this.javaClass, id)
+        preferenceService.registerProperty(dbMin, "dbMin", this.javaClass, id)
+        preferenceService.registerProperty(dbMax, "dbMax", this.javaClass, id)
     }
 
     private fun changeScalar() {

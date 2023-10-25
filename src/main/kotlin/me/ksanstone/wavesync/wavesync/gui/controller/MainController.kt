@@ -144,11 +144,11 @@ class MainController : Initializable {
         )
         waveformVisualizer.info.bind(infoShown)
 
-        barVisualizer.registerPreferences("mainBarVisualizer", preferenceService)
+        barVisualizer.registerPreferences("main", preferenceService)
         barVisualizer.initializeSettingMenu()
         waveformVisualizer.registerPreferences("main", preferenceService)
         waveformVisualizer.initializeSettingMenu()
-        preferenceService.registerProperty(infoShown, "graphInfoShown")
+        preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
         visualizerPane.items.add(barVisualizer)
         visualizerPane.items.add(waveformVisualizer)

@@ -52,8 +52,8 @@ class AudioCaptureService(
 
     @PostConstruct
     fun registerProperties() {
-        preferenceService.registerProperty(fftSize, "fftSize")
-        preferenceService.registerProperty(usedAudioSystem, "audioSystem", XtSystem::class.java)
+        preferenceService.registerProperty(fftSize, "fftSize", this.javaClass)
+        preferenceService.registerProperty(usedAudioSystem, "audioSystem", XtSystem::class.java, this.javaClass)
         detectSupportedAudioSystems()
         if (usedAudioSystem.get() == null) {
             if (Platform.isWindows() && audioSystems.contains(XtSystem.WASAPI)) {

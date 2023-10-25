@@ -45,7 +45,7 @@ class ThemeService(
                 isDark.set(theme.isDarkMode)
             }
         }
-        preferenceService.registerProperty(selectedTheme, "theme")
+        preferenceService.registerProperty(selectedTheme, "theme", this.javaClass)
     }
 
     fun applyTheme(name: String) {

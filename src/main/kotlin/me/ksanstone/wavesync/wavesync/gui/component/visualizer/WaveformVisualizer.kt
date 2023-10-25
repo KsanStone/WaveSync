@@ -58,7 +58,7 @@ class WaveformVisualizer : AutoCanvas() {
     }
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
-        preferenceService.registerProperty(enableAutoAlign, "$id-waveformVisualizer-autoAlign")
+        preferenceService.registerProperty(enableAutoAlign, "autoAlign", this.javaClass, id)
     }
 
     fun initializeSettingMenu() {
