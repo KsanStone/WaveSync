@@ -1,6 +1,7 @@
 package me.ksanstone.wavesync.wavesync
 
 import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalarType
+import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
 
 object ApplicationSettingDefaults {
     const val BAR_SMOOTHING = 0.91F
@@ -17,4 +18,5 @@ object ApplicationSettingDefaults {
     const val DB_MIN = -90.0f
     const val DB_MAX = 5.0f
     val DEFAULT_SCALAR_TYPE = FFTScalarType.DECIBEL
+    val DEFAULT_WINDOWING_FUNCTION = WindowFunctionType.HAMMING
 }

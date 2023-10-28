@@ -12,6 +12,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
 import xt.audio.Enums.XtSystem
 import java.net.URL
 import java.util.*
@@ -20,6 +21,9 @@ import kotlin.math.round
 
 
 class VisualizerOptionsController : Initializable {
+
+    @FXML
+    lateinit var windowingFunctionChoiceBox: ChoiceBox<String>
 
     @FXML
     lateinit var debugToggleSwitch: ToggleSwitch
@@ -57,6 +61,10 @@ class VisualizerOptionsController : Initializable {
         audioServerChoiceBox.valueProperty().addListener { _ ->
             changeAudioSystem()
         }
+
+        windowingFunctionChoiceBox.items.addAll(WindowFunctionType.entries.map { it.displayName })
+        windowingFunctionChoiceBox.value = audioCaptureService.usedWindowingFunction.value.displayName
+        audioCaptureService.usedWindowingFunction.bind(windowingFunctionChoiceBox.valueProperty().map { WindowFunctionType.fromDisplayName(it) })
 
         fftSizeChoiceBox.items.clear()
         fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14, 15).map { 2.0.pow(it.toDouble()).toInt() }

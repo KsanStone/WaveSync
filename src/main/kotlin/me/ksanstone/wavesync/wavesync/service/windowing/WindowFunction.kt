@@ -28,3 +28,14 @@ abstract class WindowFunction(private var windowSize: Int) {
     }
 
 }
+
+enum class WindowFunctionType(val displayName: String) {
+    HAMMING("Hamming"),
+    HANN("Hann");
+
+    companion object {
+        fun fromDisplayName(name: String): WindowFunctionType {
+            return entries.find { it.displayName == name } ?: HAMMING
+        }
+    }
+}

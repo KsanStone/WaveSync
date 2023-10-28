@@ -1,31 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import atlantafx.base.controls.ToggleSwitch?>
-<?import javafx.geometry.Insets?>
+<?import atlantafx.base.controls.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import org.kordamp.ikonli.javafx.*?>
+
 <AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.VisualizerOptionsController">
     <children>
-        <GridPane hgap="5.0" vgap="10" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" layoutX="188.0" layoutY="117.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <GridPane hgap="5.0" layoutX="188.0" layoutY="117.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <columnConstraints>
                 <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0" />
                 <ColumnConstraints hgrow="SOMETIMES" minWidth="300.0" />
             </columnConstraints>
             <rowConstraints>
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS" />
+            <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS" />
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS" />
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS" />
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS" />
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS" />
             </rowConstraints>
             <children>
-                <Label text="%dialog.deviceOptions.theme" GridPane.rowIndex="2">
+                <Label text="%dialog.deviceOptions.theme" GridPane.rowIndex="3">
                     <graphic>
                         <FontIcon iconLiteral="mdal-bedtime" />
                     </graphic>
                 </Label>
-                <fx:include source="themeSelector.fxml" GridPane.columnIndex="1" GridPane.rowIndex="2"
+                <fx:include source="themeSelector.fxml" GridPane.columnIndex="1" GridPane.rowIndex="3"
                             GridPane.halignment="CENTER" GridPane.fillWidth="true" GridPane.vgrow="NEVER"
                             GridPane.fillHeight="false"/>
                 <Label text="%dialog.deviceOptions.fft">
@@ -50,19 +52,21 @@
                         </HBox>
                     </children>
                 </GridPane>
-                <Label text="%dialog.deviceOptions.audioServer" GridPane.rowIndex="1">
+                <Label text="%dialog.deviceOptions.audioServer" GridPane.rowIndex="2">
                     <graphic>
                         <FontIcon iconLiteral="mdrmz-surround_sound" />
                     </graphic>
                 </Label>
-                <ChoiceBox fx:id="audioServerChoiceBox" maxWidth="1.7976931348623157E308" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-                <Button mnemonicParsing="false" onAction="#showResetToDefaultsDialog" text="%dialog.deviceOptions.defaults" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="4" GridPane.valignment="BOTTOM" />
-                <Label text="%dialog.deviceOptions.debug" GridPane.rowIndex="3">
+                <ChoiceBox fx:id="audioServerChoiceBox" maxWidth="1.7976931348623157E308" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                <Button mnemonicParsing="false" onAction="#showResetToDefaultsDialog" text="%dialog.deviceOptions.defaults" GridPane.columnIndex="1" GridPane.halignment="RIGHT" GridPane.rowIndex="5" GridPane.valignment="BOTTOM" />
+                <Label text="%dialog.deviceOptions.debug" GridPane.rowIndex="4">
                     <graphic>
                         <FontIcon iconLiteral="mdal-bug_report" />
                     </graphic>
                 </Label>
-            <ToggleSwitch fx:id="debugToggleSwitch" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+            <ToggleSwitch fx:id="debugToggleSwitch" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+            <Label text="%dialog.deviceOptions.windowingFunction" GridPane.rowIndex="1" />
+            <ChoiceBox fx:id="windowingFunctionChoiceBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
             </children>
             <opaqueInsets>
                 <Insets />

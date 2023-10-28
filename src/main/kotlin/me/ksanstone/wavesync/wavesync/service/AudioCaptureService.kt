@@ -5,10 +5,13 @@ import com.sun.jna.Pointer
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import javafx.beans.property.*
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencyOfBin
 import me.ksanstone.wavesync.wavesync.service.windowing.HammingWindowFunction
+import me.ksanstone.wavesync.wavesync.service.windowing.HannWindowFunction
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunction
+import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -48,12 +51,15 @@ class AudioCaptureService(
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
     val usedAudioSystem: ObjectProperty<XtSystem> = SimpleObjectProperty()
+    val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
     var audioSystems: List<XtSystem> = listOf()
 
     @PostConstruct
     fun registerProperties() {
         preferenceService.registerProperty(fftSize, "fftSize", this.javaClass)
         preferenceService.registerProperty(usedAudioSystem, "audioSystem", XtSystem::class.java, this.javaClass)
+        preferenceService.registerProperty(usedWindowingFunction, "windowingFunction", WindowFunctionType::class.java, this.javaClass)
+
         detectSupportedAudioSystems()
         if (usedAudioSystem.get() == null) {
             if (Platform.isWindows() && audioSystems.contains(XtSystem.WASAPI)) {
@@ -66,6 +72,7 @@ class AudioCaptureService(
         }
 
         usedAudioSystem.addListener { _ -> stopCapture() }
+        usedAudioSystem.addListener { _ -> changeWindowingFunction() }
     }
 
     fun detectSupportedAudioSystems() {
@@ -206,7 +213,15 @@ class AudioCaptureService(
         sampleBufferArray = FloatArray(size)
         sampleBufferArrayIndex = 0
         fftResult = FloatArray(size / 2)
-        windowFunction = HammingWindowFunction(size)
+        changeWindowingFunction()
+    }
+
+    fun changeWindowingFunction() {
+        val size = sampleBufferArray.size
+        windowFunction = when (usedWindowingFunction.get()!!) {
+            WindowFunctionType.HAMMING -> HammingWindowFunction(size)
+            WindowFunctionType.HANN -> HannWindowFunction(size)
+        }
     }
 
     @PreDestroy
@@ -214,6 +229,9 @@ class AudioCaptureService(
         stopCapture()
     }
 
+    /**
+     * This implementation is windows only
+     */
     private fun extractDeviceUUID(deviceId: String): String {
         return deviceId.split("}.{").getOrElse(1) { return deviceId }
     }
