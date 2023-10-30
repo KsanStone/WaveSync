@@ -7,6 +7,9 @@ import javafx.scene.canvas.GraphicsContext
 import javafx.scene.control.Label
 import javafx.scene.layout.HBox
 import javafx.scene.paint.Color
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_LINK
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_MAX
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_MIN
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
@@ -21,6 +24,9 @@ import kotlin.math.roundToInt
 class WaveformVisualizer : AutoCanvas() {
 
     val enableAutoAlign: BooleanProperty = SimpleBooleanProperty(false)
+    val rangeMax: FloatProperty = SimpleFloatProperty(WAVEFORM_RANGE_MAX)
+    val rangeMin: FloatProperty = SimpleFloatProperty(WAVEFORM_RANGE_MIN)
+    val rangeLink: BooleanProperty = SimpleBooleanProperty(WAVEFORM_RANGE_LINK)
 
     private val buffer: RollingBuffer<Float> = RollingBuffer(10000, 0.0f)
     private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
@@ -59,6 +65,9 @@ class WaveformVisualizer : AutoCanvas() {
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerProperty(enableAutoAlign, "autoAlign", this.javaClass, id)
+        preferenceService.registerProperty(rangeMax, "rangeMax", this.javaClass, id)
+        preferenceService.registerProperty(rangeMin, "rangeMin", this.javaClass, id)
+        preferenceService.registerProperty(rangeLink, "rangeLink", this.javaClass, id)
     }
 
     fun initializeSettingMenu() {
@@ -89,6 +98,9 @@ class WaveformVisualizer : AutoCanvas() {
 
         var drop = 0
         var take = buffer.size
+        val min = rangeMin.get()
+        val max = rangeMax.get()
+        val rangeBreadth = max - min
 
         if (align.get()) {
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate.get())
@@ -106,7 +118,7 @@ class WaveformVisualizer : AutoCanvas() {
             val ai = i - drop
             if (++stepAccumulator < step) continue
             stepAccumulator -= step
-            gc.lineTo(ai.toDouble() / take * width, (buffer[i] + 1.0f).toDouble() / 2.0 * height)
+            gc.lineTo(ai.toDouble() / take * width, (buffer[i] - min).toDouble() / rangeBreadth * height)
             acc++
         }
         downSampledSize.set(acc)

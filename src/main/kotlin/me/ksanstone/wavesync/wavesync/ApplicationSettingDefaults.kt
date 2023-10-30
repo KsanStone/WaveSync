@@ -17,6 +17,9 @@ object ApplicationSettingDefaults {
     const val INFO_SHOWN = false
     const val DB_MIN = -90.0f
     const val DB_MAX = 5.0f
+    const val WAVEFORM_RANGE_MIN = -1.0f
+    const val WAVEFORM_RANGE_MAX = 1.0f
+    const val WAVEFORM_RANGE_LINK = true
     val DEFAULT_SCALAR_TYPE = FFTScalarType.DECIBEL
     val DEFAULT_WINDOWING_FUNCTION = WindowFunctionType.HAMMING
 }
