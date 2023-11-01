@@ -2,6 +2,7 @@ package me.ksanstone.wavesync.wavesync.service
 
 import jakarta.annotation.PostConstruct
 import javafx.beans.property.*
+import javafx.scene.paint.Color
 import org.springframework.stereotype.Service
 import java.util.prefs.Preferences
 
@@ -74,6 +75,27 @@ class PreferenceService {
                 return@doRegister enumClass.enumConstants.firstOrNull { it.name == pref }
             },
             { v -> preferences.put(name, (v as Enum<*>).name) })
+    }
+
+    fun registerProperty(property: ObjectProperty<Color>, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
+        val preferences = getPreferences(clazz, id)
+        doRegister(property as Property<Any?>,
+            { intToColor(preferences.getInt(name, colorToInt(property.get()))) },
+            { v -> preferences.putInt(name, colorToInt(v as Color)) })
+    }
+
+    private fun colorToInt(c: Color): Int {
+        val r = Math.round(c.red * 255).toInt()
+        val g = Math.round(c.green * 255).toInt()
+        val b = Math.round(c.blue * 255).toInt()
+        return r shl 16 or (g shl 8) or b
+    }
+
+    private fun intToColor(value: Int): Color {
+        val r = value ushr 16 and 0xFF
+        val g = value ushr 8 and 0xFF
+        val b = value and 0xFF
+        return Color.rgb(r, g, b)
     }
 
     companion object {
