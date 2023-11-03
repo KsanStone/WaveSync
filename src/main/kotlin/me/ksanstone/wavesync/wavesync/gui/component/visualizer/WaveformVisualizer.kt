@@ -2,10 +2,12 @@ package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
 import javafx.application.Platform
 import javafx.beans.property.*
+import javafx.css.*
 import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.control.Label
 import javafx.scene.layout.HBox
+import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_LINK
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_MAX
@@ -21,6 +23,7 @@ import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.roundToInt
 
+
 class WaveformVisualizer : AutoCanvas() {
 
     val enableAutoAlign: BooleanProperty = SimpleBooleanProperty(false)
@@ -29,8 +32,7 @@ class WaveformVisualizer : AutoCanvas() {
     val rangeLink: BooleanProperty = SimpleBooleanProperty(WAVEFORM_RANGE_LINK)
 
     private val buffer: RollingBuffer<Float> = RollingBuffer(10000, 0.0f)
-    private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
-    private val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
+    private val waveColor: StyleableProperty<Color> = FACTORY.createStyleableColorProperty(this, "waveColor", "-fx-color") { vis -> vis.waveColor }
     private val align: BooleanProperty = SimpleBooleanProperty(false)
     private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     private val alignLowPass: DoubleProperty = SimpleDoubleProperty(20.0)
@@ -43,7 +45,10 @@ class WaveformVisualizer : AutoCanvas() {
         alignFrequency.bind(acs.peakFrequency)
         alignLowPass.set(calcAlignLowPass())
         sampleRate.addListener { _ -> alignLowPass.value = calcAlignLowPass() }
-        align.bind(acs.peakValue.greaterThan(0.05f).and(enableAutoAlign).and(acs.peakFrequency.greaterThan(alignLowPass)).and(acs.peakFrequency.lessThanOrEqualTo(20000)))
+        align.bind(
+            acs.peakValue.greaterThan(0.05f).and(enableAutoAlign).and(acs.peakFrequency.greaterThan(alignLowPass))
+                .and(acs.peakFrequency.lessThanOrEqualTo(20000))
+        )
 
         val alignInfo = Label()
         alignFrequency.addListener { _ -> info(alignInfo) }
@@ -57,6 +62,9 @@ class WaveformVisualizer : AutoCanvas() {
 
         infoPane.add(Label(ls.get("visualizer.waveform.info.samples")), 0, 4)
         infoPane.add(downSampleInfoLabel, 1, 4)
+
+        styleClass.add("waveform-visualizer")
+        stylesheets.add("/styles/waveform-visualizer.css")
     }
 
     private fun calcAlignLowPass(): Double {
@@ -75,7 +83,8 @@ class WaveformVisualizer : AutoCanvas() {
         loader.location = javaClass.classLoader.getResource("layout/waveform")
         loader.resources =
             WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java).getDefault()
-        val controls: HBox = loader.load(javaClass.classLoader.getResourceAsStream("layout/waveform/waveformSettings.fxml"))
+        val controls: HBox =
+            loader.load(javaClass.classLoader.getResourceAsStream("layout/waveform/waveformSettings.fxml"))
         val controller: WaveformSettingsController = loader.getController()
         controller.waveformChartSettingsController.initialize(this)
         controlPane.children.add(controls)
@@ -111,7 +120,7 @@ class WaveformVisualizer : AutoCanvas() {
         var stepAccumulator = 0.0
         val step = take.toDouble() / width.roundToInt()
 
-        gc.stroke = endColor.get()
+        gc.stroke = waveColor.value
         gc.beginPath()
         var acc = 0
         for (i in drop until drop + take) {
@@ -125,11 +134,23 @@ class WaveformVisualizer : AutoCanvas() {
         gc.stroke()
     }
 
-    // val color = startColor.get().interpolate(endColor.get(), abs(sample).toDouble().coerceIn(0.0, 1.0))
-    // gc.fill = color
-
     fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
         sampleRate.value = source.format.mix.rate
         buffer.insert(samples.toTypedArray())
+    }
+
+    override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {
+        return FACTORY.cssMetaData
+    }
+
+    companion object {
+        private val FACTORY: StyleablePropertyFactory<WaveformVisualizer> = StyleablePropertyFactory<WaveformVisualizer>(
+            Pane.getClassCssMetaData()
+        )
+
+        @Suppress("unused")
+        fun getClassCssMetaData(): List<CssMetaData<out Styleable?, *>> {
+            return FACTORY.cssMetaData
+        }
     }
 }
