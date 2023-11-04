@@ -40,6 +40,9 @@ class WaveformVisualizer : AutoCanvas() {
     private val downSampledSize: IntegerProperty = SimpleIntegerProperty(buffer.size)
 
     init {
+        canvasContainer.xAxisShown.value = false
+        canvasContainer.yAxisShown.value = false
+
         val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         val ls = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         alignFrequency.bind(acs.peakFrequency)

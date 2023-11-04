@@ -8,4 +8,4 @@ class LinearFFTScalar : FFTScalar<LinearFFTScalarParams> {
     override fun update(params: LinearFFTScalarParams) {}
 }
 
-class LinearFFTScalarParams () {}
+class LinearFFTScalarParams

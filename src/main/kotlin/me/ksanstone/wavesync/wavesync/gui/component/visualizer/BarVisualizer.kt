@@ -1,17 +1,12 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
-import javafx.beans.binding.DoubleBinding
 import javafx.beans.property.*
-import javafx.collections.ListChangeListener
 import javafx.fxml.FXMLLoader
-import javafx.scene.Node
-import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
 import javafx.scene.control.Tooltip
 import javafx.scene.layout.HBox
 import javafx.scene.paint.Color
-import javafx.scene.text.Text
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
@@ -31,16 +26,14 @@ import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.fftScaling.*
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
-import java.text.DecimalFormat
 import kotlin.math.floor
 import kotlin.math.max
 
 
 class BarVisualizer : AutoCanvas() {
 
-    private var frequencyAxis: NumberAxis
+    private var frequencyAxis: NumberAxis = xAxis
     private var smoother: MagnitudeSmoother
-    private var canvasHeightProperty: DoubleBinding
     private var localizationService: LocalizationService =
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     private val tooltip: Tooltip = Tooltip("---")
@@ -60,41 +53,8 @@ class BarVisualizer : AutoCanvas() {
     private lateinit var fftScalar: FFTScalar<*>
 
     init {
-        stylesheets.add("/styles/bar-visualizer.css")
-
-        frequencyAxis = NumberAxis(0.0, 20000.0, 1000.0)
-        frequencyAxis.childrenUnmodifiable
-            .addListener(ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
-                while (c.next()) {
-                    if (c.wasAdded()) {
-                        for (mark in c.addedSubList) {
-                            if (mark is Text) {
-                                val parsed = DecimalFormat("###,###.###").parse(mark.text).toDouble()
-                                if (parsed == frequencyAxis.lowerBound) {
-                                    mark.text =
-                                        if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
-                                } else if (parsed == frequencyAxis.upperBound) {
-                                    mark.text =
-                                        if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
-                                }
-                            }
-                        }
-                    }
-                }
-            } as ListChangeListener<Node?>?)
-
-        setBottomAnchor(frequencyAxis, 0.0)
-        setLeftAnchor(frequencyAxis, 0.0)
-        setRightAnchor(frequencyAxis, 0.0)
-        children.add(frequencyAxis)
-
-        canvasHeightProperty = heightProperty().subtract(frequencyAxis.heightProperty())
-        canvas = Canvas()
-        canvas.widthProperty().bind(widthProperty())
-        canvas.heightProperty().bind(canvasHeightProperty)
-        setTopAnchor(canvas, 0.0)
-        setLeftAnchor(canvas, 0.0)
-        children.add(canvas)
+        frequencyAxis.tickUnit = 1000.0
+        canvasContainer.yAxisShown.value = false
 
         smoother = MultiplicativeSmoother()
         smoother.dataSize = 512
@@ -229,8 +189,7 @@ class BarVisualizer : AutoCanvas() {
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         smoother.applySmoothing(deltaT)
 
-        val canvasHeight = canvasHeightProperty.doubleValue()
-        gc.clearRect(0.0, 0.0, width, canvasHeight)
+        gc.clearRect(0.0, 0.0, width, height)
 
         val localGap = gap.get()
         val bufferLength = smoother.dataSize
@@ -251,11 +210,11 @@ class BarVisualizer : AutoCanvas() {
             if (++stepAccumulator < step) continue
             stepAccumulator -= step
 
-            val barHeight = y * canvasHeight
+            val barHeight = y * height
             val color = startColor.get().interpolate(endColor.get(), y)
 
             gc.fill = color
-            gc.fillRect(x, canvasHeight - barHeight, barWidth + padding, barHeight)
+            gc.fillRect(x, height - barHeight, barWidth + padding, barHeight)
             x += barWidth + localGap
             y = 0.0
         }

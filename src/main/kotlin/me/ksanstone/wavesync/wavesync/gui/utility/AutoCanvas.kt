@@ -9,6 +9,7 @@ import javafx.beans.value.ObservableValue
 import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
+import javafx.scene.chart.NumberAxis
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
@@ -25,8 +26,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 abstract class AutoCanvas : AnchorPane() {
 
     protected var canvas: Canvas = Canvas()
+    protected var canvasContainer: GraphCanvas
     protected lateinit var infoPane: GridPane
     protected lateinit var controlPane: HBox
+
+    protected var xAxis = NumberAxis(0.0, 100.0, 10.0)
+    protected var yAxis = NumberAxis(0.0, 100.0, 10.0)
 
     val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.REFRESH_RATE)
     val info: BooleanProperty = SimpleBooleanProperty(INFO_SHOWN)
@@ -39,11 +44,12 @@ abstract class AutoCanvas : AnchorPane() {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
 
-        canvas.widthProperty().bind(widthProperty())
-        canvas.heightProperty().bind(heightProperty())
-        setTopAnchor(canvas, 0.0)
-        setLeftAnchor(canvas, 0.0)
-        children.add(canvas)
+        canvasContainer = GraphCanvas(xAxis, yAxis, canvas)
+        canvasContainer.prefWidthProperty().bind(widthProperty())
+        canvasContainer.prefHeightProperty().bind(heightProperty())
+        setTopAnchor(canvasContainer, 0.0)
+        setLeftAnchor(canvasContainer, 0.0)
+        children.add(canvasContainer)
 
         minWidth = 1.0
         minHeight = 1.0
@@ -123,7 +129,7 @@ abstract class AutoCanvas : AnchorPane() {
     private val isDrawing = AtomicBoolean(false)
 
     private fun drawCall() {
-        if(isDrawing.get()) return
+        if (isDrawing.get()) return
 
         val now = System.nanoTime()
         val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0
