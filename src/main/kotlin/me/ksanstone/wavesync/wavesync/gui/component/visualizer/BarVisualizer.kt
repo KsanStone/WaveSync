@@ -54,7 +54,6 @@ class BarVisualizer : AutoCanvas() {
 
     init {
         frequencyAxis.tickUnit = 1000.0
-        canvasContainer.yAxisShown.value = false
 
         smoother = MultiplicativeSmoother()
         smoother.dataSize = 512
@@ -149,6 +148,14 @@ class BarVisualizer : AutoCanvas() {
                 (fftScalar as DeciBelFFTScalar).update(DeciBelFFTScalarParameters(rangeMin = dbMin.get(), rangeMax = dbMax.get()))
             }
         }
+        sizeValueAxis()
+    }
+
+    private fun sizeValueAxis() {
+        val s = fftScalar.getAxisScale()
+        yAxis.lowerBound = s.min
+        yAxis.upperBound = s.max
+        yAxis.tickUnit = s.step
     }
 
     private fun sizeFrequencyAxis() {

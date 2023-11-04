@@ -12,6 +12,14 @@ class DeciBelFFTScalar : FFTScalar<DeciBelFFTScalarParameters> {
         return (10 * log10(res * res) - rangeMin).coerceIn(0.0F, scale) / scale
     }
 
+    override fun getAxisScale(): AxisScale {
+        return AxisScale(
+            min = rangeMin.toDouble(),
+            max = rangeMax.toDouble(),
+            step = 10.0
+        )
+    }
+
     override fun update(params: DeciBelFFTScalarParameters) {
         rangeMin = params.rangeMin
         rangeMax = params.rangeMax

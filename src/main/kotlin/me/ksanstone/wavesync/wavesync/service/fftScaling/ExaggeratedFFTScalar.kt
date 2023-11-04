@@ -10,6 +10,14 @@ class ExaggeratedFFTScalar : FFTScalar<ExaggeratedFFTScalarParams> {
         return (res * (scaling * (1.0f - ln(res + 0.2f) - 0.813f) + 1)).coerceAtMost(1.0f)
     }
 
+    override fun getAxisScale(): AxisScale {
+        return AxisScale(
+            min = 0.0,
+            max = 1.0,
+            step = 0.1
+        )
+    }
+
     override fun update(params: ExaggeratedFFTScalarParams) {
         this.scaling = params.scaling
     }

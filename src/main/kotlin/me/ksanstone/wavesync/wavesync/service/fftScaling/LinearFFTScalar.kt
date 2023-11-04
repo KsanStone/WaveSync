@@ -5,6 +5,14 @@ class LinearFFTScalar : FFTScalar<LinearFFTScalarParams> {
         return res
     }
 
+    override fun getAxisScale(): AxisScale {
+        return AxisScale(
+            min = 0.0,
+            max = 1.0,
+            step = 0.1
+        )
+    }
+
     override fun update(params: LinearFFTScalarParams) {}
 }
 
