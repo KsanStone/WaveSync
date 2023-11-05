@@ -41,7 +41,10 @@ class WaveformVisualizer : AutoCanvas() {
 
     init {
         canvasContainer.xAxisShown.value = false
-        canvasContainer.yAxisShown.value = false
+        yAxis.tickUnit = 0.2
+        // .toString().toDouble() hack to get an exact conversion
+        yAxis.lowerBoundProperty().bind(rangeMin.map { it.toString().toDouble() })
+        yAxis.upperBoundProperty().bind(rangeMax.map { it.toString().toDouble() })
 
         val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         val ls = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
