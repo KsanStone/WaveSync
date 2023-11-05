@@ -65,7 +65,11 @@
                     </graphic>
                 </Label>
             <ToggleSwitch fx:id="debugToggleSwitch" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-            <Label text="%dialog.deviceOptions.windowingFunction" GridPane.rowIndex="1" />
+            <Label text="%dialog.deviceOptions.windowingFunction" GridPane.rowIndex="1" >
+                <graphic>
+                    <FontIcon iconLiteral="mdmz-power_input"/>
+                </graphic>
+            </Label>
             <ChoiceBox fx:id="windowingFunctionChoiceBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
             </children>
             <opaqueInsets>

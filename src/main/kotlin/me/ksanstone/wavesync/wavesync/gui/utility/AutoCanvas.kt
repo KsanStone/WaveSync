@@ -10,6 +10,8 @@ import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
+import javafx.scene.effect.BlurType
+import javafx.scene.effect.DropShadow
 import javafx.scene.layout.AnchorPane
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
@@ -119,6 +121,12 @@ abstract class AutoCanvas : AnchorPane() {
         controller.fpsLabel.textProperty().bind(fpsCounter.current.asString("%.2f"))
 
         infoPane.visibleProperty().bind(info)
+        val dropShadow = DropShadow()
+        dropShadow.offsetX = 2.0
+        dropShadow.offsetY = 2.0
+        dropShadow.blurType = BlurType.GAUSSIAN
+        dropShadow.radius = 5.0
+        infoPane.effect = dropShadow
 
         setTopAnchor(infoPane, 5.0)
         setLeftAnchor(infoPane, 5.0)
