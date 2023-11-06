@@ -9,6 +9,7 @@ import javafx.scene.control.TabPane
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
+import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalarType
@@ -16,6 +17,9 @@ import java.net.URL
 import java.util.*
 
 class BarChartSettingsController : Initializable {
+
+    @FXML
+    lateinit var graphStyleController: GraphStyleController
 
     @FXML
     lateinit var dbMinSpinner: Spinner<Double>
@@ -112,7 +116,11 @@ class BarChartSettingsController : Initializable {
             FFTScalarType.DECIBEL -> 2
             else -> 0
         })
+        graphStyleController.yAxisToggle.isSelected = visualizer.canvasContainer.yAxisShown.get()
+        graphStyleController.xAxisToggle.isSelected = visualizer.canvasContainer.xAxisShown.get()
 
+        visualizer.canvasContainer.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
+        visualizer.canvasContainer.xAxisShown.bind(graphStyleController.xAxisToggle.selectedProperty())
         visualizer.linearScaling.bind(scalingSlider.valueProperty())
         visualizer.smoothing.bind(dropRateSlider.valueProperty())
         visualizer.targetBarWidth.bind(barWidthSlider.valueProperty())

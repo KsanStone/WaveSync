@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<HBox alignment="CENTER_LEFT" spacing="5.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController">
+   <children>
+       <ToggleButton mnemonicParsing="false" fx:id="yAxisToggle">
+           <graphic>
+               <FontIcon iconLiteral="mdal-border_left" iconSize="18" />
+           </graphic>
+       </ToggleButton>
+       <ToggleButton mnemonicParsing="false" fx:id="xAxisToggle">
+           <graphic>
+               <FontIcon iconLiteral="mdal-border_bottom" iconSize="18" />
+           </graphic>
+       </ToggleButton>
+   </children>
+</HBox>

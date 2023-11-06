@@ -124,6 +124,8 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(scalarType, "fftScalar", FFTScalarType::class.java, this.javaClass, id)
         preferenceService.registerProperty(dbMin, "dbMin", this.javaClass, id)
         preferenceService.registerProperty(dbMax, "dbMax", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
     }
 
     private fun changeScalar() {

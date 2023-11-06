@@ -1,41 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import atlantafx.base.controls.*?>
+<?import atlantafx.base.controls.ToggleSwitch?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import org.kordamp.ikonli.javafx.*?>
-
-<GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformChartSettingsController">
-   <rowConstraints>
-      <RowConstraints minHeight="30.0" />
-      <RowConstraints minHeight="30.0" prefHeight="30.0" />
-   </rowConstraints>
-   <columnConstraints>
-      <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0" />
-      <ColumnConstraints minWidth="10.0" />
-   </columnConstraints>
-   <children>
-      <Label text="%visualizer.waveform.settings.autoAlign">
-              <graphic>
-                 <FontIcon iconLiteral="mdmz-swap_calls" />
-              </graphic>
-      </Label>
-      <ToggleSwitch fx:id="autoAlignToggleSwitch" GridPane.columnIndex="1" />
-      <Label text="%visualizer.waveform.settings.displayRange" GridPane.rowIndex="1">
-         <graphic>
-            <FontIcon iconLiteral="mdal-align_vertical_center" />
-         </graphic>
-      </Label>
-      <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
-         <children>
-            <ToggleButton fx:id="linkToggleButton" mnemonicParsing="false">
-               <graphic>
-                  <FontIcon iconLiteral="mdal-insert_link" />
-               </graphic>
-            </ToggleButton>
-            <Spinner fx:id="waveformRangeMinSpinner" editable="true" />
-            <Spinner fx:id="waveformRangeMaxSpinner" editable="true" />
-         </children>
-      </HBox>
-   </children>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10"
+          xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformChartSettingsController">
+    <rowConstraints>
+        <RowConstraints minHeight="30.0"/>
+        <RowConstraints minHeight="30.0" prefHeight="30.0"/>
+    </rowConstraints>
+    <columnConstraints>
+        <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0"/>
+        <ColumnConstraints minWidth="10.0"/>
+    </columnConstraints>
+    <children>
+        <Label text="%visualizer.waveform.settings.autoAlign">
+            <graphic>
+                <FontIcon iconLiteral="mdmz-swap_calls"/>
+            </graphic>
+        </Label>
+        <ToggleSwitch fx:id="autoAlignToggleSwitch" GridPane.columnIndex="1"/>
+        <Label text="%visualizer.waveform.settings.displayRange" GridPane.rowIndex="1">
+            <graphic>
+                <FontIcon iconLiteral="mdal-align_vertical_center"/>
+            </graphic>
+        </Label>
+        <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+            <children>
+                <ToggleButton fx:id="linkToggleButton" mnemonicParsing="false">
+                    <graphic>
+                        <FontIcon iconLiteral="mdal-insert_link"/>
+                    </graphic>
+                </ToggleButton>
+                <Spinner fx:id="waveformRangeMinSpinner" editable="true"/>
+                <Spinner fx:id="waveformRangeMaxSpinner" editable="true"/>
+            </children>
+        </HBox>
+        <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="2">
+            <graphic>
+                <FontIcon iconLiteral="mdal-border_outer"/>
+            </graphic>
+        </Label>
+        <fx:include source="/layout/graph/graphStyle.fxml" GridPane.columnIndex="1" GridPane.rowIndex="2"
+                    fx:id="graphStyle"/>
+    </children>
 </GridPane>

@@ -6,8 +6,12 @@ import javafx.scene.control.Spinner
 import javafx.scene.control.SpinnerValueFactory.DoubleSpinnerValueFactory
 import javafx.scene.control.ToggleButton
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
+import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
 
 class WaveformChartSettingsController {
+
+    @FXML
+    lateinit var graphStyleController: GraphStyleController
 
     @FXML
     lateinit var waveformRangeMaxSpinner: Spinner<Double>
@@ -43,6 +47,10 @@ class WaveformChartSettingsController {
         linkToggleButton.selectedProperty().addListener { _ -> linkAdjust() }
         linkAdjust()
 
+        graphStyleController.yAxisToggle.isSelected = visualizer.canvasContainer.yAxisShown.get()
+        graphStyleController.xAxisToggle.isDisable = true
+
+        visualizer.canvasContainer.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
         visualizer.rangeMax.bind(waveformRangeMaxSpinner.valueFactory.valueProperty().map { it.toFloat() })
         visualizer.rangeMin.bind(waveformRangeMinSpinner.valueFactory.valueProperty().map { it.toFloat() })
         visualizer.rangeLink.bind(linkToggleButton.selectedProperty())

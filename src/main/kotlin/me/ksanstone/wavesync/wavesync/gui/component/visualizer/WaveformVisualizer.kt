@@ -82,6 +82,7 @@ class WaveformVisualizer : AutoCanvas() {
         preferenceService.registerProperty(rangeMax, "rangeMax", this.javaClass, id)
         preferenceService.registerProperty(rangeMin, "rangeMin", this.javaClass, id)
         preferenceService.registerProperty(rangeLink, "rangeLink", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
     }
 
     fun initializeSettingMenu() {

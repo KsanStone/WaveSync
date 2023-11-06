@@ -12,6 +12,7 @@
         <RowConstraints />
         <RowConstraints />
         <RowConstraints minHeight="10.0" />
+        <RowConstraints minHeight="10.0" prefHeight="30.0" />
     </rowConstraints>
     <columnConstraints>
         <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0" />
@@ -28,12 +29,12 @@
         <Slider fx:id="barWidthSlider" blockIncrement="5.0" majorTickUnit="5.0" max="51.0" min="1.0" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="5.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
         <Label text="%visualizer.bar.settings.barWidth" GridPane.rowIndex="1">
             <graphic>
-                <FontIcon iconLiteral="mdoal-compare_arrows" />
+                <FontIcon iconLiteral="mdal-bar_chart" />
             </graphic>
         </Label>
         <Label text="%visualizer.bar.settings.smoothing" GridPane.rowIndex="2">
             <graphic>
-                <FontIcon iconLiteral="mdmz-swap_vert" />
+                <FontIcon iconLiteral="mdoal-blur_linear" />
             </graphic>
         </Label>
         <Slider fx:id="dropRateSlider" blockIncrement="0.05" majorTickUnit="0.1" max="1.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="0.91" GridPane.columnIndex="1" GridPane.rowIndex="2" />
@@ -52,26 +53,26 @@
                 <RowConstraints minHeight="20.0" vgrow="NEVER" />
             </rowConstraints>
             <children>
-            <HBox alignment="CENTER_LEFT" GridPane.hgrow="ALWAYS">
-               <children>
-                      <Spinner fx:id="minFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
-                  <Label layoutX="194.0" layoutY="22.0" minWidth="30.0" text="Hz">
-                     <padding>
-                        <Insets left="5.0" />
-                     </padding>
-                  </Label>
-               </children>
-            </HBox>
-            <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS">
-               <children>
-                      <Spinner fx:id="maxFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
-                  <Label minWidth="30.0" text="Hz">
-                     <padding>
-                        <Insets left="5.0" />
-                     </padding>
-                  </Label>
-               </children>
-            </HBox>
+                <HBox alignment="CENTER_LEFT" GridPane.hgrow="ALWAYS">
+                    <children>
+                        <Spinner fx:id="minFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                        <Label layoutX="194.0" layoutY="22.0" minWidth="30.0" text="Hz">
+                            <padding>
+                                <Insets left="5.0" />
+                            </padding>
+                        </Label>
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS">
+                    <children>
+                        <Spinner fx:id="maxFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                        <Label minWidth="30.0" text="Hz">
+                            <padding>
+                                <Insets left="5.0" />
+                            </padding>
+                        </Label>
+                    </children>
+                </HBox>
                 <HBox alignment="CENTER" spacing="5.0" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.rowIndex="1">
                     <Hyperlink alignment="CENTER" onAction="#setMaxFreqOnVisualizer" text="%visualizer.bar.settings.max" />
                     <Label text="•" />
@@ -121,26 +122,26 @@
                             <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                         </rowConstraints>
                         <children>
-                     <HBox alignment="CENTER_LEFT">
-                        <children>
-                                  <Spinner fx:id="dbMinSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
-                           <Label minWidth="30.0" text="dB">
-                              <padding>
-                                 <Insets left="5.0" />
-                              </padding>
-                           </Label>
-                        </children>
-                     </HBox>
-                     <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1">
-                        <children>
-                                  <Spinner fx:id="dbMaxSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
-                           <Label minWidth="30.0" text="dB">
-                              <padding>
-                                 <Insets left="5.0" />
-                              </padding>
-                           </Label>
-                        </children>
-                     </HBox>
+                            <HBox alignment="CENTER_LEFT">
+                                <children>
+                                    <Spinner fx:id="dbMinSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                                    <Label minWidth="30.0" text="dB">
+                                        <padding>
+                                            <Insets left="5.0" />
+                                        </padding>
+                                    </Label>
+                                </children>
+                            </HBox>
+                            <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1">
+                                <children>
+                                    <Spinner fx:id="dbMaxSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+                                    <Label minWidth="30.0" text="dB">
+                                        <padding>
+                                            <Insets left="5.0" />
+                                        </padding>
+                                    </Label>
+                                </children>
+                            </HBox>
                         </children>
                     </GridPane>
                     <Label text="%visualizer.bar.settings.fftScalarType.decibel.description" wrapText="true" />
@@ -150,5 +151,11 @@
                 </VBox>
             </Tab>
         </TabPane>
+        <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="5" >
+            <graphic>
+                <FontIcon iconLiteral="mdal-border_outer"/>
+            </graphic>
+        </Label>
+        <fx:include source="/layout/graph/graphStyle.fxml" GridPane.columnIndex="1" GridPane.rowIndex="5" fx:id="graphStyle"/>
     </children>
 </GridPane>

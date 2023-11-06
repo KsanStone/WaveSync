@@ -28,13 +28,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 abstract class AutoCanvas : AnchorPane() {
 
     protected var canvas: Canvas = Canvas()
-    protected var canvasContainer: GraphCanvas
     protected lateinit var infoPane: GridPane
     protected lateinit var controlPane: HBox
 
     protected var xAxis = NumberAxis(0.0, 100.0, 10.0)
     protected var yAxis = NumberAxis(0.0, 100.0, 10.0)
 
+    var canvasContainer: GraphCanvas
     val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.REFRESH_RATE)
     val info: BooleanProperty = SimpleBooleanProperty(INFO_SHOWN)
 
