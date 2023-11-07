@@ -23,6 +23,9 @@ import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneControlle
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.utility.FPSCounter
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.pow
+import kotlin.math.roundToInt
+import kotlin.math.roundToLong
 
 
 abstract class AutoCanvas : AnchorPane() {
@@ -117,7 +120,8 @@ abstract class AutoCanvas : AnchorPane() {
         val controller: AutoCanvasInfoPaneController = loader.getController()
 
         controller.targetFpsLabel.textProperty().bind(framerate.asString())
-        controller.frameTimeLabel.textProperty().bind(frameTime.map { Duration.seconds(it.toDouble()).toString() })
+        controller.frameTimeLabel.textProperty().bind(frameTime.map { "${Duration.millis(fpsCounter.averagedFrameTimeProperty.value.times(1000).roundTo(3))}" })
+        controller.realTimeFrameTimeLabel.textProperty().bind(frameTime.map {"${Duration.millis(it.toDouble().times(1000))}" })
         controller.fpsLabel.textProperty().bind(fpsCounter.current.asString("%.2f"))
 
         infoPane.visibleProperty().bind(info)
@@ -147,8 +151,13 @@ abstract class AutoCanvas : AnchorPane() {
         isDrawing.set(true)
         this.draw(canvas.graphicsContext2D, deltaT, now, canvas.width, canvas.height)
         isDrawing.set(false)
-        fpsCounter.tick()
+        fpsCounter.tick(deltaT)
     }
 
     protected abstract fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double)
+}
+
+fun Double.roundTo(precision: Int): Double {
+    val f = 10.0.pow(precision)
+    return (this * f).roundToLong() / f
 }

@@ -2,18 +2,24 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+
 <GridPane hgap="5.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController">
    <children>
       <Label prefHeight="0.0" prefWidth="182.0" text="%autoCanvas.info.targetFramerate" />
       <Label fx:id="targetFpsLabel" GridPane.columnIndex="1" />
       <Label layoutX="10.0" layoutY="10.0" prefHeight="0.0" prefWidth="182.0" text="%autoCanvas.info.frameTime" GridPane.rowIndex="2" />
-      <Label fx:id="frameTimeLabel" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+      <HBox GridPane.columnIndex="1" GridPane.rowIndex="2">
+         <children>
+            <Label fx:id="frameTimeLabel" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minWidth="100.0" HBox.hgrow="ALWAYS" />
+            <Label fx:id="realTimeFrameTimeLabel" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minWidth="100.0" HBox.hgrow="ALWAYS" />
+         </children>
+      </HBox>
       <Label layoutX="10.0" layoutY="10.0" prefHeight="0.0" prefWidth="182.0" text="%autoCanvas.info.framerate" GridPane.rowIndex="1" />
       <Label fx:id="fpsLabel" GridPane.columnIndex="1" GridPane.rowIndex="1" />
    </children>
    <columnConstraints>
-      <ColumnConstraints />
-      <ColumnConstraints prefWidth="150.0" />
+      <ColumnConstraints minWidth="100.0" prefWidth="100.0" />
+      <ColumnConstraints prefWidth="200.0" />
    </columnConstraints>
    <rowConstraints>
       <RowConstraints minHeight="10.0" />

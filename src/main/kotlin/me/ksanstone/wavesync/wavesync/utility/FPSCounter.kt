@@ -9,11 +9,16 @@ import java.util.concurrent.atomic.AtomicInteger
 class FPSCounter {
 
     val current = SimpleDoubleProperty(0.0)
+    val averagedFrameTimeProperty = SimpleDoubleProperty(0.0)
     private val counter = AtomicInteger(0)
     private var lastCount = System.nanoTime()
+    private val frameTimeBuffer: RollingBuffer<Double> = RollingBuffer(30, -1.0)
 
-    fun tick() {
+    fun tick(frameTime: Double = -1.0) {
+        frameTimeBuffer.insert(frameTime)
         counter.incrementAndGet()
+        if (frameTimeBuffer.written % frameTimeBuffer.size.toUInt() == 0uL)
+            averagedFrameTimeProperty.set(frameTimeBuffer.filter { it != -1.0 }.average())
     }
 
     private var timer: Timeline = Timeline(

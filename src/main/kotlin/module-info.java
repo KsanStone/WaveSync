@@ -16,4 +16,5 @@ open module wavesync {
     requires com.sun.jna.platform;
     requires spring.boot.autoconfigure;
     requires java.desktop;
+    requires org.kordamp.ikonli.javafx;
 }

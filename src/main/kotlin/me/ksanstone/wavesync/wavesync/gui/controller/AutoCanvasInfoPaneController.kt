@@ -6,6 +6,9 @@ import javafx.scene.control.Label
 class AutoCanvasInfoPaneController {
 
     @FXML
+    lateinit var realTimeFrameTimeLabel: Label
+
+    @FXML
     lateinit var fpsLabel: Label
 
     @FXML

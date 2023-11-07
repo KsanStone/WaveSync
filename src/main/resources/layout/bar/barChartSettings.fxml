@@ -87,16 +87,20 @@
             </graphic>
         </Label>
         <TabPane fx:id="scalarTypeTabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minWidth="300.0" prefHeight="150.0" prefWidth="300.0" tabClosingPolicy="UNAVAILABLE" GridPane.columnIndex="1" GridPane.rowIndex="4">
-            <Tab text="%visualizer.bar.settings.fftScalarType.linear">
-                <VBox spacing="5.0">
+            <Tab styleClass="floating" text="%visualizer.bar.settings.fftScalarType.linear">
+                <VBox spacing="10.0">
                     <padding>
                         <Insets top="5.0" />
                     </padding>
-                    <Label text="%visualizer.bar.settings.fftScalarType.linear.description" wrapText="true" />
+                    <Label text="%visualizer.bar.settings.fftScalarType.linear.description" wrapText="true">
+                        <graphic>
+                            <FontIcon iconLiteral="mdal-info" />
+                        </graphic>
+                    </Label>
                 </VBox>
             </Tab>
             <Tab text="%visualizer.bar.settings.fftScalarType.exaggerated">
-                <VBox spacing="5.0">
+                <VBox spacing="10.0">
                     <padding>
                         <Insets top="5.0" />
                     </padding>
@@ -107,12 +111,21 @@
                             </graphic>
                         </Label>
                         <Slider fx:id="scalingSlider" blockIncrement="5.0" majorTickUnit="10.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="300.0" showTickLabels="true" showTickMarks="true" value="20.0" />
-                        <Label text="%visualizer.bar.settings.fftScalarType.exaggerated.description" wrapText="true" />
+                        <Label text="%visualizer.bar.settings.fftScalarType.exaggerated.description" wrapText="true">
+                            <graphic>
+                                <FontIcon iconLiteral="mdal-info" />
+                            </graphic>
+                        </Label>
                     </children>
                 </VBox>
             </Tab>
             <Tab text="%visualizer.bar.settings.fftScalarType.decibel">
-                <VBox spacing="5.0">
+                <VBox spacing="10.0">
+                    <Label text="%visualizer.bar.settings.fftScalarType.decibel.range">
+                        <graphic>
+                            <FontIcon iconLiteral="mdal-format_line_spacing" />
+                        </graphic>
+                    </Label>
                     <GridPane hgap="5.0">
                         <columnConstraints>
                             <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -144,18 +157,22 @@
                             </HBox>
                         </children>
                     </GridPane>
-                    <Label text="%visualizer.bar.settings.fftScalarType.decibel.description" wrapText="true" />
+                    <Label text="%visualizer.bar.settings.fftScalarType.decibel.description" wrapText="true">
+                        <graphic>
+                            <FontIcon iconLiteral="mdal-info" />
+                        </graphic>
+                    </Label>
                     <padding>
                         <Insets top="5.0" />
                     </padding>
                 </VBox>
             </Tab>
         </TabPane>
-        <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="5" >
+        <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="5">
             <graphic>
-                <FontIcon iconLiteral="mdal-border_outer"/>
+                <FontIcon iconLiteral="mdal-border_outer" />
             </graphic>
         </Label>
-        <fx:include source="/layout/graph/graphStyle.fxml" GridPane.columnIndex="1" GridPane.rowIndex="5" fx:id="graphStyle"/>
+        <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml" GridPane.columnIndex="1" GridPane.rowIndex="5" />
     </children>
 </GridPane>

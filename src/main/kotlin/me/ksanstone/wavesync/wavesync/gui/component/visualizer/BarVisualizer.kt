@@ -208,8 +208,6 @@ class BarVisualizer : AutoCanvas() {
         val buffer = smoother.data
         val padding = (barWidth * 0.3).coerceAtMost(1.0)
 
-
-        gc.fill = Color.HOTPINK
         var x = 0.0
         var y = 0.0
         var stepAccumulator = 0.0
