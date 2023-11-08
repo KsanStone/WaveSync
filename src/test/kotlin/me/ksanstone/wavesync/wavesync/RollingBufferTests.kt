@@ -9,24 +9,60 @@ class RollingBufferTests {
 
     @Test
     fun dataOrderTest() {
-        val buffer = RollingBuffer(100,0)
-        IntRange(0,50).toList().forEach { buffer.insert(it) }
-        val arr = Array(100) { 0 }
-        buffer.cloneOnto(arr)
-        var iterated = buffer.iterator().asSequence().toList()
+        val testCases =
+            listOf(50 to IntRange(0, 50), 50 to IntRange(0, 10), 50 to IntRange(0, 100), 50 to IntRange(0, -1))
+        testCases.forEach { testCase ->
+            val buffer = RollingBuffer(testCase.first, 0)
+            testCase.second.toList().forEach { buffer.insert(it) }
 
-        assertEquals(true, arr.isSorted())
-        assertArrayEquals(arr, iterated.toTypedArray())
-        assertArrayEquals(arr, buffer.toArray())
+            val arr = Array(testCase.first) { 0 }
+            buffer.cloneOnto(arr)
 
-        IntRange(50,300).toList().forEach { buffer.insert(it) }
-        buffer.cloneOnto(arr)
-        iterated = buffer.iterator().asSequence().toList()
-        assertEquals(true, arr.isSorted())
-        assertArrayEquals(arr, iterated.toTypedArray())
-        assertArrayEquals(arr, buffer.toArray())
+            val iterated = buffer.toList()
+
+            assertEquals(true, arr.isSorted())
+            assertArrayEquals(arr, iterated.toTypedArray())
+            assertArrayEquals(arr, buffer.toArray())
+
+            assertArrayEquals(
+                getExpectedRange(testCase.second, buffer.size).toTypedArray(),
+                buffer.toArray()
+            )
+        }
     }
 
+    /**
+     * This test is needed as the array insert method works differently from the regular insert method,
+     * as it copies over large chunks of data at once
+     */
+    @Test
+    fun arrayInsertTest() {
+        val testCases =
+            listOf(50 to IntRange(0, 50), 50 to IntRange(0, 10), 50 to IntRange(0, 100), 50 to IntRange(0, -1))
+        testCases.forEach { testCase ->
+            val referenceBuffer = RollingBuffer(testCase.first, 0)
+            testCase.second.toList().forEach { referenceBuffer.insert(it) }
+
+            val arrayInsertBuffer = RollingBuffer(testCase.first, 0)
+            arrayInsertBuffer.insert(testCase.second.toList().toTypedArray())
+
+            assertArrayEquals(referenceBuffer.toArray(), arrayInsertBuffer.toArray())
+
+            assertArrayEquals(
+                getExpectedRange(testCase.second, referenceBuffer.size).toTypedArray(),
+                referenceBuffer.toArray()
+            )
+        }
+    }
+
+    private fun getExpectedRange(range: IntRange, bufSize: Int): MutableList<Int> {
+        val rangeSize = range.last - range.first + 1
+        val expectedRange = range.toList()
+            .slice(range.first.coerceAtLeast(rangeSize - bufSize)..range.last)
+            .toMutableList()
+        for (i in 0..<bufSize - expectedRange.size) expectedRange.add(0, 0)
+        return expectedRange
+    }
 }
 
 fun Array<Int>.isSorted(): Boolean {

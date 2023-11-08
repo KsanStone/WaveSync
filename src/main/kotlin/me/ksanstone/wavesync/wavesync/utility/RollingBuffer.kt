@@ -12,9 +12,14 @@ class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Ite
 
     fun insert(elems: Array<T>) {
         val start = max(elems.size - size, 0)
-        for (i in start until elems.size) {
-            this.insert(elems[i])
-        }
+
+        val copiedBatchSize = elems.size - start
+        val initialCopyBatch = (size - dataIndex - 1).coerceAtMost(copiedBatchSize)
+
+        System.arraycopy(elems, start, data, dataIndex + 1, initialCopyBatch)
+        System.arraycopy(elems, start + initialCopyBatch, data, 0, copiedBatchSize - initialCopyBatch)
+
+        dataIndex = (dataIndex + copiedBatchSize) % size
     }
 
     @Synchronized
