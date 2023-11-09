@@ -28,6 +28,7 @@ class RollingBufferTests {
                 getExpectedRange(testCase.second, buffer.size).toTypedArray(),
                 buffer.toArray()
             )
+            assertEquals(testCase.second.size().toULong(), buffer.written)
         }
     }
 
@@ -47,22 +48,25 @@ class RollingBufferTests {
             arrayInsertBuffer.insert(testCase.second.toList().toTypedArray())
 
             assertArrayEquals(referenceBuffer.toArray(), arrayInsertBuffer.toArray())
-
             assertArrayEquals(
                 getExpectedRange(testCase.second, referenceBuffer.size).toTypedArray(),
                 referenceBuffer.toArray()
             )
+            assertEquals(testCase.second.size().toULong(), referenceBuffer.written)
         }
     }
 
     private fun getExpectedRange(range: IntRange, bufSize: Int): MutableList<Int> {
-        val rangeSize = range.last - range.first + 1
         val expectedRange = range.toList()
-            .slice(range.first.coerceAtLeast(rangeSize - bufSize)..range.last)
+            .slice(range.first.coerceAtLeast(range.size() - bufSize)..range.last)
             .toMutableList()
         for (i in 0..<bufSize - expectedRange.size) expectedRange.add(0, 0)
         return expectedRange
     }
+}
+
+fun IntRange.size(): Int {
+    return this.last - this.first + 1
 }
 
 fun Array<Int>.isSorted(): Boolean {

@@ -20,6 +20,7 @@ class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Ite
         System.arraycopy(elems, start + initialCopyBatch, data, 0, copiedBatchSize - initialCopyBatch)
 
         dataIndex = (dataIndex + copiedBatchSize) % size
+        written += elems.size.toUInt()
     }
 
     @Synchronized
