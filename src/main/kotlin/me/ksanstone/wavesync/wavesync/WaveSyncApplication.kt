@@ -2,8 +2,6 @@ package me.ksanstone.wavesync.wavesync
 
 import javafx.application.Application
 import javafx.application.Platform
-import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyEvent
 import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
 import org.slf4j.Logger
@@ -25,11 +23,6 @@ class WaveSyncApplication : Application() {
     override fun start(stage: Stage) {
         try {
             primaryStage = stage
-            primaryStage.addEventHandler(KeyEvent.KEY_PRESSED) { event ->
-                if (KeyCode.F11 == event.code) {
-                    primaryStage.isFullScreen = !primaryStage.isFullScreen
-                }
-            }
             applicationContext.publishEvent(StageReadyEvent(stage))
         } catch (t: Throwable) {
             t.printStackTrace()
