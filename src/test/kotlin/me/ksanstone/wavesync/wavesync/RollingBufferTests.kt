@@ -13,22 +13,22 @@ class RollingBufferTests {
             listOf(50 to IntRange(0, 50), 50 to IntRange(0, 10), 50 to IntRange(0, 100), 50 to IntRange(0, -1), 50 to IntRange(0, 49))
         testCases.forEach { testCase ->
             val buffer = RollingBuffer(testCase.first, 0)
-            testCase.second.toList().forEach { buffer.insert(it) }
+            val floatBuffer = RollingBuffer(testCase.first, 0.0f)
+            testCase.second.toList().forEach { buffer.insert(it); floatBuffer.insert(it.toFloat()) }
 
             val arr = Array(testCase.first) { 0 }
             buffer.cloneOnto(arr)
 
             val iterated = buffer.toList()
 
-            assertEquals(true, arr.isSorted())
             assertArrayEquals(arr, iterated.toTypedArray())
             assertArrayEquals(arr, buffer.toArray())
-
             assertArrayEquals(
                 getExpectedRange(testCase.second, buffer.size).toTypedArray(),
                 buffer.toArray()
             )
             assertEquals(testCase.second.size().toULong(), buffer.written)
+            assertArrayEquals(buffer.toArray(), floatBuffer.toArray().map { it.toInt() }.toTypedArray())
         }
     }
 
@@ -67,14 +67,4 @@ class RollingBufferTests {
 
 fun IntRange.size(): Int {
     return this.last - this.first + 1
-}
-
-fun Array<Int>.isSorted(): Boolean {
-    assert(this.isNotEmpty())
-    var a = this[0]
-    for (i in indices) {
-        if (this[i] < a) return false
-        a = this[i]
-    }
-    return true
 }

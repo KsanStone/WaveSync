@@ -43,6 +43,7 @@
                     <rowConstraints>
                         <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
                         <RowConstraints minHeight="40.0" prefHeight="40.0" vgrow="ALWAYS" />
+                  <RowConstraints minHeight="40.0" prefHeight="40.0" vgrow="ALWAYS" />
                     </rowConstraints>
                     <children>
                         <Button fx:id="applyFreqButton" mnemonicParsing="false" onAction="#applyFreqSettings" text="%dialog.deviceOptions.apply" GridPane.columnIndex="1" />
@@ -50,6 +51,8 @@
                         <HBox alignment="CENTER_LEFT" GridPane.columnSpan="2" GridPane.rowIndex="1">
                             <Label fx:id="fftInfoLabel" styleClass="text-small" text="-;-" wrapText="true" HBox.hgrow="ALWAYS" />
                         </HBox>
+                  <Label text="%dialog.deviceOptions.fft.upSampling" GridPane.rowIndex="2" />
+                  <ChoiceBox fx:id="fftUpsampleChoiceBox" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                     </children>
                 </GridPane>
                 <Label text="%dialog.deviceOptions.audioServer" GridPane.rowIndex="2">
@@ -65,9 +68,9 @@
                     </graphic>
                 </Label>
             <ToggleSwitch fx:id="debugToggleSwitch" mnemonicParsing="false" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-            <Label text="%dialog.deviceOptions.windowingFunction" GridPane.rowIndex="1" >
+            <Label text="%dialog.deviceOptions.windowingFunction" GridPane.rowIndex="1">
                 <graphic>
-                    <FontIcon iconLiteral="mdmz-power_input"/>
+                    <FontIcon iconLiteral="mdmz-power_input" />
                 </graphic>
             </Label>
             <ChoiceBox fx:id="windowingFunctionChoiceBox" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />

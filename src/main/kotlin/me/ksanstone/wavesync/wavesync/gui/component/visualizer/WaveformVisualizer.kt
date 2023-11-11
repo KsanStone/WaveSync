@@ -120,7 +120,7 @@ class WaveformVisualizer : AutoCanvas() {
 
         if (align.get()) {
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate.get())
-            drop = (waveSize - (buffer.written % waveSize.toULong()).toInt()).toInt().coerceIn(0, buffer.size - 50)
+            drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - 50)
             take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15).roundToInt().coerceAtMost(buffer.size - drop)
         }
 

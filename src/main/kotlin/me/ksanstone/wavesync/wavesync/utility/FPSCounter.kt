@@ -17,7 +17,7 @@ class FPSCounter {
     fun tick(frameTime: Double = -1.0) {
         frameTimeBuffer.insert(frameTime)
         counter.incrementAndGet()
-        if (frameTimeBuffer.written % frameTimeBuffer.size.toUInt() == 0uL)
+        if (frameTimeBuffer.written % frameTimeBuffer.size == 0L)
             averagedFrameTimeProperty.set(frameTimeBuffer.filter { it != -1.0 }.average())
     }
 

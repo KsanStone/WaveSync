@@ -20,6 +20,7 @@ object ApplicationSettingDefaults {
     const val WAVEFORM_RANGE_MIN = -1.0f
     const val WAVEFORM_RANGE_MAX = 1.0f
     const val WAVEFORM_RANGE_LINK = true
+    const val DEFAULT_UPSAMPLING = 1
     val DEFAULT_SCALAR_TYPE = FFTScalarType.DECIBEL
     val DEFAULT_WINDOWING_FUNCTION = WindowFunctionType.HAMMING
 }

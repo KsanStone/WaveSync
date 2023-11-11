@@ -18,9 +18,12 @@ import java.net.URL
 import java.util.*
 import kotlin.math.pow
 import kotlin.math.round
+import kotlin.math.roundToInt
 
 
 class VisualizerOptionsController : Initializable {
+
+    lateinit var fftUpsampleChoiceBox: ChoiceBox<String>
 
     @FXML
     lateinit var windowingFunctionChoiceBox: ChoiceBox<String>
@@ -70,6 +73,8 @@ class VisualizerOptionsController : Initializable {
         fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14, 15).map { 2.0.pow(it.toDouble()).toInt() }
             .toList())
         fftSizeChoiceBox.value = audioCaptureService.fftSize.get()
+        fftUpsampleChoiceBox.items.addAll(listOf(1, 2, 4, 8, 16, 32).map { "${it}x"})
+        fftUpsampleChoiceBox.value = "${audioCaptureService.fftUpsample.get()}x"
         fftSizeChoiceBox.valueProperty().addListener { _ -> updateFftInfoLabel() }
         audioCaptureService.source.addListener { _ -> updateFftInfoLabel() }
 
@@ -79,6 +84,10 @@ class VisualizerOptionsController : Initializable {
             } else {
                 applyFreqButton.styleClass.remove("accent")
             }
+        }
+        fftUpsampleChoiceBox.valueProperty().addListener { _, _, v ->
+            audioCaptureService.fftUpsample.set(v.replace("x", "").toInt())
+            updateFftInfoLabel()
         }
 
         debugToggleSwitch.selectedProperty().set(MainController.instance.infoShown.get())
@@ -100,12 +109,6 @@ class VisualizerOptionsController : Initializable {
         (alert.dialogPane.scene.window as Stage).icons.add(Image("icon.png"))
 
         if (alert.showAndWait().get() == reset) {
-//            scalingSlider.value = BAR_SCALING.toDouble()
-//            dropRateSlider.value = BAR_SMOOTHING.toDouble()
-//            barWidthSlider.value = TARGET_BAR_WIDTH.toDouble()
-//            maxFreqSpinner.valueFactory.value = BAR_CUTOFF
-//            minFreqSpinner.valueFactory.value = BAR_LOW_PASS
-//            gapSlider.value = GAP.toDouble()
             fftSizeChoiceBox.value = FFT_SIZE
             applyFreqSettings()
         }
@@ -117,7 +120,15 @@ class VisualizerOptionsController : Initializable {
             val freq = audioCaptureService.source.get().getMinimumFrequency(fftSizeChoiceBox.value)
             var updateInterval = audioCaptureService.source.get().getUpdateInterval(fftSizeChoiceBox.value)
             updateInterval = Duration.millis(round(updateInterval.toMillis() * 10.0) / 10.0)
-            fftInfoLabel.text = localizationService.format("dialog.deviceOptions.windowSizeInfo", freq, updateInterval)
+            if (audioCaptureService.fftUpsample.get() <= 1) {
+                fftInfoLabel.text =
+                    localizationService.format("dialog.deviceOptions.windowSizeInfo", freq, updateInterval)
+            } else {
+                val upsampledDuration = updateInterval.divide(audioCaptureService.fftUpsample.get().toDouble())
+                val upsampledHertz = 1.0 / upsampledDuration.toSeconds()
+                fftInfoLabel.text =
+                    localizationService.format("dialog.deviceOptions.upSampledWindowSizeInfo", freq, updateInterval, upsampledDuration, upsampledHertz.roundToInt())
+            }
         } else {
             fftInfoLabel.text = localizationService.get("dialog.deviceOptions.noDevice")
         }

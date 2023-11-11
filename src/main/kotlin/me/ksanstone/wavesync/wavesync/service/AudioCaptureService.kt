@@ -5,6 +5,7 @@ import com.sun.jna.Pointer
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import javafx.beans.property.*
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_UPSAMPLING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencyOfBin
@@ -12,6 +13,8 @@ import me.ksanstone.wavesync.wavesync.service.windowing.HammingWindowFunction
 import me.ksanstone.wavesync.wavesync.service.windowing.HannWindowFunction
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunction
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
+import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
+import me.ksanstone.wavesync.wavesync.utility.toFloatArray
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -34,8 +37,7 @@ class AudioCaptureService(
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
 
     private lateinit var bufferArray: ByteArray
-    private lateinit var sampleBufferArray: FloatArray
-    private var sampleBufferArrayIndex: Int = 0
+    private lateinit var fftSampleBuffer: RollingBuffer<Float>
     private var currentStream: XtStream? = null
     private var lock: CountDownLatch = CountDownLatch(0)
     private var recordingFuture: CompletableFuture<Void>? = null
@@ -50,6 +52,7 @@ class AudioCaptureService(
     val peakValue = SimpleFloatProperty(0.0f)
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
+    val fftUpsample: IntegerProperty = SimpleIntegerProperty(DEFAULT_UPSAMPLING)
     val usedAudioSystem: ObjectProperty<XtSystem> = SimpleObjectProperty()
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
     var audioSystems: List<XtSystem> = listOf()
@@ -59,6 +62,7 @@ class AudioCaptureService(
         preferenceService.registerProperty(fftSize, "fftSize", this.javaClass)
         preferenceService.registerProperty(usedAudioSystem, "audioSystem", XtSystem::class.java, this.javaClass)
         preferenceService.registerProperty(usedWindowingFunction, "windowingFunction", WindowFunctionType::class.java, this.javaClass)
+        preferenceService.registerProperty(fftUpsample, "fftUpsample", this.javaClass)
 
         detectSupportedAudioSystems()
         if (usedAudioSystem.get() == null) {
@@ -95,17 +99,17 @@ class AudioCaptureService(
     fun processAudio(audio: FloatArray, frames: Int) {
         val channels = source.get().format.channels.inputs
         val sampleFactor = 1.0f / channels.toFloat()
+        val targetSamplesUntilRefresh = (fftSampleBuffer.size / fftUpsample.get()).toLong()
         for (frame in 0 until frames) {
             val sampleIndex = frame * 2
             var sample = 0.0f
             for (channel in 0 until channels) {
                 sample += audio[sampleIndex + channel] * sampleFactor
             }
-            sampleBufferArray[sampleBufferArrayIndex++] = sample
+            fftSampleBuffer.insert(sample)
             samples[frame] = sample
-            if (sampleBufferArrayIndex == sampleBufferArray.size) {
-                doFFT(sampleBufferArray, source.get().format.mix.rate)
-                sampleBufferArrayIndex = 0
+            if (fftSampleBuffer.written % targetSamplesUntilRefresh == 0L) {
+                doFFT(fftSampleBuffer.toFloatArray(), source.get().format.mix.rate)
             }
         }
         sampleObservers.forEach { it.accept(samples.sliceArray(0 until frames), source.get()) }
@@ -121,7 +125,8 @@ class AudioCaptureService(
     }
 
     private fun calcPeak(fftResult: FloatArray) {
-        val maxIdx = fftResult.indices.maxBy { fftResult[it] } ?: 0
+        val maxIdx = fftResult.indices.maxBy { fftResult[it] }
+        if (maxIdx == -1) return
 
         val peakV = fftResult[maxIdx]
 
@@ -210,14 +215,13 @@ class AudioCaptureService(
 
     fun setScanWindowSize(size: Int) {
         logger.info("Using window size $size")
-        sampleBufferArray = FloatArray(size)
-        sampleBufferArrayIndex = 0
+        fftSampleBuffer = RollingBuffer(size, 0.0f)
         fftResult = FloatArray(size / 2)
         changeWindowingFunction()
     }
 
     fun changeWindowingFunction() {
-        val size = sampleBufferArray.size
+        val size = fftSampleBuffer.size
         windowFunction = when (usedWindowingFunction.get()!!) {
             WindowFunctionType.HAMMING -> HammingWindowFunction(size)
             WindowFunctionType.HANN -> HannWindowFunction(size)

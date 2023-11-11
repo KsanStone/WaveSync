@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.HBox?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 <HBox alignment="CENTER_LEFT" spacing="5.0" xmlns="http://javafx.com/javafx/17.0.2-ea"
@@ -11,16 +11,25 @@
             <graphic>
                 <FontIcon iconLiteral="mdal-border_left" iconSize="18"/>
             </graphic>
+            <tooltip>
+                <Tooltip text="%chart.settings.tooltip.yAxis"/>
+            </tooltip>
         </ToggleButton>
         <ToggleButton mnemonicParsing="false" fx:id="xAxisToggle">
             <graphic>
                 <FontIcon iconLiteral="mdal-border_bottom" iconSize="18"/>
             </graphic>
+            <tooltip>
+                <Tooltip text="%chart.settings.tooltip.xAxis"/>
+            </tooltip>
         </ToggleButton>
-        <ToggleButton mnemonicParsing="false" fx:id="gridToggle">
+        <ToggleButton fx:id="gridToggle" mnemonicParsing="false">
             <graphic>
-                <FontIcon iconLiteral="mdal-grid_on" iconSize="18" fx:id="gridToggleIcon"/>
+                <FontIcon fx:id="gridToggleIcon" iconLiteral="mdal-grid_on" iconSize="18"/>
             </graphic>
+            <tooltip>
+                <Tooltip text="%chart.settings.tooltip.grid"/>
+            </tooltip>
         </ToggleButton>
     </children>
 </HBox>
