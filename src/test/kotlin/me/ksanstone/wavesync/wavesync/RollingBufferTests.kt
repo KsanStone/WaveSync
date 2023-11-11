@@ -27,7 +27,7 @@ class RollingBufferTests {
                 getExpectedRange(testCase.second, buffer.size).toTypedArray(),
                 buffer.toArray()
             )
-            assertEquals(testCase.second.size().toULong(), buffer.written)
+            assertEquals(testCase.second.size().toLong(), buffer.written)
             assertArrayEquals(buffer.toArray(), floatBuffer.toArray().map { it.toInt() }.toTypedArray())
         }
     }
@@ -52,7 +52,7 @@ class RollingBufferTests {
                 getExpectedRange(testCase.second, referenceBuffer.size).toTypedArray(),
                 referenceBuffer.toArray()
             )
-            assertEquals(testCase.second.size().toULong(), referenceBuffer.written)
+            assertEquals(testCase.second.size().toLong(), referenceBuffer.written)
         }
     }
 
