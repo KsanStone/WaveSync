@@ -7,7 +7,12 @@ import javafx.scene.Node
 import javafx.scene.canvas.Canvas
 import javafx.scene.chart.NumberAxis
 import javafx.scene.layout.Pane
+import javafx.scene.shape.Line
+import javafx.scene.shape.LineTo
+import javafx.scene.shape.MoveTo
+import javafx.scene.shape.Path
 import javafx.scene.text.Text
+import java.lang.Double.isNaN
 import java.text.DecimalFormat
 
 class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, private val canvas: Canvas) : Pane() {
@@ -15,10 +20,24 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
     val xAxisShown = SimpleBooleanProperty(true)
     val yAxisShown = SimpleBooleanProperty(true)
 
+    val horizontalLinesVisible = SimpleBooleanProperty(true)
+    val verticalLinesVisible = SimpleBooleanProperty(true)
+
+    private var horizontalGridLines: Path = Path()
+    private var verticalGridLines: Path = Path()
+    private var horizontalZeroLine: Line = Line()
+    private var verticalZeroLine: Line = Line()
+    private var horizontalZeroLineVisible = true
+    private var verticalZeroLineVisible = true
+
     init {
         listOf(xAxisShown, yAxisShown, widthProperty(), heightProperty())
             .forEach { it.addListener { _ -> doLayout() } }
-        children.addAll(xAxis, yAxis, canvas)
+        horizontalGridLines.styleClass.setAll("horizontal-grid-lines")
+        verticalGridLines.styleClass.setAll("vertical-grid-lines")
+        horizontalZeroLine.styleClass.setAll("horizontal-zero-line")
+        verticalZeroLine.styleClass.setAll("vertical-zero-line")
+        children.addAll(horizontalGridLines, verticalGridLines, horizontalZeroLine, verticalZeroLine, xAxis, yAxis, canvas)
 
         yAxis.side = Side.LEFT
         yAxis.animated = false
@@ -65,6 +84,10 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
                 }
             } as ListChangeListener<Node?>?)
 
+        listOf(xAxis.tickMarks, yAxis.tickMarks).forEach { it.addListener(ListChangeListener { c -> while(c.next()); layoutGrid() }) }
+        listOf(horizontalLinesVisible, verticalLinesVisible, xAxisShown, yAxisShown).forEach { it.addListener { _ -> layoutGrid() }}
+
+
         minWidth = 1.0
         minHeight = 1.0
         maxWidth = Double.MAX_VALUE
@@ -73,8 +96,8 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
     }
 
     private fun doLayout() {
-        val leftPad = if (yAxisShown.get()) { yAxis.prefWidth(-1.0) } else { 0.0 }
-        val bottomPad = if (xAxisShown.get()) { xAxis.prefHeight(-1.0) } else { 0.0 }
+        val leftPad = if (yAxisShown.get()) yAxis.prefWidth(-1.0) else 0.0
+        val bottomPad = if (xAxisShown.get()) xAxis.prefHeight(-1.0) else 0.0
 
         yAxis.isVisible = yAxisShown.get()
         xAxis.isVisible = xAxisShown.get()
@@ -91,6 +114,63 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         canvas.width = width - leftPad
         canvas.height = height - bottomPad
         canvas.resizeRelocate(leftPad, 0.0, canvas.width, canvas.height)
+
+        layoutGrid()
     }
 
+    private fun layoutGrid() {
+        val leftPad = if (yAxisShown.get()) yAxis.prefWidth(-1.0) else 0.0
+        createGrid(left = leftPad, xAxisWidth = canvas.width, yAxisHeight = canvas.height)
+    }
+
+    private fun createGrid(left: Double, top: Double = 0.0, xAxisWidth: Double, yAxisHeight: Double) {
+        val xTics = xAxis.tickMarks
+        val xAxisZero = xAxis.zeroPosition
+        val yTics = yAxis.tickMarks
+        val yAxisZero = yAxis.zeroPosition
+
+        // position vertical and horizontal zero lines
+        if (isNaN(xAxisZero) || !verticalZeroLineVisible || !verticalLinesVisible.get().and(xAxisShown.get())) {
+            verticalZeroLine.isVisible = false
+        } else {
+            verticalZeroLine.startX = left + xAxisZero + 0.5
+            verticalZeroLine.startY = top
+            verticalZeroLine.endX = left + xAxisZero + 0.5
+            verticalZeroLine.endY = top + yAxisHeight
+            verticalZeroLine.isVisible = true
+        }
+        if (isNaN(yAxisZero) || !horizontalZeroLineVisible || !horizontalLinesVisible.get().and(yAxisShown.get())) {
+            horizontalZeroLine.isVisible = false
+        } else {
+            horizontalZeroLine.startX = left
+            horizontalZeroLine.startY = top + yAxisZero + 0.5
+            horizontalZeroLine.endX = left + xAxisWidth
+            horizontalZeroLine.endY = top + yAxisZero + 0.5
+            horizontalZeroLine.isVisible = true
+        }
+
+        verticalGridLines.elements.clear()
+        if (verticalLinesVisible.get().and(xAxisShown.get())) {
+            for (i in xTics.indices) {
+                val tick = xTics[i]
+                val x: Double = xAxis.getDisplayPosition(tick.value)
+                if ((x != xAxisZero || !verticalZeroLineVisible) && x > 0 && x <= xAxisWidth) {
+                    verticalGridLines.elements.add(MoveTo(left + x + 0.5, top))
+                    verticalGridLines.elements.add(LineTo(left + x + 0.5, top + yAxisHeight))
+                }
+            }
+        }
+
+        horizontalGridLines.elements.clear()
+        if (horizontalLinesVisible.get().and(yAxisShown.get())) {
+            for (i in yTics.indices) {
+                val tick = yTics[i]
+                val y: Double = yAxis.getDisplayPosition(tick.value)
+                if ((y != yAxisZero || !horizontalZeroLineVisible) && y >= 0 && y < yAxisHeight) {
+                    horizontalGridLines.elements.add(MoveTo(left, top + y + 0.5))
+                    horizontalGridLines.elements.add(LineTo(left + xAxisWidth, top + y + 0.5))
+                }
+            }
+        }
+    }
 }

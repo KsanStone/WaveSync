@@ -61,7 +61,12 @@ class AudioCaptureService(
     fun registerProperties() {
         preferenceService.registerProperty(fftSize, "fftSize", this.javaClass)
         preferenceService.registerProperty(usedAudioSystem, "audioSystem", XtSystem::class.java, this.javaClass)
-        preferenceService.registerProperty(usedWindowingFunction, "windowingFunction", WindowFunctionType::class.java, this.javaClass)
+        preferenceService.registerProperty(
+            usedWindowingFunction,
+            "windowingFunction",
+            WindowFunctionType::class.java,
+            this.javaClass
+        )
         preferenceService.registerProperty(fftUpsample, "fftUpsample", this.javaClass)
 
         detectSupportedAudioSystems()
@@ -130,7 +135,7 @@ class AudioCaptureService(
 
         val peakV = fftResult[maxIdx]
 
-        if(peakV < 0.001f) return
+        if (peakV < 0.001f) return
 
         val n1 = (fftResult.getOrNull(maxIdx - 1) ?: 0.0f).toDouble()
         val n2 = (fftResult.getOrNull(maxIdx + 1) ?: 0.0f).toDouble()
@@ -142,7 +147,8 @@ class AudioCaptureService(
         var offset = frequencyOfBin(source.get().format.mix.rate, fftResult.size * 2) * factor
         offset = offset.coerceIn(-1.0, 1.0)
 
-        peakFrequency.value = frequencyOfBin(maxIdx, source.get().format.mix.rate, fftResult.size * 2).toDouble() + offset
+        peakFrequency.value =
+            frequencyOfBin(maxIdx, source.get().format.mix.rate, fftResult.size * 2).toDouble() + offset
         peakValue.value = peakV
     }
 

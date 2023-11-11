@@ -139,7 +139,7 @@ class MainController : Initializable {
         )
         barVisualizer.info.bind(infoShown)
         waveformVisualizer.framerate.set(
-             WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
+            WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
                 .findHighestRefreshRate()
         )
         waveformVisualizer.info.bind(infoShown)

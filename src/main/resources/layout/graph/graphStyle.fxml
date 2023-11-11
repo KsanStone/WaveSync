@@ -25,7 +25,7 @@
         </ToggleButton>
         <ToggleButton fx:id="gridToggle" mnemonicParsing="false">
             <graphic>
-                <FontIcon fx:id="gridToggleIcon" iconLiteral="mdal-grid_on" iconSize="18"/>
+                <FontIcon iconLiteral="mdal-grid_on" iconSize="18"/>
             </graphic>
             <tooltip>
                 <Tooltip text="%chart.settings.tooltip.grid"/>

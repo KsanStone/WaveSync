@@ -2,7 +2,10 @@ package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
 import javafx.application.Platform
 import javafx.beans.property.*
-import javafx.css.*
+import javafx.css.CssMetaData
+import javafx.css.Styleable
+import javafx.css.StyleableProperty
+import javafx.css.StyleablePropertyFactory
 import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.control.Label
@@ -32,7 +35,8 @@ class WaveformVisualizer : AutoCanvas() {
     val rangeLink: BooleanProperty = SimpleBooleanProperty(WAVEFORM_RANGE_LINK)
 
     private val buffer: RollingBuffer<Float> = RollingBuffer(10000, 0.0f)
-    private val waveColor: StyleableProperty<Color> = FACTORY.createStyleableColorProperty(this, "waveColor", "-fx-color") { vis -> vis.waveColor }
+    private val waveColor: StyleableProperty<Color> =
+        FACTORY.createStyleableColorProperty(this, "waveColor", "-fx-color") { vis -> vis.waveColor }
     private val align: BooleanProperty = SimpleBooleanProperty(false)
     private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     private val alignLowPass: DoubleProperty = SimpleDoubleProperty(20.0)
@@ -83,6 +87,8 @@ class WaveformVisualizer : AutoCanvas() {
         preferenceService.registerProperty(rangeMin, "rangeMin", this.javaClass, id)
         preferenceService.registerProperty(rangeLink, "rangeLink", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
     }
 
     fun initializeSettingMenu() {
@@ -151,9 +157,10 @@ class WaveformVisualizer : AutoCanvas() {
     }
 
     companion object {
-        private val FACTORY: StyleablePropertyFactory<WaveformVisualizer> = StyleablePropertyFactory<WaveformVisualizer>(
-            Pane.getClassCssMetaData()
-        )
+        private val FACTORY: StyleablePropertyFactory<WaveformVisualizer> =
+            StyleablePropertyFactory<WaveformVisualizer>(
+                Pane.getClassCssMetaData()
+            )
 
         @Suppress("unused")
         fun getClassCssMetaData(): List<CssMetaData<out Styleable?, *>> {

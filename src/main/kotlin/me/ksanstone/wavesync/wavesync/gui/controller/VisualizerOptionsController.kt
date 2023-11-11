@@ -67,13 +67,14 @@ class VisualizerOptionsController : Initializable {
 
         windowingFunctionChoiceBox.items.addAll(WindowFunctionType.entries.map { it.displayName })
         windowingFunctionChoiceBox.value = audioCaptureService.usedWindowingFunction.value.displayName
-        audioCaptureService.usedWindowingFunction.bind(windowingFunctionChoiceBox.valueProperty().map { WindowFunctionType.fromDisplayName(it) })
+        audioCaptureService.usedWindowingFunction.bind(
+            windowingFunctionChoiceBox.valueProperty().map { WindowFunctionType.fromDisplayName(it) })
 
         fftSizeChoiceBox.items.clear()
         fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14, 15).map { 2.0.pow(it.toDouble()).toInt() }
             .toList())
         fftSizeChoiceBox.value = audioCaptureService.fftSize.get()
-        fftUpsampleChoiceBox.items.addAll(listOf(1, 2, 4, 8, 16, 32).map { "${it}x"})
+        fftUpsampleChoiceBox.items.addAll(listOf(1, 2, 4, 8, 16, 32).map { "${it}x" })
         fftUpsampleChoiceBox.value = "${audioCaptureService.fftUpsample.get()}x"
         fftSizeChoiceBox.valueProperty().addListener { _ -> updateFftInfoLabel() }
         audioCaptureService.source.addListener { _ -> updateFftInfoLabel() }
@@ -127,7 +128,13 @@ class VisualizerOptionsController : Initializable {
                 val upsampledDuration = updateInterval.divide(audioCaptureService.fftUpsample.get().toDouble())
                 val upsampledHertz = 1.0 / upsampledDuration.toSeconds()
                 fftInfoLabel.text =
-                    localizationService.format("dialog.deviceOptions.upSampledWindowSizeInfo", freq, updateInterval, upsampledDuration, upsampledHertz.roundToInt())
+                    localizationService.format(
+                        "dialog.deviceOptions.upSampledWindowSizeInfo",
+                        freq,
+                        updateInterval,
+                        upsampledDuration,
+                        upsampledHertz.roundToInt()
+                    )
             }
         } else {
             fftInfoLabel.text = localizationService.get("dialog.deviceOptions.noDevice")

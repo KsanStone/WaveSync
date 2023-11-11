@@ -103,7 +103,8 @@ abstract class AutoCanvas : AnchorPane() {
                 if (detachedStage == null) {
                     detachedStage = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
                         .createEmptyStage("AutoCanvas", Label())
-                    detachedStage!!.showingProperty().addListener { _, _, showing -> if (!showing) detachedProperty.set(false) }
+                    detachedStage!!.showingProperty()
+                        .addListener { _, _, showing -> if (!showing) detachedProperty.set(false) }
                 }
 
                 (detachedStage!!.scene.root as BorderPane).center = canvasContainer
@@ -141,8 +142,10 @@ abstract class AutoCanvas : AnchorPane() {
 
         val detachButton = Button()
         detachButton.styleClass.add("button-icon")
-        detachButton.graphic = FontIcon(if(detachedProperty.get()) "mdmz-south_west" else "mdmz-open_in_new")
-        detachedProperty.addListener { _, _, v -> (detachButton.graphic as FontIcon).iconLiteral = if(v) "mdmz-south_west" else "mdmz-open_in_new" }
+        detachButton.graphic = FontIcon(if (detachedProperty.get()) "mdmz-south_west" else "mdmz-open_in_new")
+        detachedProperty.addListener { _, _, v ->
+            (detachButton.graphic as FontIcon).iconLiteral = if (v) "mdmz-south_west" else "mdmz-open_in_new"
+        }
         detachButton.onAction = EventHandler { detachedProperty.set(!detachedProperty.get()) }
 
         controlPane.children.add(detachButton)

@@ -63,7 +63,7 @@ class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Ite
 
     @Suppress("UNCHECKED_CAST")
     fun toArray(): Array<T> {
-        return cloneOnto(Array<Any>(size) {default} as Array<T>)
+        return cloneOnto(Array<Any>(size) { default } as Array<T>)
     }
 }
 

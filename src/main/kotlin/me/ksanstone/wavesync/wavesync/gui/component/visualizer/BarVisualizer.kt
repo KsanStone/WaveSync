@@ -66,9 +66,9 @@ class BarVisualizer : AutoCanvas() {
 
         changeScalar()
         scalarType.addListener { _ -> changeScalar() }
-        linearScaling.addListener{ _ -> refreshScalar() }
-        dbMax.addListener{ _ -> refreshScalar() }
-        dbMin.addListener{ _ -> refreshScalar() }
+        linearScaling.addListener { _ -> refreshScalar() }
+        dbMax.addListener { _ -> refreshScalar() }
+        dbMin.addListener { _ -> refreshScalar() }
 
         setOnMouseMoved {
             if (source == null) {
@@ -126,6 +126,8 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(dbMax, "dbMax", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
     }
 
     private fun changeScalar() {
@@ -143,11 +145,18 @@ class BarVisualizer : AutoCanvas() {
             is LinearFFTScalar -> {
                 (fftScalar as LinearFFTScalar).update(LinearFFTScalarParams())
             }
+
             is ExaggeratedFFTScalar -> {
                 (fftScalar as ExaggeratedFFTScalar).update(ExaggeratedFFTScalarParams(scaling = linearScaling.get()))
             }
+
             is DeciBelFFTScalar -> {
-                (fftScalar as DeciBelFFTScalar).update(DeciBelFFTScalarParameters(rangeMin = dbMin.get(), rangeMax = dbMax.get()))
+                (fftScalar as DeciBelFFTScalar).update(
+                    DeciBelFFTScalarParameters(
+                        rangeMin = dbMin.get(),
+                        rangeMax = dbMax.get()
+                    )
+                )
             }
         }
         sizeValueAxis()

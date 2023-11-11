@@ -6,3 +6,19 @@
 .axis {
     -fx-tick-label-fill: -color-fg-muted;
 }
+
+.horizontal-grid-lines {
+    -fx-stroke: -color-base-8;
+}
+
+.vertical-grid-lines {
+    -fx-stroke: -color-base-8;
+}
+
+.horizontal-zero-line {
+    -fx-stroke: -color-base-6;
+}
+
+.vertical-zero-line {
+    -fx-stroke: -color-base-6;
+}

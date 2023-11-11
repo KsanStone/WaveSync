@@ -110,17 +110,22 @@ class BarChartSettingsController : Initializable {
         dropRateSlider.value = visualizer.smoothing.get().toDouble()
         barWidthSlider.value = visualizer.targetBarWidth.get().toDouble()
         gapSlider.value = visualizer.gap.get().toDouble()
-        scalarTypeTabPane.selectionModel.select(when(visualizer.scalarType.value) {
-            FFTScalarType.LINEAR -> 0
-            FFTScalarType.EXAGGERATED -> 1
-            FFTScalarType.DECIBEL -> 2
-            else -> 0
-        })
+        scalarTypeTabPane.selectionModel.select(
+            when (visualizer.scalarType.value) {
+                FFTScalarType.LINEAR -> 0
+                FFTScalarType.EXAGGERATED -> 1
+                FFTScalarType.DECIBEL -> 2
+                else -> 0
+            }
+        )
         graphStyleController.yAxisToggle.isSelected = visualizer.canvasContainer.yAxisShown.get()
         graphStyleController.xAxisToggle.isSelected = visualizer.canvasContainer.xAxisShown.get()
+        graphStyleController.gridToggle.isSelected = visualizer.canvasContainer.horizontalLinesVisible.get()
 
         visualizer.canvasContainer.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
         visualizer.canvasContainer.xAxisShown.bind(graphStyleController.xAxisToggle.selectedProperty())
+        visualizer.canvasContainer.horizontalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
+        visualizer.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
         visualizer.linearScaling.bind(scalingSlider.valueProperty())
         visualizer.smoothing.bind(dropRateSlider.valueProperty())
         visualizer.targetBarWidth.bind(barWidthSlider.valueProperty())

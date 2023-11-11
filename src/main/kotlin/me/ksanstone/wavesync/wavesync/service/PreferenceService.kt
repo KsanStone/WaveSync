@@ -77,7 +77,12 @@ class PreferenceService {
             { v -> preferences.put(name, (v as Enum<*>).name) })
     }
 
-    fun registerProperty(property: ObjectProperty<Color>, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
+    fun registerProperty(
+        property: ObjectProperty<Color>,
+        name: String,
+        clazz: Class<*>? = null,
+        id: String = DEFAULT_ID
+    ) {
         val preferences = getPreferences(clazz, id)
         doRegister(property as Property<Any?>,
             { intToColor(preferences.getInt(name, colorToInt(property.get()))) },

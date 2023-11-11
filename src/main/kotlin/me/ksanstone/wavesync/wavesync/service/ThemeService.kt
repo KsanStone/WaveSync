@@ -24,7 +24,12 @@ class ThemeService(
         val pairs = mutableListOf<Pair<Theme, Theme?>>()
         themes.forEach {
             if (it.value.isDarkMode) {
-                pairs.add(it.value to if(it.value.name.contains("Dark")) themes[it.value.name.replace("Dark","Light")] else null)
+                pairs.add(
+                    it.value to if (it.value.name.contains("Dark")) themes[it.value.name.replace(
+                        "Dark",
+                        "Light"
+                    )] else null
+                )
             }
         }
         themePairs = pairs

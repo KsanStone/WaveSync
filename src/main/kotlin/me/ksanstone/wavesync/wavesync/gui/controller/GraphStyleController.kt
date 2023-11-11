@@ -3,14 +3,10 @@ package me.ksanstone.wavesync.wavesync.gui.controller
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.ToggleButton
-import org.kordamp.ikonli.javafx.FontIcon
 import java.net.URL
 import java.util.*
 
-class GraphStyleController : Initializable{
-
-    @FXML
-    lateinit var gridToggleIcon: FontIcon
+class GraphStyleController : Initializable {
 
     @FXML
     lateinit var gridToggle: ToggleButton
@@ -22,14 +18,5 @@ class GraphStyleController : Initializable{
     lateinit var yAxisToggle: ToggleButton
 
     @FXML
-    override fun initialize(location: URL?, resources: ResourceBundle?) {
-        gridToggle.isDisable = true
-        gridToggle.selectedProperty().addListener { _ -> updateIcon() }
-        updateIcon()
-    }
-
-    private fun updateIcon() {
-        gridToggleIcon.iconLiteral = if (gridToggle.isSelected) "mdal-grid_off" else "mdal-grid_on"
-    }
-
+    override fun initialize(location: URL?, resources: ResourceBundle?) {}
 }
