@@ -6,25 +6,31 @@ import javafx.animation.KeyFrame
 import javafx.animation.Timeline
 import javafx.beans.property.*
 import javafx.beans.value.ObservableValue
+import javafx.event.EventHandler
 import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
+import javafx.scene.control.Button
+import javafx.scene.control.Label
 import javafx.scene.effect.BlurType
 import javafx.scene.effect.DropShadow
 import javafx.scene.layout.AnchorPane
+import javafx.scene.layout.BorderPane
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
+import javafx.stage.Stage
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.INFO_SHOWN
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController
+import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.utility.FPSCounter
+import org.kordamp.ikonli.javafx.FontIcon
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.pow
-import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 
@@ -41,9 +47,11 @@ abstract class AutoCanvas : AnchorPane() {
     val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.REFRESH_RATE)
     val info: BooleanProperty = SimpleBooleanProperty(INFO_SHOWN)
 
+    private var detachedStage: Stage? = null
     private var lastDraw = System.nanoTime()
     private val frameTime = SimpleDoubleProperty(0.0)
     private val fpsCounter = FPSCounter()
+    private val detachedProperty = SimpleBooleanProperty(false)
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
@@ -64,6 +72,7 @@ abstract class AutoCanvas : AnchorPane() {
         initializeInfoPane()
         initializeControlPane()
         initializeDrawLoop()
+        initializeDetacherProperty()
     }
 
     private fun initializeDrawLoop() {
@@ -88,6 +97,27 @@ abstract class AutoCanvas : AnchorPane() {
         }
     }
 
+    private fun initializeDetacherProperty() {
+        detachedProperty.addListener { _, _, v ->
+            if (v) {
+                if (detachedStage == null) {
+                    detachedStage = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
+                        .createEmptyStage("AutoCanvas", Label())
+                    detachedStage!!.showingProperty().addListener { _, _, showing -> if (!showing) detachedProperty.set(false) }
+                }
+
+                (detachedStage!!.scene.root as BorderPane).center = canvasContainer
+                children.remove(canvasContainer)
+                detachedStage!!.show()
+            } else {
+                if (detachedStage == null) return@addListener
+                detachedStage!!.hide()
+                children.add(0, canvasContainer)
+                (detachedStage!!.scene.root as BorderPane).center = null
+            }
+        }
+    }
+
     private fun initializeControlPane() {
         controlPane = HBox()
         controlPane.styleClass.add("control-box")
@@ -109,6 +139,14 @@ abstract class AutoCanvas : AnchorPane() {
         setTopAnchor(controlPane, 5.0)
         setRightAnchor(controlPane, 5.0)
 
+        val detachButton = Button()
+        detachButton.styleClass.add("button-icon")
+        detachButton.graphic = FontIcon(if(detachedProperty.get()) "mdmz-south_west" else "mdmz-open_in_new")
+        detachedProperty.addListener { _, _, v -> (detachButton.graphic as FontIcon).iconLiteral = if(v) "mdmz-south_west" else "mdmz-open_in_new" }
+        detachButton.onAction = EventHandler { detachedProperty.set(!detachedProperty.get()) }
+
+        controlPane.children.add(detachButton)
+
         children.add(controlPane)
     }
 
@@ -120,8 +158,15 @@ abstract class AutoCanvas : AnchorPane() {
         val controller: AutoCanvasInfoPaneController = loader.getController()
 
         controller.targetFpsLabel.textProperty().bind(framerate.asString())
-        controller.frameTimeLabel.textProperty().bind(frameTime.map { "${Duration.millis(fpsCounter.averagedFrameTimeProperty.value.times(1000).roundTo(3))}" })
-        controller.realTimeFrameTimeLabel.textProperty().bind(frameTime.map {"${Duration.millis(it.toDouble().times(1000))}" })
+        controller.frameTimeLabel.textProperty().bind(frameTime.map {
+            "${
+                Duration.millis(
+                    fpsCounter.averagedFrameTimeProperty.value.times(1000).roundTo(3)
+                )
+            }"
+        })
+        controller.realTimeFrameTimeLabel.textProperty()
+            .bind(frameTime.map { "${Duration.millis(it.toDouble().times(1000))}" })
         controller.fpsLabel.textProperty().bind(fpsCounter.current.asString("%.2f"))
 
         infoPane.visibleProperty().bind(info)
