@@ -16,9 +16,17 @@
 }
 
 .horizontal-zero-line {
-    -fx-stroke: -color-base-6;
+    -fx-stroke: -color-base-5;
 }
 
 .vertical-zero-line {
+    -fx-stroke: -color-base-5;
+}
+
+.horizontal-highlighted-grid-lines {
+    -fx-stroke: -color-base-6;
+}
+
+.vertical-highlighted-grid-lines {
     -fx-stroke: -color-base-6;
 }

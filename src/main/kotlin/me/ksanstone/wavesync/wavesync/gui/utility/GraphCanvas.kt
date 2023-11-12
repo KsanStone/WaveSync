@@ -1,7 +1,9 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
 import javafx.beans.property.SimpleBooleanProperty
+import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
+import javafx.collections.ObservableList
 import javafx.geometry.Side
 import javafx.scene.Node
 import javafx.scene.canvas.Canvas
@@ -22,9 +24,13 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
 
     val horizontalLinesVisible = SimpleBooleanProperty(true)
     val verticalLinesVisible = SimpleBooleanProperty(true)
+    val highlightedVerticalLines: ObservableList<Double> = FXCollections.observableArrayList()
+    val highlightedHorizontalLines: ObservableList<Double> = FXCollections.observableArrayList()
 
     private var horizontalGridLines: Path = Path()
     private var verticalGridLines: Path = Path()
+    private var highlightedHorizontalGridLines: Path = Path()
+    private var highlightedVerticalGridLines: Path = Path()
     private var horizontalZeroLine: Line = Line()
     private var verticalZeroLine: Line = Line()
     private var horizontalZeroLineVisible = true
@@ -35,9 +41,21 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             .forEach { it.addListener { _ -> doLayout() } }
         horizontalGridLines.styleClass.setAll("horizontal-grid-lines")
         verticalGridLines.styleClass.setAll("vertical-grid-lines")
+        highlightedHorizontalGridLines.styleClass.setAll("horizontal-highlighted-grid-lines")
+        highlightedVerticalGridLines.styleClass.setAll("vertical-highlighted-grid-lines")
         horizontalZeroLine.styleClass.setAll("horizontal-zero-line")
         verticalZeroLine.styleClass.setAll("vertical-zero-line")
-        children.addAll(horizontalGridLines, verticalGridLines, horizontalZeroLine, verticalZeroLine, xAxis, yAxis, canvas)
+        children.addAll(
+            horizontalGridLines,
+            verticalGridLines,
+            horizontalZeroLine,
+            verticalZeroLine,
+            highlightedHorizontalGridLines,
+            highlightedVerticalGridLines,
+            xAxis,
+            yAxis,
+            canvas
+        )
 
         yAxis.side = Side.LEFT
         yAxis.animated = false
@@ -84,8 +102,16 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
                 }
             } as ListChangeListener<Node?>?)
 
-        listOf(xAxis.tickMarks, yAxis.tickMarks).forEach { it.addListener(ListChangeListener { c -> while(c.next()); layoutGrid() }) }
-        listOf(horizontalLinesVisible, verticalLinesVisible, xAxisShown, yAxisShown).forEach { it.addListener { _ -> layoutGrid() }}
+        listOf(
+            xAxis.tickMarks,
+            yAxis.tickMarks
+        ).forEach { it.addListener(ListChangeListener { c -> while (c.next()); layoutGrid() }) }
+        listOf(
+            horizontalLinesVisible,
+            verticalLinesVisible,
+            xAxisShown,
+            yAxisShown
+        ).forEach { it.addListener { _ -> layoutGrid() } }
 
 
         minWidth = 1.0
@@ -150,25 +176,41 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         }
 
         verticalGridLines.elements.clear()
+        highlightedVerticalGridLines.elements.clear()
         if (verticalLinesVisible.get().and(xAxisShown.get())) {
             for (i in xTics.indices) {
                 val tick = xTics[i]
                 val x: Double = xAxis.getDisplayPosition(tick.value)
-                if ((x != xAxisZero || !verticalZeroLineVisible) && x > 0 && x <= xAxisWidth) {
+                if ((x != xAxisZero || !verticalZeroLineVisible) && x > 0 && x <= xAxisWidth && !highlightedVerticalLines.contains(tick.value)) {
                     verticalGridLines.elements.add(MoveTo(left + x + 0.5, top))
                     verticalGridLines.elements.add(LineTo(left + x + 0.5, top + yAxisHeight))
+                }
+            }
+            for(line in highlightedVerticalLines) {
+                val x: Double = xAxis.getDisplayPosition(line)
+                if (x > 0 && x <= xAxisWidth) {
+                    highlightedVerticalGridLines.elements.add(MoveTo(left + x + 0.5, top))
+                    highlightedVerticalGridLines.elements.add(LineTo(left + x + 0.5, top + yAxisHeight))
                 }
             }
         }
 
         horizontalGridLines.elements.clear()
+        highlightedHorizontalGridLines.elements.clear()
         if (horizontalLinesVisible.get().and(yAxisShown.get())) {
             for (i in yTics.indices) {
                 val tick = yTics[i]
                 val y: Double = yAxis.getDisplayPosition(tick.value)
-                if ((y != yAxisZero || !horizontalZeroLineVisible) && y >= 0 && y < yAxisHeight) {
+                if ((y != yAxisZero || !horizontalZeroLineVisible) && y >= 0 && y < yAxisHeight && !highlightedHorizontalLines.contains(tick.value)) {
                     horizontalGridLines.elements.add(MoveTo(left, top + y + 0.5))
                     horizontalGridLines.elements.add(LineTo(left + xAxisWidth, top + y + 0.5))
+                }
+            }
+            for(line in highlightedHorizontalLines) {
+                val y: Double = yAxis.getDisplayPosition(line)
+                if (y >= 0 && y < yAxisHeight) {
+                    highlightedHorizontalGridLines.elements.add(MoveTo(left, top + y + 0.5))
+                    highlightedHorizontalGridLines.elements.add(LineTo(left + xAxisWidth, top + y + 0.5))
                 }
             }
         }

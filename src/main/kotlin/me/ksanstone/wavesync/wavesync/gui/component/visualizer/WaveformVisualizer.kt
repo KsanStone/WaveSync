@@ -45,6 +45,7 @@ class WaveformVisualizer : AutoCanvas() {
 
     init {
         canvasContainer.xAxisShown.value = false
+        canvasContainer.highlightedHorizontalLines.addAll(1.0, -1.0)
         yAxis.tickUnit = 0.2
         // .toString().toDouble() hack to get an exact conversion
         yAxis.lowerBoundProperty().bind(rangeMin.map { it.toString().toDouble() })
