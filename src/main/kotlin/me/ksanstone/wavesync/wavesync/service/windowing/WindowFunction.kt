@@ -1,8 +1,11 @@
 package me.ksanstone.wavesync.wavesync.service.windowing
 
+import java.lang.Float.isNaN
+
 abstract class WindowFunction(private var windowSize: Int) {
 
     private var factors: FloatArray? = null
+    private var sum: Float = Float.NaN
 
     init {
         factors = getPrecomputedFactors(windowSize)
@@ -19,6 +22,10 @@ abstract class WindowFunction(private var windowSize: Int) {
                         "expected " + windowSize) + ", received " + window.size
             )
         }
+    }
+
+    fun getSum(): Float {
+        return if (!isNaN(sum)) sum else factors!!.sum()
     }
 
     protected abstract fun getPrecomputedFactors(windowSize: Int): FloatArray

@@ -41,8 +41,8 @@ object FourierMath {
         }
     }
 
-    fun transform(sign: Int, n: Int, ar: FloatArray, ai: FloatArray) {
-        val scale = if (sign > 0) 2.0f / n else 0.5f
+    fun transform(sign: Int, n: Int, ar: FloatArray, ai: FloatArray, windowSum: Float) {
+        val scale = if (sign > 0) 2.0f / windowSum else 0.5f
         val numBits = numBits(n)
         val reverseTable = getReverseTable(numBits)
         val sineTable = getFloatSineTable(numBits)

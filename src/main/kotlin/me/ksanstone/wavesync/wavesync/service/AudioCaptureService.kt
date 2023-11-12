@@ -50,12 +50,14 @@ class AudioCaptureService(
 
     val peakFrequency = SimpleDoubleProperty(0.0)
     val peakValue = SimpleFloatProperty(0.0f)
+
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
     val fftUpsample: IntegerProperty = SimpleIntegerProperty(DEFAULT_UPSAMPLING)
     val usedAudioSystem: ObjectProperty<XtSystem> = SimpleObjectProperty()
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
     var audioSystems: List<XtSystem> = listOf()
+
 
     @PostConstruct
     fun registerProperties() {
@@ -123,7 +125,7 @@ class AudioCaptureService(
     fun doFFT(samples: FloatArray, rate: Int) {
         windowFunction!!.applyFunction(samples)
         val imag = FloatArray(samples.size)
-        FourierMath.transform(1, samples.size, samples, imag)
+        FourierMath.transform(1, samples.size, samples, imag, windowFunction!!.getSum())
         FourierMath.calculateMagnitudes(samples, imag, fftResult)
         calcPeak(fftResult)
         fftObservers.forEach { it.accept(fftResult, source.get()) }
