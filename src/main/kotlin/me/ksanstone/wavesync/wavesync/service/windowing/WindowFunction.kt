@@ -28,6 +28,10 @@ abstract class WindowFunction(private var windowSize: Int) {
         return if (!isNaN(sum)) sum else factors!!.sum()
     }
 
+    fun getWindow(): FloatArray {
+        return factors ?: getPrecomputedFactors(windowSize)
+    }
+
     protected abstract fun getPrecomputedFactors(windowSize: Int): FloatArray
 
     companion object {
@@ -38,6 +42,7 @@ abstract class WindowFunction(private var windowSize: Int) {
 
 enum class WindowFunctionType(val displayName: String) {
     HAMMING("Hamming"),
+    BLACKMAN_HARRIS("Blackman Harris"),
     HANN("Hann");
 
     companion object {

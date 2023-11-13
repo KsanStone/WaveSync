@@ -9,10 +9,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_UPSAMPL
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencyOfBin
-import me.ksanstone.wavesync.wavesync.service.windowing.HammingWindowFunction
-import me.ksanstone.wavesync.wavesync.service.windowing.HannWindowFunction
-import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunction
-import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
+import me.ksanstone.wavesync.wavesync.service.windowing.*
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import me.ksanstone.wavesync.wavesync.utility.toFloatArray
 import org.slf4j.Logger
@@ -233,6 +230,7 @@ class AudioCaptureService(
         windowFunction = when (usedWindowingFunction.get()!!) {
             WindowFunctionType.HAMMING -> HammingWindowFunction(size)
             WindowFunctionType.HANN -> HannWindowFunction(size)
+            WindowFunctionType.BLACKMAN_HARRIS -> BlackmanHarrisWindowFunction(size)
         }
     }
 
