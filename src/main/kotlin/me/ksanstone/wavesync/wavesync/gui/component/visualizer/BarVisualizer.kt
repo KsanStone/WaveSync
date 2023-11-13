@@ -55,6 +55,7 @@ class BarVisualizer : AutoCanvas() {
     init {
         frequencyAxis.tickUnit = 1000.0
         canvasContainer.highlightedVerticalLines.add(20000.0)
+        detachedWindowNameProperty.set("Bar")
 
         smoother = MultiplicativeSmoother()
         smoother.dataSize = 512

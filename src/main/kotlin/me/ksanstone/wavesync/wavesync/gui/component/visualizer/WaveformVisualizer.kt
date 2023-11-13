@@ -44,6 +44,7 @@ class WaveformVisualizer : AutoCanvas() {
     private val downSampledSize: IntegerProperty = SimpleIntegerProperty(buffer.size)
 
     init {
+        detachedWindowNameProperty.set("Waveform")
         canvasContainer.xAxisShown.value = false
         canvasContainer.highlightedHorizontalLines.addAll(1.0, -1.0)
         yAxis.tickUnit = 0.2

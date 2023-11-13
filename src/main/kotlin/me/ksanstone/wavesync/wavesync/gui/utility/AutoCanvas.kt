@@ -39,6 +39,7 @@ abstract class AutoCanvas : AnchorPane() {
     protected var canvas: Canvas = Canvas()
     protected lateinit var infoPane: GridPane
     protected lateinit var controlPane: HBox
+    protected val detachedWindowNameProperty: StringProperty = SimpleStringProperty("AutoCanvas")
 
     protected var xAxis = NumberAxis(0.0, 100.0, 10.0)
     protected var yAxis = NumberAxis(0.0, 100.0, 10.0)
@@ -102,7 +103,8 @@ abstract class AutoCanvas : AnchorPane() {
             if (v) {
                 if (detachedStage == null) {
                     detachedStage = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
-                        .createEmptyStage("AutoCanvas", Label())
+                        .createEmptyStage("", Label())
+                    detachedStage!!.titleProperty().bind(detachedWindowNameProperty.map { if (it.isNotEmpty()) "WaveSync • $it" else "WaveSync" })
                     detachedStage!!.showingProperty()
                         .addListener { _, _, showing -> if (!showing) detachedProperty.set(false) }
                 }
