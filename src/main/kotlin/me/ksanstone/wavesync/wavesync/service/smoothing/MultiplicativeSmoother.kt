@@ -2,7 +2,7 @@ package me.ksanstone.wavesync.wavesync.service.smoothing
 
 class MultiplicativeSmoother : MagnitudeSmoother {
 
-    private lateinit var dataTarget: FloatArray
+    override lateinit var dataTarget: FloatArray
     private lateinit var dataArray: FloatArray
 
     override var factor: Double = 0.91

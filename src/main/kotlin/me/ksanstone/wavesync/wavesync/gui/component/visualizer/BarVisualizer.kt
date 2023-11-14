@@ -26,6 +26,7 @@ import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.fftScaling.*
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
+import me.ksanstone.wavesync.wavesync.utility.MaxTracker
 import kotlin.math.floor
 import kotlin.math.max
 
@@ -34,6 +35,7 @@ class BarVisualizer : AutoCanvas() {
 
     private var frequencyAxis: NumberAxis = xAxis
     private var smoother: MagnitudeSmoother
+    private var maxTracker: MaxTracker
     private var localizationService: LocalizationService =
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     private val tooltip: Tooltip = Tooltip("---")
@@ -59,6 +61,8 @@ class BarVisualizer : AutoCanvas() {
 
         smoother = MultiplicativeSmoother()
         smoother.dataSize = 512
+        maxTracker = MaxTracker()
+        maxTracker.dataSize = smoother.dataSize
 
         smoothing.addListener { _ ->
             smoother.factor = smoothing.get().toDouble()
@@ -194,11 +198,13 @@ class BarVisualizer : AutoCanvas() {
         size = (size - frequencyBinSkip).coerceAtLeast(10)
         if (smoother.dataSize != size) {
             smoother.dataSize = size
+            maxTracker.dataSize = size
         }
 
-        smoother.data = array.slice(frequencyBinSkip until size).map { fl ->
-            fftScalar.scale(fl)
-        }.toFloatArray()
+        for (i in frequencyBinSkip until size) {
+            smoother.dataTarget[i - frequencyBinSkip] = fftScalar.scale(array[i])
+        }
+        maxTracker.data = smoother.data
     }
 
     private fun calculateStep(targetWidth: Int, bufferLength: Int, width: Double): Double {
