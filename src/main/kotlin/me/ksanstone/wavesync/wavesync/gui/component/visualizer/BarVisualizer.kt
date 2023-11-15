@@ -1,12 +1,18 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
 import javafx.beans.property.*
+import javafx.css.CssMetaData
+import javafx.css.Styleable
+import javafx.css.StyleableProperty
+import javafx.css.StyleablePropertyFactory
 import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
 import javafx.scene.control.Tooltip
 import javafx.scene.layout.HBox
+import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
+import javafx.scene.paint.Paint
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
@@ -15,6 +21,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MAX
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MIN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.PEAK_LINE_VISIBLE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarSettingsController
@@ -46,6 +53,7 @@ class BarVisualizer : AutoCanvas() {
     val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(TARGET_BAR_WIDTH)
     val gap: IntegerProperty = SimpleIntegerProperty(GAP)
+    val peakLineVisible: BooleanProperty = SimpleBooleanProperty(PEAK_LINE_VISIBLE)
 
     val scalarType: ObjectProperty<FFTScalarType> = SimpleObjectProperty(DEFAULT_SCALAR_TYPE)
     val linearScaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
@@ -53,6 +61,9 @@ class BarVisualizer : AutoCanvas() {
     val dbMax: FloatProperty = SimpleFloatProperty(DB_MAX)
 
     private lateinit var fftScalar: FFTScalar<*>
+
+    private val peakLineColor: StyleableProperty<Paint> =
+        FACTORY.createStyleablePaintProperty(this, "peakLineColor", "-fx-peak-line-color") { vis -> vis.peakLineColor }
 
     init {
         frequencyAxis.tickUnit = 1000.0
@@ -71,10 +82,11 @@ class BarVisualizer : AutoCanvas() {
         lowPass.addListener { _ -> sizeFrequencyAxis() }
 
         changeScalar()
-        scalarType.addListener { _ -> changeScalar() }
+        scalarType.addListener { _ -> changeScalar(); maxTracker.zero() }
         linearScaling.addListener { _ -> refreshScalar() }
         dbMax.addListener { _ -> refreshScalar() }
         dbMin.addListener { _ -> refreshScalar() }
+        peakLineVisible.addListener { _, _, v -> if(v) maxTracker.zero() }
 
         setOnMouseMoved {
             if (source == null) {
@@ -103,6 +115,8 @@ class BarVisualizer : AutoCanvas() {
         }
 
         Tooltip.install(this, tooltip)
+        this.styleClass.setAll("bar-visualizer")
+        this.stylesheets.add("/styles/bar-visualizer.css")
 
         controlPane.toFront()
     }
@@ -130,6 +144,7 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(scalarType, "fftScalar", FFTScalarType::class.java, this.javaClass, id)
         preferenceService.registerProperty(dbMin, "dbMin", this.javaClass, id)
         preferenceService.registerProperty(dbMax, "dbMax", this.javaClass, id)
+        preferenceService.registerProperty(peakLineVisible, "peakLineVisible", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
@@ -204,7 +219,8 @@ class BarVisualizer : AutoCanvas() {
         for (i in frequencyBinSkip until size) {
             smoother.dataTarget[i - frequencyBinSkip] = fftScalar.scale(array[i])
         }
-        maxTracker.data = smoother.data
+        if (peakLineVisible.get())
+            maxTracker.data = smoother.data
     }
 
     private fun calculateStep(targetWidth: Int, bufferLength: Int, width: Double): Double {
@@ -219,9 +235,9 @@ class BarVisualizer : AutoCanvas() {
 
         val localGap = gap.get()
         val bufferLength = smoother.dataSize
-        val step = calculateStep(targetBarWidth.get(), bufferLength, width)
+        var step = calculateStep(targetBarWidth.get(), bufferLength, width)
         val totalBars = floor(bufferLength.toDouble() / step)
-        val barWidth = (width - (totalBars - 1) * localGap) / totalBars
+        var barWidth = (width - (totalBars - 1) * localGap) / totalBars
         val buffer = smoother.data
         val padding = (barWidth * 0.3).coerceAtMost(1.0)
 
@@ -241,6 +257,46 @@ class BarVisualizer : AutoCanvas() {
             gc.fillRect(x, height - barHeight, barWidth + padding, barHeight)
             x += barWidth + localGap
             y = 0.0
+        }
+
+        if (!peakLineVisible.get()) return
+
+        gc.stroke = peakLineColor.value
+
+        x = 0.0
+        y = 0.0
+        stepAccumulator = 0.0
+        step = calculateStep(1, bufferLength, width)
+        gc.beginPath()
+        gc.moveTo(0.0, height - maxTracker.data[0].toDouble() * height)
+        barWidth = width / floor(bufferLength.toDouble() / step)
+
+        for (i in 0 until bufferLength) {
+            y = max(maxTracker.data[i].toDouble(), y)
+            if (++stepAccumulator < step) continue
+            stepAccumulator -= step
+
+            gc.lineTo(x, height - y * height)
+            x += barWidth
+            y = 0.0
+        }
+
+        gc.stroke()
+    }
+
+    override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {
+        return FACTORY.cssMetaData
+    }
+
+    companion object {
+        private val FACTORY: StyleablePropertyFactory<BarVisualizer> =
+            StyleablePropertyFactory<BarVisualizer>(
+                Pane.getClassCssMetaData()
+            )
+
+        @Suppress("unused")
+        fun getClassCssMetaData(): List<CssMetaData<out Styleable?, *>> {
+            return FACTORY.cssMetaData
         }
     }
 }

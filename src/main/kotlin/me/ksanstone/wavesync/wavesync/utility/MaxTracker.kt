@@ -20,4 +20,7 @@ class MaxTracker {
             dataArray = FloatArray(value)
         }
 
+    fun zero() {
+        this.dataSize = dataSize
+    }
 }

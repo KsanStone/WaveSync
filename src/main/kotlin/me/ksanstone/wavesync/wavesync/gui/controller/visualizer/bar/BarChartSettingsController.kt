@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar
 
+import atlantafx.base.controls.ToggleSwitch
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.Slider
@@ -17,6 +18,9 @@ import java.net.URL
 import java.util.*
 
 class BarChartSettingsController : Initializable {
+
+    @FXML
+    lateinit var peakToggleSwitch: ToggleSwitch
 
     @FXML
     lateinit var graphStyleController: GraphStyleController
@@ -109,6 +113,7 @@ class BarChartSettingsController : Initializable {
         scalingSlider.value = visualizer.linearScaling.get().toDouble()
         dropRateSlider.value = visualizer.smoothing.get().toDouble()
         barWidthSlider.value = visualizer.targetBarWidth.get().toDouble()
+        peakToggleSwitch.isSelected = visualizer.peakLineVisible.get()
         gapSlider.value = visualizer.gap.get().toDouble()
         scalarTypeTabPane.selectionModel.select(
             when (visualizer.scalarType.value) {
@@ -132,6 +137,7 @@ class BarChartSettingsController : Initializable {
         visualizer.cutoff.bind(maxFreqSpinner.valueProperty())
         visualizer.lowPass.bind(minFreqSpinner.valueProperty())
         visualizer.gap.bind(gapSlider.valueProperty())
+        visualizer.peakLineVisible.bind(peakToggleSwitch.selectedProperty())
         visualizer.dbMin.bind(dbMinSpinner.valueProperty().map { it.toFloat() })
         visualizer.dbMax.bind(dbMaxSpinner.valueProperty().map { it.toFloat() })
         visualizer.scalarType.bind(scalarTypeTabPane.selectionModel.selectedIndexProperty().map {
