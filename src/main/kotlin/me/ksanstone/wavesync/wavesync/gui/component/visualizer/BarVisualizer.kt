@@ -96,9 +96,9 @@ class BarVisualizer : AutoCanvas() {
             } else {
                 val x = v.x
                 val bufferLength = smoother.dataSize
-                val step = calculateStep(targetBarWidth.get(), bufferLength, width)
+                val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
                 val totalBars = floor(bufferLength.toDouble() / step)
-                val barWidth = (width - (totalBars - 1) * gap.get()) / totalBars
+                val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
                 val bar = floor(x / barWidth)
                 val binStart = floor(bar * step).toInt()
                 val binEnd = floor((bar + 1) * step).toInt()
