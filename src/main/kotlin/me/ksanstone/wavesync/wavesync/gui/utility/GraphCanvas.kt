@@ -1,13 +1,16 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
 import javafx.beans.property.SimpleBooleanProperty
+import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
+import javafx.geometry.Point2D
 import javafx.geometry.Side
 import javafx.scene.Node
 import javafx.scene.canvas.Canvas
 import javafx.scene.chart.NumberAxis
+import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.shape.Line
 import javafx.scene.shape.LineTo
@@ -18,6 +21,14 @@ import java.lang.Double.isNaN
 import java.text.DecimalFormat
 
 class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, private val canvas: Canvas) : Pane() {
+
+    companion object {
+        const val TOOLTIP_OFFSET = 5.0
+    }
+
+    val tooltipContainer = HBox()
+    val tooltipEnabled = SimpleBooleanProperty(false)
+    val tooltipPosition = SimpleObjectProperty<Point2D>()
 
     val xAxisShown = SimpleBooleanProperty(true)
     val yAxisShown = SimpleBooleanProperty(true)
@@ -45,6 +56,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         highlightedVerticalGridLines.styleClass.setAll("vertical-highlighted-grid-lines")
         horizontalZeroLine.styleClass.setAll("horizontal-zero-line")
         verticalZeroLine.styleClass.setAll("vertical-zero-line")
+        tooltipContainer.styleClass.setAll("tooltip")
         children.addAll(
             horizontalGridLines,
             verticalGridLines,
@@ -54,7 +66,8 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             highlightedVerticalGridLines,
             xAxis,
             yAxis,
-            canvas
+            canvas,
+            tooltipContainer
         )
 
         yAxis.side = Side.LEFT
@@ -101,6 +114,21 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
                     }
                 }
             } as ListChangeListener<Node?>?)
+
+        canvas.setOnMouseMoved {
+            tooltipPosition.set(Point2D(it.x, it.y))
+        }
+
+        tooltipContainer.visibleProperty().bind(canvas.hoverProperty().and(tooltipEnabled))
+        tooltipContainer.isMouseTransparent = true
+
+        // the canvas is not always snapped to x=0, but it is snapped to the right edge, thus we use `this`.width
+        tooltipContainer.layoutXProperty().bind(tooltipPosition.map
+        { (canvas.localToParent(it).x).let { x -> if (x > this.width - TOOLTIP_OFFSET - tooltipContainer.width) x - tooltipContainer.width - TOOLTIP_OFFSET else x + TOOLTIP_OFFSET } })
+
+        // the canvas is always snapped to the top, so we use canvas.height, to make the tooltip not cover the x-axis
+        tooltipContainer.layoutYProperty().bind(tooltipPosition.map
+        { (canvas.localToParent(it).y).let { y -> if (y > canvas.height - TOOLTIP_OFFSET - tooltipContainer.height) y - tooltipContainer.height - TOOLTIP_OFFSET else y + TOOLTIP_OFFSET } })
 
         listOf(
             xAxis.tickMarks,
@@ -181,12 +209,15 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             for (i in xTics.indices) {
                 val tick = xTics[i]
                 val x: Double = xAxis.getDisplayPosition(tick.value)
-                if ((x != xAxisZero || !verticalZeroLineVisible) && x > 0 && x <= xAxisWidth && !highlightedVerticalLines.contains(tick.value)) {
+                if ((x != xAxisZero || !verticalZeroLineVisible) && x > 0 && x <= xAxisWidth && !highlightedVerticalLines.contains(
+                        tick.value
+                    )
+                ) {
                     verticalGridLines.elements.add(MoveTo(left + x + 0.5, top))
                     verticalGridLines.elements.add(LineTo(left + x + 0.5, top + yAxisHeight))
                 }
             }
-            for(line in highlightedVerticalLines) {
+            for (line in highlightedVerticalLines) {
                 val x: Double = xAxis.getDisplayPosition(line)
                 if (x > 0 && x <= xAxisWidth) {
                     highlightedVerticalGridLines.elements.add(MoveTo(left + x + 0.5, top))
@@ -201,12 +232,15 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             for (i in yTics.indices) {
                 val tick = yTics[i]
                 val y: Double = yAxis.getDisplayPosition(tick.value)
-                if ((y != yAxisZero || !horizontalZeroLineVisible) && y >= 0 && y < yAxisHeight && !highlightedHorizontalLines.contains(tick.value)) {
+                if ((y != yAxisZero || !horizontalZeroLineVisible) && y >= 0 && y < yAxisHeight && !highlightedHorizontalLines.contains(
+                        tick.value
+                    )
+                ) {
                     horizontalGridLines.elements.add(MoveTo(left, top + y + 0.5))
                     horizontalGridLines.elements.add(LineTo(left + xAxisWidth, top + y + 0.5))
                 }
             }
-            for(line in highlightedHorizontalLines) {
+            for (line in highlightedHorizontalLines) {
                 val y: Double = yAxis.getDisplayPosition(line)
                 if (y >= 0 && y < yAxisHeight) {
                     highlightedHorizontalGridLines.elements.add(MoveTo(left, top + y + 0.5))

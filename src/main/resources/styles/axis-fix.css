@@ -30,3 +30,5 @@
 .vertical-highlighted-grid-lines {
     -fx-stroke: -color-base-6;
 }
+
+.tooltip {}

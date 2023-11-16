@@ -8,7 +8,7 @@ import javafx.css.StyleablePropertyFactory
 import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
-import javafx.scene.control.Tooltip
+import javafx.scene.control.Label
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
@@ -45,7 +45,7 @@ class BarVisualizer : AutoCanvas() {
     private var maxTracker: MaxTracker
     private var localizationService: LocalizationService =
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
-    private val tooltip: Tooltip = Tooltip("---")
+    private val tooltip = Label("---")
     private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
     private val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
@@ -69,6 +69,8 @@ class BarVisualizer : AutoCanvas() {
         frequencyAxis.tickUnit = 1000.0
         canvasContainer.highlightedVerticalLines.add(20000.0)
         detachedWindowNameProperty.set("Bar")
+        canvasContainer.tooltipEnabled.set(true)
+        canvasContainer.tooltipContainer.children.add(tooltip)
 
         smoother = MultiplicativeSmoother()
         smoother.dataSize = 512
@@ -88,11 +90,11 @@ class BarVisualizer : AutoCanvas() {
         dbMin.addListener { _ -> refreshScalar() }
         peakLineVisible.addListener { _, _, v -> if(v) maxTracker.zero() }
 
-        setOnMouseMoved {
+        canvasContainer.tooltipPosition.addListener { _, _, v ->
             if (source == null) {
                 tooltip.text = "---"
             } else {
-                val x = it.x
+                val x = v.x
                 val bufferLength = smoother.dataSize
                 val step = calculateStep(targetBarWidth.get(), bufferLength, width)
                 val totalBars = floor(bufferLength.toDouble() / step)
@@ -114,7 +116,6 @@ class BarVisualizer : AutoCanvas() {
             }
         }
 
-        Tooltip.install(this, tooltip)
         this.styleClass.setAll("bar-visualizer")
         this.stylesheets.add("/styles/bar-visualizer.css")
 
