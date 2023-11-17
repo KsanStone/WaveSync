@@ -79,17 +79,15 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         yAxis.childrenUnmodifiable
             .addListener(ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
                 while (c.next()) {
-                    if (c.wasAdded()) {
-                        for (mark in c.addedSubList) {
-                            if (mark is Text) {
-                                val parsed = DecimalFormat("###,###.###").parse(mark.text).toDouble()
-                                if (parsed == yAxis.lowerBound && !xAxisShown.get()) {
-                                    mark.text =
-                                        if (mark.text.contains("\n")) mark.text else mark.text + "\n"
-                                } else if (parsed == yAxis.upperBound) {
-                                    mark.text = if (mark.text.contains("\n")) mark.text else "\n" + mark.text
-                                }
-                            }
+                    if (!c.wasAdded()) continue
+                    for (mark in c.addedSubList) {
+                        if (mark !is Text) continue
+                        val parsed = DecimalFormat("###,###.###").parse(mark.text).toDouble()
+                        if (parsed == yAxis.lowerBound && !xAxisShown.get()) {
+                            mark.text =
+                                if (mark.text.contains("\n")) mark.text else mark.text + "\n"
+                        } else if (parsed == yAxis.upperBound) {
+                            mark.text = if (mark.text.contains("\n")) mark.text else "\n" + mark.text
                         }
                     }
                 }
@@ -101,18 +99,16 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         xAxis.childrenUnmodifiable
             .addListener(ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
                 while (c.next()) {
-                    if (c.wasAdded()) {
-                        for (mark in c.addedSubList) {
-                            if (mark is Text) {
-                                val parsed = DecimalFormat("###,###.###").parse(mark.text).toDouble()
-                                if (parsed == xAxis.lowerBound && !yAxisShown.get()) {
-                                    mark.text =
-                                        if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
-                                } else if (parsed == xAxis.upperBound) {
-                                    mark.text =
-                                        if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
-                                }
-                            }
+                    if (!c.wasAdded()) continue
+                    for (mark in c.addedSubList) {
+                        if (mark !is Text) continue
+                        val parsed = DecimalFormat("###,###.###").parse(mark.text).toDouble()
+                        if (parsed == xAxis.lowerBound && !yAxisShown.get()) {
+                            mark.text =
+                                if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
+                        } else if (parsed == xAxis.upperBound) {
+                            mark.text =
+                                if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
                         }
                     }
                 }
@@ -127,11 +123,11 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
 
         // the canvas is not always snapped to x=0, but it is snapped to the right edge, thus we use `this`.width
         tooltipContainer.layoutXProperty().bind(tooltipPosition.map
-        { (canvas.localToParent(it).x).let { x -> if (x > this.width - TOOLTIP_OFFSET - tooltipContainer.width) x - tooltipContainer.width - TOOLTIP_OFFSET else x + TOOLTIP_OFFSET } })
+        { (canvas.localToParent(it).x).let { x -> if (x > this.width - TOOLTIP_OFFSET - tooltipContainer.width) (x - tooltipContainer.width - TOOLTIP_OFFSET).coerceAtLeast(0.0) else x + TOOLTIP_OFFSET } })
 
         // the canvas is always snapped to the top, so we use canvas.height, to make the tooltip not cover the x-axis
         tooltipContainer.layoutYProperty().bind(tooltipPosition.map
-        { (canvas.localToParent(it).y).let { y -> if (y > canvas.height - TOOLTIP_OFFSET - tooltipContainer.height) y - tooltipContainer.height - TOOLTIP_OFFSET else y + TOOLTIP_OFFSET } })
+        { (canvas.localToParent(it).y).let { y -> if (y > canvas.height - TOOLTIP_OFFSET - tooltipContainer.height) (y - tooltipContainer.height - TOOLTIP_OFFSET).coerceAtLeast(0.0) else y + TOOLTIP_OFFSET } })
 
         listOf(
             tooltipContainer.visibleProperty(),
@@ -140,7 +136,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         listOf(
             xAxis.tickMarks,
             yAxis.tickMarks
-        ).forEach { it.addListener(ListChangeListener { c -> while (c.next()); layoutGrid() }) }
+        ).forEach { it.addListener(ListChangeListener { c -> while (c.next()) { /* layout once updates have settled */ }; layoutGrid() }) }
         listOf(
             horizontalLinesVisible,
             verticalLinesVisible,
@@ -189,15 +185,17 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         val p: Point2D? = tooltipPosition.get()
         if (!tooltipContainer.isVisible || p == null) return
 
+        val axisTickOverlap = 5.5
+
         var s1 = canvas.localToParent(Point2D(0.0, p.y))
-        tooltipCross.elements.add(MoveTo(s1.x, s1.y))
         var s2 = canvas.localToParent(Point2D(canvas.width, p.y))
-        tooltipCross.elements.add(LineTo(s2.x, s2.y))
+        tooltipCross.elements.add(MoveTo(s1.x - (if(xAxisShown.get()) axisTickOverlap else 0.0), s1.y + 0.5))
+        tooltipCross.elements.add(LineTo(s2.x, s2.y + 0.5))
 
         s1 = canvas.localToParent(Point2D(p.x, 0.0))
-        tooltipCross.elements.add(MoveTo(s1.x, s1.y))
         s2 = canvas.localToParent(Point2D(p.x, canvas.height))
-        tooltipCross.elements.add(LineTo(s2.x, s2.y))
+        tooltipCross.elements.add(MoveTo(s2.x + 0.5, s2.y + (if(xAxisShown.get()) axisTickOverlap else 0.0)))
+        tooltipCross.elements.add(LineTo(s1.x + 0.5, s1.y))
     }
 
     private fun createGrid(left: Double, top: Double = 0.0, xAxisWidth: Double, yAxisHeight: Double) {

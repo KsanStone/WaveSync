@@ -5,6 +5,10 @@ class LinearFFTScalar : FFTScalar<LinearFFTScalarParams> {
         return res
     }
 
+    override fun scaleRaw(res: Float): Float {
+        return res
+    }
+
     override fun getAxisScale(): AxisScale {
         return AxisScale(
             min = 0.0,

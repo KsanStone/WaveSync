@@ -43,9 +43,10 @@ class BarVisualizer : AutoCanvas() {
     private var frequencyAxis: NumberAxis = xAxis
     private var smoother: MagnitudeSmoother
     private var maxTracker: MaxTracker
+    private var rawMaxTracker: MaxTracker
     private var localizationService: LocalizationService =
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
-    private val tooltip = Label("---")
+    private val tooltip = Label()
     private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
     private val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
@@ -59,6 +60,12 @@ class BarVisualizer : AutoCanvas() {
     val linearScaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
     val dbMin: FloatProperty = SimpleFloatProperty(DB_MIN)
     val dbMax: FloatProperty = SimpleFloatProperty(DB_MAX)
+
+    private var source: SupportedCaptureSource? = null
+    private var fftSize: Int = 1024
+    private var frequencyBinSkip: Int = 0
+    private lateinit var fftDataArray: FloatArray
+
 
     private lateinit var fftScalar: FFTScalar<*>
 
@@ -76,6 +83,8 @@ class BarVisualizer : AutoCanvas() {
         smoother.dataSize = 512
         maxTracker = MaxTracker()
         maxTracker.dataSize = smoother.dataSize
+        rawMaxTracker = MaxTracker()
+        rawMaxTracker.dataSize = smoother.dataSize
 
         smoothing.addListener { _ ->
             smoother.factor = smoothing.get().toDouble()
@@ -90,31 +99,7 @@ class BarVisualizer : AutoCanvas() {
         dbMin.addListener { _ -> refreshScalar() }
         peakLineVisible.addListener { _, _, v -> if(v) maxTracker.zero() }
 
-        canvasContainer.tooltipPosition.addListener { _, _, v ->
-            if (source == null) {
-                tooltip.text = "---"
-            } else {
-                val x = v.x
-                val bufferLength = smoother.dataSize
-                val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
-                val totalBars = floor(bufferLength.toDouble() / step)
-                val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
-                val bar = floor(x / barWidth)
-                val binStart = floor(bar * step).toInt()
-                val binEnd = floor((bar + 1) * step).toInt()
-                val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
-                val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
-                tooltip.text =
-                    "Bar: ${localizationService.formatNumber(bar)} \nFFT: ${localizationService.formatNumber(binStart)} - ${
-                        localizationService.formatNumber(binEnd)
-                    }\nFreq: ${localizationService.formatNumber(minFreq, "Hz")} - ${
-                        localizationService.formatNumber(
-                            maxFreq,
-                            "Hz"
-                        )
-                    }"
-            }
-        }
+        canvasContainer.tooltipPosition.addListener { _ -> refreshTooltipLabel() }
 
         this.styleClass.setAll("bar-visualizer")
         this.stylesheets.add("/styles/bar-visualizer.css")
@@ -150,6 +135,32 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+    }
+
+    private fun refreshTooltipLabel() {
+            if (source == null) {
+                tooltip.text = "---"
+                return
+            }
+
+            val x = canvasContainer.tooltipPosition.get().x
+            val bufferLength = smoother.dataSize
+            val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
+            val totalBars = floor(bufferLength.toDouble() / step)
+            val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
+            val bar = floor(x / barWidth)
+            val binStart = floor(bar * step).toInt()
+            val binEnd = floor((bar + 1) * step).toInt()
+            val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
+            val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
+            val maxValue = rawMaxTracker.data.slice(binStart .. binEnd).max()
+            val rawValue = fftDataArray.slice(binStart + frequencyBinSkip .. binEnd + frequencyBinSkip).max()
+            tooltip.text =
+                "Bar: ${localizationService.formatNumber(bar)} \n" +
+                "FFT: ${localizationService.formatNumber(binStart)} - ${localizationService.formatNumber(binEnd)}\n" +
+                "Freq: ${localizationService.formatNumber(minFreq, "Hz")} - ${localizationService.formatNumber(maxFreq, "Hz")}\n" +
+                "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
+            if (peakLineVisible.get()) tooltip.text += "\nMax: ${localizationService.formatNumber(fftScalar.scaleRaw(maxValue))}"
     }
 
     private fun changeScalar() {
@@ -199,11 +210,8 @@ class BarVisualizer : AutoCanvas() {
         frequencyAxis.upperBound = FourierMath.frequencyOfBin(upper, source!!.format.mix.rate, fftSize).toDouble()
     }
 
-    private var source: SupportedCaptureSource? = null
-    private var fftSize: Int = 1024
-    private var frequencyBinSkip: Int = 0
-
     fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
+        fftDataArray = array
         if (source != this.source) {
             this.source = source
             sizeFrequencyAxis()
@@ -215,13 +223,16 @@ class BarVisualizer : AutoCanvas() {
         if (smoother.dataSize != size) {
             smoother.dataSize = size
             maxTracker.dataSize = size
+            rawMaxTracker.dataSize = size
         }
 
         for (i in frequencyBinSkip until size) {
             smoother.dataTarget[i - frequencyBinSkip] = fftScalar.scale(array[i])
         }
-        if (peakLineVisible.get())
+        if (peakLineVisible.get()) {
             maxTracker.data = smoother.data
+            rawMaxTracker.applyData(array, frequencyBinSkip, size)
+        }
     }
 
     private fun calculateStep(targetWidth: Int, bufferLength: Int, width: Double): Double {
@@ -259,6 +270,8 @@ class BarVisualizer : AutoCanvas() {
             x += barWidth + localGap
             y = 0.0
         }
+
+        if(canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
 
         if (!peakLineVisible.get()) return
 

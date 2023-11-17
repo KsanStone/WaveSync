@@ -12,6 +12,10 @@ class DeciBelFFTScalar : FFTScalar<DeciBelFFTScalarParameters> {
         return (20 * log10(res) - rangeMin).coerceIn(0.0F, scale) / scale
     }
 
+    override fun scaleRaw(res: Float): Float {
+        return 20 * log10(res)
+    }
+
     override fun getAxisScale(): AxisScale {
         return AxisScale(
             min = rangeMin.toDouble(),

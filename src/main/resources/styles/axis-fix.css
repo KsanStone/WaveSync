@@ -35,6 +35,6 @@
 
 .tooltip-cross {
     -fx-stroke: -color-accent-4;
-    -fx-stroke-dash-array: 7 4;
+    -fx-stroke-dash-array: 7;
     -fx-stroke-width: 1;
 }

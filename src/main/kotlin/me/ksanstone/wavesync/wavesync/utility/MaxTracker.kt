@@ -23,4 +23,11 @@ class MaxTracker {
     fun zero() {
         this.dataSize = dataSize
     }
+
+    fun applyData(data: FloatArray, offset: Int, limit: Int) {
+        if (offset + limit > data.size || limit != dataSize) throw IllegalArgumentException("Size mismatch")
+        for(i in 0 until limit) {
+            dataArray[i] = max(data[i + offset], dataArray[i])
+        }
+    }
 }

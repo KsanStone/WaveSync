@@ -3,6 +3,8 @@ package me.ksanstone.wavesync.wavesync.service.fftScaling
 interface FFTScalar<E : Any> {
     fun scale(res: Float): Float
 
+    fun scaleRaw(res: Float): Float
+
     fun update(params: E)
 
     fun getAxisScale(): AxisScale

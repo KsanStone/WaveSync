@@ -4,4 +4,4 @@ ${AnsiColor.BRIGHT_MAGENTA}| | /| / / __ `/ | / / _ \${AnsiColor.BRIGHT_CYAN}\__
 ${AnsiColor.BRIGHT_MAGENTA}| |/ |/ / /_/ /| |/ /  __/${AnsiColor.BRIGHT_CYAN}__/ / /_/ / / / / /__
 ${AnsiColor.BRIGHT_MAGENTA}|__/|__/\__,_/ |___/\___/${AnsiColor.BRIGHT_CYAN}____/\__, /_/ /_/\___/
 ${AnsiColor.BRIGHT_CYAN}                             /____/
-${AnsiStyle.NORMAL} :: Spring Boot${spring-boot.formatted-version} ::
+${AnsiColor.BRIGHT_BLACK}::${AnsiStyle.NORMAL} Spring Boot ${spring-boot.version} ${AnsiColor.BRIGHT_BLACK}::${AnsiStyle.NORMAL} JavaFX ${javafx.version} ${AnsiColor.BRIGHT_BLACK}::${AnsiStyle.NORMAL} Java ${java.version} ${AnsiColor.BRIGHT_BLACK}::${AnsiStyle.NORMAL}
