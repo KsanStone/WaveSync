@@ -42,6 +42,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
     private var verticalGridLines: Path = Path()
     private var highlightedHorizontalGridLines: Path = Path()
     private var highlightedVerticalGridLines: Path = Path()
+    private var tooltipCross: Path = Path()
     private var horizontalZeroLine: Line = Line()
     private var verticalZeroLine: Line = Line()
     private var horizontalZeroLineVisible = true
@@ -49,7 +50,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
 
     init {
         listOf(xAxisShown, yAxisShown, widthProperty(), heightProperty())
-            .forEach { it.addListener { _ -> doLayout() } }
+            .forEach { it.addListener { _ -> doLayout(); layoutTooltipCross() } }
         horizontalGridLines.styleClass.setAll("horizontal-grid-lines")
         verticalGridLines.styleClass.setAll("vertical-grid-lines")
         highlightedHorizontalGridLines.styleClass.setAll("horizontal-highlighted-grid-lines")
@@ -57,6 +58,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         horizontalZeroLine.styleClass.setAll("horizontal-zero-line")
         verticalZeroLine.styleClass.setAll("vertical-zero-line")
         tooltipContainer.styleClass.setAll("tooltip")
+        tooltipCross.styleClass.setAll("tooltip-cross")
         children.addAll(
             horizontalGridLines,
             verticalGridLines,
@@ -64,6 +66,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             verticalZeroLine,
             highlightedHorizontalGridLines,
             highlightedVerticalGridLines,
+            tooltipCross,
             xAxis,
             yAxis,
             canvas,
@@ -131,6 +134,10 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         { (canvas.localToParent(it).y).let { y -> if (y > canvas.height - TOOLTIP_OFFSET - tooltipContainer.height) y - tooltipContainer.height - TOOLTIP_OFFSET else y + TOOLTIP_OFFSET } })
 
         listOf(
+            tooltipContainer.visibleProperty(),
+            tooltipPosition
+        ).forEach { it.addListener { _ -> layoutTooltipCross() } }
+        listOf(
             xAxis.tickMarks,
             yAxis.tickMarks
         ).forEach { it.addListener(ListChangeListener { c -> while (c.next()); layoutGrid() }) }
@@ -175,6 +182,22 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
     private fun layoutGrid() {
         val leftPad = if (yAxisShown.get()) yAxis.prefWidth(-1.0) else 0.0
         createGrid(left = leftPad, xAxisWidth = canvas.width, yAxisHeight = canvas.height)
+    }
+
+    private fun layoutTooltipCross() {
+        tooltipCross.elements.clear()
+        val p: Point2D? = tooltipPosition.get()
+        if (!tooltipContainer.isVisible || p == null) return
+
+        var s1 = canvas.localToParent(Point2D(0.0, p.y))
+        tooltipCross.elements.add(MoveTo(s1.x, s1.y))
+        var s2 = canvas.localToParent(Point2D(canvas.width, p.y))
+        tooltipCross.elements.add(LineTo(s2.x, s2.y))
+
+        s1 = canvas.localToParent(Point2D(p.x, 0.0))
+        tooltipCross.elements.add(MoveTo(s1.x, s1.y))
+        s2 = canvas.localToParent(Point2D(p.x, canvas.height))
+        tooltipCross.elements.add(LineTo(s2.x, s2.y))
     }
 
     private fun createGrid(left: Double, top: Double = 0.0, xAxisWidth: Double, yAxisHeight: Double) {
