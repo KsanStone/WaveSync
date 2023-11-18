@@ -54,6 +54,13 @@ class PreferenceService {
             { v -> preferences.putFloat(name, v as Float) })
     }
 
+    fun registerProperty(property: DoubleProperty, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
+        val preferences = getPreferences(clazz, id)
+        doRegister(property as Property<Any?>,
+            { preferences.getDouble(name, property.get()) },
+            { v -> preferences.putDouble(name, v as Double) })
+    }
+
     fun registerProperty(property: StringProperty, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
         val preferences = getPreferences(clazz, id)
         doRegister(property as Property<Any?>,

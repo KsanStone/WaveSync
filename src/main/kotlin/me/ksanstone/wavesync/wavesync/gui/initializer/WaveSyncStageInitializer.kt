@@ -9,6 +9,7 @@ import javafx.scene.input.KeyCombination
 import javafx.scene.input.KeyEvent
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.StageSizingService
 import me.ksanstone.wavesync.wavesync.service.ThemeService
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
@@ -18,7 +19,9 @@ import org.springframework.stereotype.Component
 class WaveSyncStageInitializer(
     private val themeService: ThemeService,
     private val localizationService: LocalizationService,
+    private val stageSizingService: StageSizingService
 ) : ApplicationListener<StageReadyEvent> {
+
     override fun onApplicationEvent(event: StageReadyEvent) {
         val stage = event.stage
 
@@ -37,6 +40,8 @@ class WaveSyncStageInitializer(
         val scene = Scene(root)
 
         themeService.applyCurrent()
+
+        stageSizingService.registerStageSize(stage, "main")
 
         stage.title = "WaveSync"
         stage.icons.add(Image("icon.png"))
