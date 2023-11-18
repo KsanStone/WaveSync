@@ -42,7 +42,6 @@ class BarVisualizer : AutoCanvas() {
 
     private var frequencyAxis: NumberAxis = xAxis
     private var smoother: MagnitudeSmoother
-    private var maxTracker: MaxTracker
     private var rawMaxTracker: MaxTracker
     private var localizationService: LocalizationService =
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
@@ -81,8 +80,6 @@ class BarVisualizer : AutoCanvas() {
 
         smoother = MultiplicativeSmoother()
         smoother.dataSize = 512
-        maxTracker = MaxTracker()
-        maxTracker.dataSize = smoother.dataSize
         rawMaxTracker = MaxTracker()
         rawMaxTracker.dataSize = smoother.dataSize
 
@@ -93,11 +90,11 @@ class BarVisualizer : AutoCanvas() {
         lowPass.addListener { _ -> sizeFrequencyAxis() }
 
         changeScalar()
-        scalarType.addListener { _ -> changeScalar(); maxTracker.zero() }
+        scalarType.addListener { _ -> changeScalar(); rawMaxTracker.zero() }
         linearScaling.addListener { _ -> refreshScalar() }
         dbMax.addListener { _ -> refreshScalar() }
         dbMin.addListener { _ -> refreshScalar() }
-        peakLineVisible.addListener { _, _, v -> if(v) maxTracker.zero() }
+        peakLineVisible.addListener { _, _, v -> if(v) rawMaxTracker.zero() }
 
         canvasContainer.tooltipPosition.addListener { _ -> refreshTooltipLabel() }
 
@@ -222,7 +219,6 @@ class BarVisualizer : AutoCanvas() {
         size = (size - frequencyBinSkip).coerceAtLeast(10)
         if (smoother.dataSize != size) {
             smoother.dataSize = size
-            maxTracker.dataSize = size
             rawMaxTracker.dataSize = size
         }
 
@@ -230,7 +226,6 @@ class BarVisualizer : AutoCanvas() {
             smoother.dataTarget[i - frequencyBinSkip] = fftScalar.scale(array[i])
         }
         if (peakLineVisible.get()) {
-            maxTracker.data = smoother.data
             rawMaxTracker.applyData(array, frequencyBinSkip, size)
         }
     }
@@ -282,11 +277,11 @@ class BarVisualizer : AutoCanvas() {
         stepAccumulator = 0.0
         step = calculateStep(1, bufferLength, width)
         gc.beginPath()
-        gc.moveTo(0.0, height - maxTracker.data[0].toDouble() * height)
+        gc.moveTo(0.0, height - rawMaxTracker.data[0].toDouble() * height)
         barWidth = width / floor(bufferLength.toDouble() / step)
 
         for (i in 0 until bufferLength) {
-            y = max(maxTracker.data[i].toDouble(), y)
+            y = max(fftScalar.scale(rawMaxTracker.data[i]).toDouble(), y)
             if (++stepAccumulator < step) continue
             stepAccumulator -= step
 
