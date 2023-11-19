@@ -1,7 +1,9 @@
 package me.ksanstone.wavesync.wavesync.service
 
+import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleDoubleProperty
+import javafx.beans.value.ChangeListener
 import javafx.stage.Stage
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -19,32 +21,47 @@ class StageSizingService(
     private val logger: Logger = LoggerFactory.getLogger(this.javaClass)
 
     fun registerStageSize(stage: Stage, id: String) {
-        val widthPropWrapper = SimpleDoubleProperty(stage.width)
-        preferenceService.registerProperty(widthPropWrapper, "width", this.javaClass, id)
-        stage.width = widthPropWrapper.get()
-        widthPropWrapper.bind(stage.widthProperty())
+        if (stage.isShowing) doRegister(stage, id)
+        else doRegisterWhenShown(stage, id)
+    }
 
-        val heightPropWrapper = SimpleDoubleProperty(stage.height)
-        preferenceService.registerProperty(heightPropWrapper, "height", this.javaClass, id)
-        stage.height = heightPropWrapper.get()
-        heightPropWrapper.bind(stage.heightProperty())
+    private fun doRegisterWhenShown(stage: Stage, id: String) {
+        lateinit var listener: ChangeListener<Boolean>
+        listener = ChangeListener<Boolean> { _, _, v -> if(!v) return@ChangeListener; doRegister(stage, id); stage.showingProperty().removeListener(listener) }
+        stage.showingProperty().addListener(listener)
+    }
 
-        val xPropWrapper = SimpleDoubleProperty(stage.x)
-        preferenceService.registerProperty(xPropWrapper, "x", this.javaClass, id)
-        stage.x = xPropWrapper.get()
-        xPropWrapper.bind(stage.xProperty())
+    private fun doRegister(stage: Stage, id: String) {
+        Platform.runLater {
+            val widthPropWrapper = SimpleDoubleProperty(stage.width)
+            preferenceService.registerProperty(widthPropWrapper, "width", this.javaClass, id)
+            stage.width = widthPropWrapper.get()
+            widthPropWrapper.bind(stage.widthProperty())
 
-        val yPropWrapper = SimpleDoubleProperty(stage.y)
-        preferenceService.registerProperty(yPropWrapper, "y", this.javaClass, id)
-        stage.y = yPropWrapper.get()
-        yPropWrapper.bind(stage.yProperty())
+            val heightPropWrapper = SimpleDoubleProperty(stage.height)
+            preferenceService.registerProperty(heightPropWrapper, "height", this.javaClass, id)
+            stage.height = heightPropWrapper.get()
+            heightPropWrapper.bind(stage.heightProperty())
 
-        val maximizedPropWrapper = SimpleBooleanProperty(stage.isMaximized)
-        preferenceService.registerProperty(maximizedPropWrapper, "isMaximized", this.javaClass, id)
-        stage.isMaximized = maximizedPropWrapper.get()
-        maximizedPropWrapper.bind(stage.maximizedProperty())
+            val xPropWrapper = SimpleDoubleProperty(stage.x)
+            preferenceService.registerProperty(xPropWrapper, "x", this.javaClass, id)
+            stage.x = xPropWrapper.get()
+            xPropWrapper.bind(stage.xProperty())
 
-        getStageHome(stage, id)
+            val yPropWrapper = SimpleDoubleProperty(stage.y)
+            preferenceService.registerProperty(yPropWrapper, "y", this.javaClass, id)
+            stage.y = yPropWrapper.get()
+            yPropWrapper.bind(stage.yProperty())
+
+            getStageHome(stage, id)
+
+            Platform.runLater {
+                val maximizedPropWrapper = SimpleBooleanProperty(stage.isMaximized)
+                preferenceService.registerProperty(maximizedPropWrapper, "isMaximized", this.javaClass, id)
+                stage.isMaximized = maximizedPropWrapper.get()
+                maximizedPropWrapper.bind(stage.maximizedProperty())
+            }
+        }
     }
 
     fun getStageHome(stage: Stage, id: String? = null) {
