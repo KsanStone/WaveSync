@@ -5,7 +5,7 @@ import javafx.scene.Node
 import javafx.scene.Parent
 import javafx.scene.Scene
 import javafx.scene.image.Image
-import javafx.scene.layout.BorderPane
+import javafx.scene.layout.AnchorPane
 import javafx.stage.Modality
 import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.WaveSyncApplication
@@ -47,8 +47,8 @@ class MenuInitializer(
         val stage = Stage()
 
         if (node != null) {
-            val root = BorderPane()
-            root.center = node
+            val root = AnchorPane()
+            root.children.add(node)
             stage.scene = Scene(root)
         }
 

@@ -16,7 +16,6 @@ import javafx.scene.control.Label
 import javafx.scene.effect.BlurType
 import javafx.scene.effect.DropShadow
 import javafx.scene.layout.AnchorPane
-import javafx.scene.layout.BorderPane
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.HBox
 import javafx.stage.Stage
@@ -59,8 +58,8 @@ abstract class AutoCanvas : AnchorPane() {
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
 
         canvasContainer = GraphCanvas(xAxis, yAxis, canvas)
-        canvasContainer.prefWidthProperty().bind(widthProperty())
-        canvasContainer.prefHeightProperty().bind(heightProperty())
+        setBottomAnchor(canvasContainer, 0.0)
+        setRightAnchor(canvasContainer, 0.0)
         setTopAnchor(canvasContainer, 0.0)
         setLeftAnchor(canvasContainer, 0.0)
         children.add(canvasContainer)
@@ -109,14 +108,22 @@ abstract class AutoCanvas : AnchorPane() {
                         .addListener { _, _, showing -> if (!showing) detachedProperty.set(false) }
                 }
 
-                (detachedStage!!.scene.root as BorderPane).center = canvasContainer
+                (detachedStage!!.scene.root as AnchorPane).children.add(canvasContainer)
+                (detachedStage!!.scene.root as AnchorPane).children.add(infoPane)
+                (detachedStage!!.scene.root as AnchorPane).children.add(controlPane)
                 children.remove(canvasContainer)
+                children.remove(infoPane)
+                children.remove(controlPane)
                 detachedStage!!.show()
             } else {
                 if (detachedStage == null) return@addListener
                 detachedStage!!.hide()
-                children.add(0, canvasContainer)
-                (detachedStage!!.scene.root as BorderPane).center = null
+                children.add(canvasContainer)
+                children.add(infoPane)
+                children.add(controlPane)
+                (detachedStage!!.scene.root as AnchorPane).children.remove(canvasContainer)
+                (detachedStage!!.scene.root as AnchorPane).children.remove(infoPane)
+                (detachedStage!!.scene.root as AnchorPane).children.remove(controlPane)
             }
         }
     }
