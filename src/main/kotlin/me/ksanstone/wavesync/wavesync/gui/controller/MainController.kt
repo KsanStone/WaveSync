@@ -7,9 +7,11 @@ import javafx.fxml.Initializable
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
+import javafx.scene.layout.HBox
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.event.FXMLInitializeEvent
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
+import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
@@ -21,6 +23,9 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class MainController : Initializable {
+
+    @FXML
+    lateinit var bottomBar: HBox
 
     @FXML
     lateinit var audioDeviceListComboBox: ChoiceBox<String>
@@ -152,6 +157,11 @@ class MainController : Initializable {
 
         visualizerPane.items.add(barVisualizer)
         visualizerPane.items.add(waveformVisualizer)
+
+        val masterVolumeVisualizer = VolumeVisualizer()
+        masterVolumeVisualizer.valueProperty.bind(audioCaptureService.masterVolume)
+
+        bottomBar.children.add(masterVolumeVisualizer)
     }
 
     companion object {

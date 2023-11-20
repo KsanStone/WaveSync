@@ -33,7 +33,7 @@ import kotlin.math.pow
 import kotlin.math.roundToLong
 
 
-abstract class AutoCanvas : AnchorPane() {
+abstract class AutoCanvas(private val detachable: Boolean = true) : AnchorPane() {
 
     protected var canvas: Canvas = Canvas()
     protected lateinit var infoPane: GridPane
@@ -149,15 +149,16 @@ abstract class AutoCanvas : AnchorPane() {
         setTopAnchor(controlPane, 5.0)
         setRightAnchor(controlPane, 5.0)
 
-        val detachButton = Button()
-        detachButton.styleClass.add("button-icon")
-        detachButton.graphic = FontIcon(if (detachedProperty.get()) "mdmz-south_west" else "mdmz-open_in_new")
-        detachedProperty.addListener { _, _, v ->
-            (detachButton.graphic as FontIcon).iconLiteral = if (v) "mdmz-south_west" else "mdmz-open_in_new"
+        if(detachable) {
+            val detachButton = Button()
+            detachButton.styleClass.add("button-icon")
+            detachButton.graphic = FontIcon(if (detachedProperty.get()) "mdmz-south_west" else "mdmz-open_in_new")
+            detachedProperty.addListener { _, _, v ->
+                (detachButton.graphic as FontIcon).iconLiteral = if (v) "mdmz-south_west" else "mdmz-open_in_new"
+            }
+            detachButton.onAction = EventHandler { detachedProperty.set(!detachedProperty.get()) }
+            controlPane.children.add(detachButton)
         }
-        detachButton.onAction = EventHandler { detachedProperty.set(!detachedProperty.get()) }
-
-        controlPane.children.add(detachButton)
 
         children.add(controlPane)
     }

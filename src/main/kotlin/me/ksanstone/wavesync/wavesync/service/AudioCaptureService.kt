@@ -5,6 +5,8 @@ import com.sun.jna.Pointer
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import javafx.beans.property.*
+import javafx.collections.FXCollections
+import javafx.collections.ObservableList
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_UPSAMPLING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
@@ -24,6 +26,9 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.function.BiConsumer
+import kotlin.math.log10
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 
 @Service
@@ -47,6 +52,7 @@ class AudioCaptureService(
 
     val peakFrequency = SimpleDoubleProperty(0.0)
     val peakValue = SimpleFloatProperty(0.0f)
+    val masterVolume = SimpleDoubleProperty(Double.MIN_VALUE)
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
@@ -116,7 +122,19 @@ class AudioCaptureService(
                 doFFT(fftSampleBuffer.toFloatArray(), source.get().format.mix.rate)
             }
         }
-        sampleObservers.forEach { it.accept(samples.sliceArray(0 until frames), source.get()) }
+        val sampleSlice = samples.sliceArray(0 until frames)
+        doLoudnessCalc(sampleSlice)
+        sampleObservers.forEach { it.accept(sampleSlice, source.get()) }
+    }
+
+    private fun calcRMS(samples: FloatArray): Double {
+        var s = 0.0
+        for (i in samples) s += i.toDouble().pow(2)
+        return sqrt(s / samples.size)
+    }
+
+    fun doLoudnessCalc(samples: FloatArray) {
+        masterVolume.value = 20 * log10(calcRMS(samples))
     }
 
     fun doFFT(samples: FloatArray, rate: Int) {
