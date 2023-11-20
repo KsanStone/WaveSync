@@ -1,5 +1,5 @@
 .volume-visualizer {
-    -fx-peak-color: -color-accent-0;
-    -fx-bottom-color: -color-accent-7;
-    -fx-tick-color: -color-base-1;
+    -fx-peak-color: -color-accent-3;
+    -fx-bottom-color: -color-accent-9;
+    -fx-tick-color: -color-base-4;
 }

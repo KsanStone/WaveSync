@@ -15,7 +15,7 @@ import javafx.scene.paint.Color
 import javafx.scene.paint.CycleMethod
 import javafx.scene.paint.LinearGradient
 import javafx.scene.paint.Stop
-import javafx.scene.text.Text
+import javafx.scene.text.Font
 import javafx.scene.text.TextAlignment
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import java.text.DecimalFormat
@@ -106,8 +106,14 @@ class VolumeVisualizer : AutoCanvas(false) {
         return TextAlignment.CENTER
     }
 
+    private fun getTextBaseline(tickPosition: Double, textHeight: Double): VPos {
+        val alignFactor = when (orientationProperty.get()!!) {Orientation.HORIZONTAL -> width; Orientation.VERTICAL -> height}
+        if (tickPosition < textHeight) return VPos.TOP
+        if (tickPosition > alignFactor - textHeight) return VPos.BOTTOM
+        return VPos.CENTER
+    }
+
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
-        val max = rangeMax.get()
         val min = rangeMin.get()
         val range = range.get()
         val v = (valueProperty.get() - min).coerceIn(0.0, range) / range
@@ -136,10 +142,11 @@ class VolumeVisualizer : AutoCanvas(false) {
         // Drawing the tick marks on top
         gc.stroke = tickColor.value
         gc.fill = tickColor.value
-        gc.textBaseline = VPos.CENTER
+        gc.font = Font.font(10.0)
         val tickSize = 5.0
         when (orientation) {
             Orientation.HORIZONTAL -> {
+                gc.textBaseline = VPos.CENTER
                 tickMarks.forEach {
                     val pos = getTickPosition(it.first)
                     gc.strokeLine(pos, 0.0, pos, tickSize)
@@ -149,7 +156,14 @@ class VolumeVisualizer : AutoCanvas(false) {
                 }
             }
             Orientation.VERTICAL -> {
-
+                gc.textAlign = TextAlignment.CENTER
+                tickMarks.forEach {
+                    val pos = getTickPosition(it.first)
+                    gc.strokeLine(0.0, pos, tickSize, pos)
+                    gc.strokeLine(width - tickSize, pos, width, pos)
+                    gc.textBaseline = getTextBaseline(pos, 5.0)
+                    gc.fillText(it.second, width / 2, pos)
+                }
             }
         }
     }

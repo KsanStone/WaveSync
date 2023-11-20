@@ -24,6 +24,7 @@
                             </graphic>
                         </Button>
                         <Label fx:id="deviceInfoLabel" text="No device" HBox.hgrow="SOMETIMES" />
+                        <Label HBox.hgrow="ALWAYS" maxWidth="Infinity"></Label>
                     </children>
                     <padding>
                         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
