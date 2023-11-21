@@ -87,9 +87,6 @@ class VolumeVisualizer : AutoCanvas(false) {
         while (tick < max) { newTickMarks.add(tick); tick += tickUnit}
         newTickMarks.addAll(listOf(min, max))
         val tickMarkList = newTickMarks.toMutableList()
-        if (tickMarkList.size > 2 && tickMarkList[1] - tickMarkList[0] < delta) tickMarkList.removeAt(1)
-        if (tickMarkList.size > 2 && tickMarkList[tickMarkList.size - 1] - tickMarkList[tickMarkList.size - 2] < delta)
-            tickMarkList.removeAt(tickMarkList.size - 2)
 
         tickMarks.setAll(tickMarkList.map { it to tickFormat.format(it) })
     }
