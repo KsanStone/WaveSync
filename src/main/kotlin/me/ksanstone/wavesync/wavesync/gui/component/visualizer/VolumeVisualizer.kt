@@ -7,6 +7,7 @@ import javafx.css.CssMetaData
 import javafx.css.Styleable
 import javafx.css.StyleableProperty
 import javafx.css.StyleablePropertyFactory
+import javafx.geometry.Bounds
 import javafx.geometry.Orientation
 import javafx.geometry.VPos
 import javafx.scene.canvas.GraphicsContext
@@ -16,6 +17,7 @@ import javafx.scene.paint.CycleMethod
 import javafx.scene.paint.LinearGradient
 import javafx.scene.paint.Stop
 import javafx.scene.text.Font
+import javafx.scene.text.Text
 import javafx.scene.text.TextAlignment
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import java.text.DecimalFormat
@@ -82,7 +84,6 @@ class VolumeVisualizer : AutoCanvas(false) {
         val min = rangeMin.get()
         val tickUnit = tickUnit.get()
 
-        val delta = tickUnit * 0.5
         var tick = min - min % tickUnit + tickUnit
         while (tick < max) { newTickMarks.add(tick); tick += tickUnit}
         newTickMarks.addAll(listOf(min, max))
@@ -96,18 +97,17 @@ class VolumeVisualizer : AutoCanvas(false) {
                 when (orientationProperty.get()!!) {Orientation.HORIZONTAL -> width - 1; Orientation.VERTICAL -> height - 1}
     }
 
-    private fun getTextAlign(tickPosition: Double, textWidth: Double): TextAlignment {
+    private fun getTextAlign(tickPosition: Double, textWidth: Double): Double {
         val alignFactor = when (orientationProperty.get()!!) {Orientation.HORIZONTAL -> width; Orientation.VERTICAL -> height}
-        if (tickPosition < textWidth) return TextAlignment.LEFT
-        if (tickPosition > alignFactor - textWidth) return TextAlignment.RIGHT
-        return TextAlignment.CENTER
+        if (tickPosition < textWidth) return 1.0
+        if (tickPosition > alignFactor - textWidth) return 0.0
+        return 0.5
     }
 
-    private fun getTextBaseline(tickPosition: Double, textHeight: Double): VPos {
-        val alignFactor = when (orientationProperty.get()!!) {Orientation.HORIZONTAL -> width; Orientation.VERTICAL -> height}
-        if (tickPosition < textHeight) return VPos.TOP
-        if (tickPosition > alignFactor - textHeight) return VPos.BOTTOM
-        return VPos.CENTER
+    private fun measureText(t: String, font: Font): Bounds {
+        val text = Text(t)
+        text.font = font
+        return text.boundsInLocal
     }
 
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
@@ -141,25 +141,48 @@ class VolumeVisualizer : AutoCanvas(false) {
         gc.fill = tickColor.value
         gc.font = Font.font(10.0)
         val tickSize = 5.0
+        val tickPad = 3.0
         when (orientation) {
             Orientation.HORIZONTAL -> {
                 gc.textBaseline = VPos.CENTER
-                tickMarks.forEach {
+                var previousText = 0.0
+                val lastText = measureText(tickMarks.last().second, gc.font).width
+                tickMarks.forEachIndexed { i, it ->
                     val pos = getTickPosition(it.first)
                     gc.strokeLine(pos, 0.0, pos, tickSize)
                     gc.strokeLine(pos, height - tickSize, pos, height)
-                    gc.textAlign = getTextAlign(pos, 5.0)
-                    gc.fillText(it.second, pos, height / 2)
+
+                    val measure = measureText(it.second, gc.font)
+                    val align = getTextAlign(pos, 5.0)
+                    val notObstructingLast = pos + measure.width * align < width - lastText - tickPad
+                    val notObstructingPrevious = previousText < pos - (measure.width * (1.0 - align)) - tickPad
+
+                    if (i == 0 || i == tickMarks.size - 1 || (notObstructingPrevious && notObstructingLast)) {
+                        gc.textAlign = when (align) {1.0 -> TextAlignment.LEFT; 0.0 -> TextAlignment.RIGHT; else -> TextAlignment.CENTER; }
+                        gc.fillText(it.second, pos, height / 2)
+                        previousText = pos + measure.width * align
+                    }
                 }
             }
             Orientation.VERTICAL -> {
                 gc.textAlign = TextAlignment.CENTER
-                tickMarks.forEach {
+                var previousText = 0.0
+                val lastText = measureText(tickMarks.last().second, gc.font).height
+                tickMarks.forEachIndexed { i, it ->
                     val pos = getTickPosition(it.first)
                     gc.strokeLine(0.0, pos, tickSize, pos)
                     gc.strokeLine(width - tickSize, pos, width, pos)
-                    gc.textBaseline = getTextBaseline(pos, 5.0)
-                    gc.fillText(it.second, width / 2, pos)
+
+                    val measure = measureText(it.second, gc.font)
+                    val align = getTextAlign(pos, 5.0)
+                    val notObstructingLast = pos + measure.height * align < height - lastText - tickPad
+                    val notObstructingPrevious = previousText < pos - (measure.height * (1.0 - align)) - tickPad
+
+                    if (i == 0 || i == tickMarks.size - 1 || (notObstructingPrevious && notObstructingLast)) {
+                        gc.textBaseline = when (align) {1.0 -> VPos.TOP; 0.0 -> VPos.BOTTOM; else -> VPos.CENTER; }
+                        gc.fillText(it.second, width / 2, pos)
+                        previousText = pos + measure.height * align
+                    }
                 }
             }
         }
