@@ -3,6 +3,8 @@ package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.FXCollections
+import javafx.collections.ListChangeListener
+import javafx.collections.ObservableList
 import javafx.css.CssMetaData
 import javafx.css.Styleable
 import javafx.css.StyleableProperty
@@ -20,6 +22,7 @@ import javafx.scene.text.Font
 import javafx.scene.text.Text
 import javafx.scene.text.TextAlignment
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import java.text.DecimalFormat
 
 class VolumeVisualizer : AutoCanvas(false) {
@@ -47,16 +50,33 @@ class VolumeVisualizer : AutoCanvas(false) {
         FACTORY.createStyleableColorProperty(this, "tickColor", "-fx-tick-color") { vis -> vis.tickColor }
 
     val orientationProperty = SimpleObjectProperty<Orientation>()
-    val valueProperty = SimpleDoubleProperty(Double.MIN_VALUE)
+    var values: List<Double>
+        get() = FXCollections.unmodifiableObservableList(valueProperty) as ObservableList<Double>
+        set(value) {
+            synchronized(valueProperty) {
+                valueProperty.setAll(value)
+            }
+        }
+
     val rangeMin = SimpleDoubleProperty(-80.0)
     val rangeMax = SimpleDoubleProperty(0.0)
     val tickUnit = SimpleDoubleProperty(10.0)
     val tickMarks = FXCollections.observableArrayList<Pair<Double, String>>()
     val range = rangeMax.subtract(rangeMin)
 
+    private val valueProperty = FXCollections.observableArrayList<Double>()
     private val tickFormat = DecimalFormat()
+    private val smoother = MultiplicativeSmoother()
 
     init {
+        smoother.factor = 0.77
+        smoother.dataSize = 1
+        smoother.boundMin = rangeMin.get().toFloat()
+        rangeMin.addListener { _, _, v -> smoother.boundMin = v.toFloat() }
+        smoother.boundMax = rangeMax.get().toFloat()
+        rangeMax.addListener { _, _, v -> smoother.boundMax = v.toFloat() }
+
+
         canvasContainer.xAxisShown.value = false
         canvasContainer.yAxisShown.value = false
         canvasContainer.tooltipEnabled.value = false
@@ -73,6 +93,12 @@ class VolumeVisualizer : AutoCanvas(false) {
             }
         }
         orientationProperty.set(Orientation.HORIZONTAL)
+        valueProperty.addListener(ListChangeListener { c ->
+            while (c.next()) { /* wait for changes to settle */ }
+            if(smoother.dataSize != valueProperty.size)
+                smoother.dataSize = valueProperty.size
+            valueProperty.forEachIndexed { i, it -> smoother.dataTarget[i] = it.toFloat() }
+        })
 
         listOf(rangeMax, rangeMin, tickUnit).forEach { it.addListener { _ -> calculateTicks() } }
         calculateTicks()
@@ -111,28 +137,40 @@ class VolumeVisualizer : AutoCanvas(false) {
     }
 
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
+        smoother.applySmoothing(deltaT)
         val min = rangeMin.get()
         val range = range.get()
-        val v = (valueProperty.get() - min).coerceIn(0.0, range) / range
         val orientation = orientationProperty.get()
+        var dataCopy: Array<Double>
+        synchronized(valueProperty) {
+            dataCopy = valueProperty.toTypedArray()
+        }
 
         // Drawing the bar
         gc.clearRect(0.0, 0.0, width, height)
         val stops = arrayOf(Stop(0.0, bottomColor.value), Stop(1.0, peakColor.value))
         when (orientation!!) {
             Orientation.HORIZONTAL -> {
-                gc.fill = LinearGradient(
-                    0.0, 0.0, width, 0.0,
-                    false, CycleMethod.NO_CYCLE, *stops
-                )
-                gc.fillRect(0.0, 0.0, width * v, height)
+                val sliceSize = height / dataCopy.size
+                for ((i, d) in dataCopy.withIndex()) {
+                    val v = (d - min).coerceIn(0.0, range) / range
+                    gc.fill = LinearGradient(
+                        0.0, 0.0, width, 0.0,
+                        false, CycleMethod.NO_CYCLE, *stops
+                    )
+                    gc.fillRect(0.0, sliceSize * i, width * v, sliceSize)
+                }
             }
             Orientation.VERTICAL -> {
-                gc.fill = LinearGradient(
-                    0.0, height, 0.0, 0.0,
-                    false, CycleMethod.NO_CYCLE, *stops
-                )
-                gc.fillRect(0.0, height * (1.0 - v), width, height * v)
+                val sliceSize = width / dataCopy.size
+                for ((i, d) in dataCopy.withIndex()) {
+                    val v = (d - min).coerceIn(0.0, range) / range
+                    gc.fill = LinearGradient(
+                        0.0, height, 0.0, 0.0,
+                        false, CycleMethod.NO_CYCLE, *stops
+                    )
+                    gc.fillRect(sliceSize * i, height * (1.0 - v), sliceSize, height * v)
+                }
             }
         }
 

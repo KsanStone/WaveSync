@@ -6,6 +6,8 @@ class MultiplicativeSmoother : MagnitudeSmoother {
     private lateinit var dataArray: FloatArray
 
     override var factor: Double = 0.91
+    var boundMin = 0.0f
+    var boundMax = 1.0f
 
     override var dataSize: Int
         get() = dataTarget.size
@@ -26,7 +28,7 @@ class MultiplicativeSmoother : MagnitudeSmoother {
         for (i in 0 until dataSize) {
             dataArray[i] = (
                     dataArray[i] + (dataTarget[i] - dataArray[i]) * f * dt
-                    ).coerceIn(0.0f, 1.0f)
+                    ).coerceIn(boundMin, boundMax)
         }
     }
 }

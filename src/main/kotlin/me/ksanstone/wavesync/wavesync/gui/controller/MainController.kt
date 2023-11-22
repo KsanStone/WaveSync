@@ -159,7 +159,9 @@ class MainController : Initializable {
         visualizerPane.items.add(waveformVisualizer)
 
         val masterVolumeVisualizer = VolumeVisualizer()
-        masterVolumeVisualizer.valueProperty.bind(audioCaptureService.masterVolume)
+        audioCaptureService.masterVolume.addListener { _, _, v -> masterVolumeVisualizer.values =
+            listOf(v.toDouble())
+        }
 
         bottomBar.children.add(masterVolumeVisualizer)
     }

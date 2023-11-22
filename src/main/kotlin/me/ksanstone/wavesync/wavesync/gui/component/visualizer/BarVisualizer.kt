@@ -246,7 +246,7 @@ class BarVisualizer : AutoCanvas() {
         val totalBars = floor(bufferLength.toDouble() / step)
         var barWidth = (width - (totalBars - 1) * localGap) / totalBars
         val buffer = smoother.data
-        val padding = (barWidth * 0.3).coerceAtMost(1.0)
+        val padding = (barWidth * 0.33).coerceAtMost(1.0)
 
         var x = 0.0
         var y = 0.0
