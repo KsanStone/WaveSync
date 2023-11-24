@@ -8,19 +8,19 @@
 }
 
 .horizontal-grid-lines {
-    -fx-stroke: -color-base-8;
+    -fx-stroke: ladder(-color-bg-default, -color-base-8 49%, -color-border-muted 50%);
 }
 
 .vertical-grid-lines {
-    -fx-stroke: -color-base-8;
+    -fx-stroke: ladder(-color-bg-default, -color-base-8 49%, -color-border-muted 50%);
 }
 
 .horizontal-zero-line {
-    -fx-stroke: -color-base-5;
+    -fx-stroke: ladder(-color-bg-default, -color-base-5 49%, -color-fg-subtle 50%);
 }
 
 .vertical-zero-line {
-    -fx-stroke: -color-base-5;
+    -fx-stroke: ladder(-color-bg-default, -color-base-5 49%, -color-fg-subtle 50%);
 }
 
 .horizontal-highlighted-grid-lines {

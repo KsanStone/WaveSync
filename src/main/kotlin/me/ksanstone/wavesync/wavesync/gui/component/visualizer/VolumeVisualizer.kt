@@ -48,6 +48,8 @@ class VolumeVisualizer : AutoCanvas(false) {
         FACTORY.createStyleableColorProperty(this, "bottomColor", "-fx-bottom-color") { vis -> vis.bottomColor }
     private val tickColor: StyleableProperty<Color> =
         FACTORY.createStyleableColorProperty(this, "tickColor", "-fx-tick-color") { vis -> vis.tickColor }
+    private val tickLabelFillColor: StyleableProperty<Color> =
+        FACTORY.createStyleableColorProperty(this, "tickLabelFill", "-fx-tick-label-fill") {vis -> vis.tickLabelFillColor}
 
     val orientationProperty = SimpleObjectProperty<Orientation>()
     var values: List<Double>
@@ -58,7 +60,7 @@ class VolumeVisualizer : AutoCanvas(false) {
             }
         }
 
-    val rangeMin = SimpleDoubleProperty(-80.0)
+    val rangeMin = SimpleDoubleProperty(-90.0)
     val rangeMax = SimpleDoubleProperty(0.0)
     val tickUnit = SimpleDoubleProperty(10.0)
     val tickMarks = FXCollections.observableArrayList<Pair<Double, String>>()
@@ -69,7 +71,7 @@ class VolumeVisualizer : AutoCanvas(false) {
     private val smoother = MultiplicativeSmoother()
 
     init {
-        smoother.factor = 0.77
+        smoother.factor = 0.9
         smoother.dataSize = 1
         smoother.boundMin = rangeMin.get().toFloat()
         rangeMin.addListener { _, _, v -> smoother.boundMin = v.toFloat() }
@@ -176,7 +178,7 @@ class VolumeVisualizer : AutoCanvas(false) {
 
         // Drawing the tick marks on top
         gc.stroke = tickColor.value
-        gc.fill = tickColor.value
+        gc.fill = tickLabelFillColor.value
         gc.font = Font.font(10.0)
         val tickSize = 5.0
         val tickPad = 3.0
