@@ -5,13 +5,13 @@ import com.sun.jna.Pointer
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import javafx.beans.property.*
-import javafx.collections.FXCollections
-import javafx.collections.ObservableList
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_UPSAMPLING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencyOfBin
 import me.ksanstone.wavesync.wavesync.service.windowing.*
+import me.ksanstone.wavesync.wavesync.utility.CommonChannel
+import me.ksanstone.wavesync.wavesync.utility.FloatChanneledStore
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import me.ksanstone.wavesync.wavesync.utility.toFloatArray
 import org.slf4j.Logger
@@ -38,7 +38,7 @@ class AudioCaptureService(
 
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
 
-    private lateinit var bufferArray: ByteArray
+    private lateinit var pcmDataBuffer: ByteArray
     private lateinit var fftSampleBuffer: RollingBuffer<Float>
     private var currentStream: XtStream? = null
     private var lock: CountDownLatch = CountDownLatch(0)
@@ -47,12 +47,12 @@ class AudioCaptureService(
     private var sampleObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
     private var windowFunction: WindowFunction? = null
 
-    lateinit var fftResult: FloatArray
-    lateinit var samples: FloatArray
+    val fftResult = FloatChanneledStore()
+    val samples = FloatChanneledStore()
 
     val peakFrequency = SimpleDoubleProperty(0.0)
     val peakValue = SimpleFloatProperty(0.0f)
-    val masterVolume = SimpleDoubleProperty(Double.MIN_VALUE)
+    val channelVolumes = FloatChanneledStore()
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
@@ -100,13 +100,13 @@ class AudioCaptureService(
         safe.lock(buffer)
 
         val audio = safe.input as FloatArray
-        processAudio(audio, buffer.frames)
+        marshalSamples(audio, buffer.frames)
 
         safe.unlock(buffer)
         return 0
     }
 
-    fun processAudio(audio: FloatArray, frames: Int) {
+    fun marshalSamples(audio: FloatArray, frames: Int) {
         val channels = source.get().format.channels.inputs
         val sampleFactor = 1.0f / channels.toFloat()
         val targetSamplesUntilRefresh = (fftSampleBuffer.size / fftUpsample.get()).toLong()
@@ -115,35 +115,43 @@ class AudioCaptureService(
             var sample = 0.0f
             for (channel in 0 until channels) {
                 sample += audio[sampleIndex + channel] * sampleFactor
+                samples[1 + channel].data[frame] = audio[sampleIndex + channel]
             }
+            samples[0].data[frame] = sample
             fftSampleBuffer.insert(sample)
-            samples[frame] = sample
             if (fftSampleBuffer.written % targetSamplesUntilRefresh == 0L) {
                 doFFT(fftSampleBuffer.toFloatArray(), source.get().format.mix.rate)
             }
         }
-        val sampleSlice = samples.sliceArray(0 until frames)
-        doLoudnessCalc(sampleSlice)
+        processSamples(frames)
+    }
+
+    fun processSamples(frames: Int) {
+        doLoudnessCalc(frames)
+        val sampleSlice = samples[0].data.sliceArray(0 until frames)
         sampleObservers.forEach { it.accept(sampleSlice, source.get()) }
     }
 
-    private fun calcRMS(samples: FloatArray): Double {
+    private fun calcRMS(samples: FloatArray, frames: Int): Double {
         var s = 0.0
-        for (i in samples) s += i.toDouble().pow(2)
+        for (i in 0 until frames) s += samples[i].toDouble().pow(2)
         return sqrt(s / samples.size)
     }
 
-    fun doLoudnessCalc(samples: FloatArray) {
-        masterVolume.value = 20 * log10(calcRMS(samples))
+    fun doLoudnessCalc(frames: Int) {
+        for (i in 0 until samples.channels()) {
+            channelVolumes[i].data[0] = (20 * log10(calcRMS(samples[i].data, frames))).toFloat()
+        }
+        channelVolumes.fireDataChanged()
     }
 
     fun doFFT(samples: FloatArray, rate: Int) {
         windowFunction!!.applyFunction(samples)
         val imag = FloatArray(samples.size)
         FourierMath.transform(1, samples.size, samples, imag, windowFunction!!.getSum())
-        FourierMath.calculateMagnitudes(samples, imag, fftResult)
-        calcPeak(fftResult)
-        fftObservers.forEach { it.accept(fftResult, source.get()) }
+        FourierMath.calculateMagnitudes(samples, imag, fftResult[0].data)
+        calcPeak(fftResult[0].data)
+        fftObservers.forEach { it.accept(fftResult[0].data, source.get()) }
     }
 
     private fun calcPeak(fftResult: FloatArray) {
@@ -196,14 +204,18 @@ class AudioCaptureService(
                     val deviceStream = device.openStream(deviceParams, null)
                     deviceStream.use { stream ->
                         logger.info("Stream opened")
+                        val channels = format.channels.inputs
+                        val rate = deviceParams.format.mix.rate
+                        val sample = deviceParams.format.mix.sample
                         this.currentStream = stream
                         XtSafeBuffer.register(stream).use { _ ->
-                            bufferArray = ByteArray(
-                                stream.frames * format.channels.inputs * XtAudio.getSampleAttributes(format.mix.sample).size
+                            pcmDataBuffer = ByteArray(
+                                stream.frames * channels * XtAudio.getSampleAttributes(sample).size
                             )
-                            samples = FloatArray(stream.frames)
+                            samples.resize(1 + channels, stream.frames).label(CommonChannel.MASTER)
+                            channelVolumes.resize(1 + channels, 1).label(CommonChannel.MASTER)
                             stream.start()
-                            logger.info("Capture started")
+                            logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
                             lock.await()
                             stream.stop()
                             logger.info("Capture finished")
@@ -239,7 +251,7 @@ class AudioCaptureService(
     fun setScanWindowSize(size: Int) {
         logger.info("Using window size $size")
         fftSampleBuffer = RollingBuffer(size, 0.0f)
-        fftResult = FloatArray(size / 2)
+        fftResult.resize(1, size / 2).label(CommonChannel.MASTER)
         changeWindowingFunction()
     }
 
