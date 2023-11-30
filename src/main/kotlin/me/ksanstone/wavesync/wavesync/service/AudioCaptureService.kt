@@ -111,7 +111,7 @@ class AudioCaptureService(
         val sampleFactor = 1.0f / channels.toFloat()
         val targetSamplesUntilRefresh = (fftSampleBuffer.size / fftUpsample.get()).toLong()
         for (frame in 0 until frames) {
-            val sampleIndex = frame * 2
+            val sampleIndex = frame * channels
             var sample = 0.0f
             for (channel in 0 until channels) {
                 sample += audio[sampleIndex + channel] * sampleFactor
