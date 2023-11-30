@@ -21,7 +21,7 @@ class FloatChanneledStore : ChannelStore<FloatArray>() {
     }
 
     override operator fun get(idx: Int): Channel<FloatArray> {
-        return channelData[0]
+        return channelData[idx]
     }
 
     override fun channels(): Int {

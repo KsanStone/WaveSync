@@ -26,6 +26,7 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.function.BiConsumer
+import kotlin.math.abs
 import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -60,6 +61,8 @@ class AudioCaptureService(
     val usedAudioSystem: ObjectProperty<XtSystem> = SimpleObjectProperty()
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
     var audioSystems: List<XtSystem> = listOf()
+
+    private val channelLabels = arrayOf(CommonChannel.MASTER, CommonChannel.LEFT, CommonChannel.RIGHT)
 
 
     @PostConstruct
@@ -212,8 +215,8 @@ class AudioCaptureService(
                             pcmDataBuffer = ByteArray(
                                 stream.frames * channels * XtAudio.getSampleAttributes(sample).size
                             )
-                            samples.resize(1 + channels, stream.frames).label(CommonChannel.MASTER)
-                            channelVolumes.resize(1 + channels, 1).label(CommonChannel.MASTER)
+                            samples.resize(1 + channels, stream.frames).label(*channelLabels)
+                            channelVolumes.resize(1 + channels, 1).label(*channelLabels)
                             stream.start()
                             logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
                             lock.await()

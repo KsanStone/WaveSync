@@ -64,6 +64,7 @@ class BarVisualizer : AutoCanvas() {
     private var fftSize: Int = 1024
     private var frequencyBinSkip: Int = 0
     private lateinit var fftDataArray: FloatArray
+    private val bufferResizeLock = Object()
 
 
     private lateinit var fftScalar: FFTScalar<*>
@@ -218,8 +219,10 @@ class BarVisualizer : AutoCanvas() {
         frequencyBinSkip = source.bufferBeginningSkipFor(lowPass.get(), array.size * 2)
         size = (size - frequencyBinSkip).coerceAtLeast(10)
         if (smoother.dataSize != size) {
-            smoother.dataSize = size
-            rawMaxTracker.dataSize = size
+            synchronized(bufferResizeLock) {
+                smoother.dataSize = size
+                rawMaxTracker.dataSize = size
+            }
         }
 
         for (i in frequencyBinSkip until size) {
@@ -236,61 +239,63 @@ class BarVisualizer : AutoCanvas() {
     }
 
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
-        smoother.applySmoothing(deltaT)
+        synchronized(bufferResizeLock) {
+            smoother.applySmoothing(deltaT)
 
-        gc.clearRect(0.0, 0.0, width, height)
+            gc.clearRect(0.0, 0.0, width, height)
 
-        val localGap = gap.get()
-        val bufferLength = smoother.dataSize
-        var step = calculateStep(targetBarWidth.get(), bufferLength, width)
-        val totalBars = floor(bufferLength.toDouble() / step)
-        var barWidth = (width - (totalBars - 1) * localGap) / totalBars
-        val buffer = smoother.data
-        val padding = (barWidth * 0.33).coerceAtMost(1.0)
+            val localGap = gap.get()
+            val bufferLength = smoother.dataSize
+            var step = calculateStep(targetBarWidth.get(), bufferLength, width)
+            val totalBars = floor(bufferLength.toDouble() / step)
+            var barWidth = (width - (totalBars - 1) * localGap) / totalBars
+            val buffer = smoother.data
+            val padding = (barWidth * 0.33).coerceAtMost(1.0)
 
-        var x = 0.0
-        var y = 0.0
-        var stepAccumulator = 0.0
+            var x = 0.0
+            var y = 0.0
+            var stepAccumulator = 0.0
 
-        for (i in 0 until bufferLength) {
-            y = max(buffer[i].toDouble(), y)
-            if (++stepAccumulator < step) continue
-            stepAccumulator -= step
+            for (i in 0 until bufferLength) {
+                y = max(buffer[i].toDouble(), y)
+                if (++stepAccumulator < step) continue
+                stepAccumulator -= step
 
-            val barHeight = y * height
-            val color = startColor.get().interpolate(endColor.get(), y)
+                val barHeight = y * height
+                val color = startColor.get().interpolate(endColor.get(), y)
 
-            gc.fill = color
-            gc.fillRect(x, height - barHeight, barWidth + padding, barHeight)
-            x += barWidth + localGap
+                gc.fill = color
+                gc.fillRect(x, height - barHeight, barWidth + padding, barHeight)
+                x += barWidth + localGap
+                y = 0.0
+            }
+
+            if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
+
+            if (!peakLineVisible.get()) return
+
+            gc.stroke = peakLineColor.value
+
+            x = 0.0
             y = 0.0
+            stepAccumulator = 0.0
+            step = calculateStep(1, bufferLength, width)
+            gc.beginPath()
+            gc.moveTo(0.0, height - rawMaxTracker.data[0].toDouble() * height)
+            barWidth = width / floor(bufferLength.toDouble() / step)
+
+            for (i in 0 until bufferLength) {
+                y = max(fftScalar.scale(rawMaxTracker.data[i]).toDouble(), y)
+                if (++stepAccumulator < step) continue
+                stepAccumulator -= step
+
+                gc.lineTo(x, height - y * height)
+                x += barWidth
+                y = 0.0
+            }
+
+            gc.stroke()
         }
-
-        if(canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
-
-        if (!peakLineVisible.get()) return
-
-        gc.stroke = peakLineColor.value
-
-        x = 0.0
-        y = 0.0
-        stepAccumulator = 0.0
-        step = calculateStep(1, bufferLength, width)
-        gc.beginPath()
-        gc.moveTo(0.0, height - rawMaxTracker.data[0].toDouble() * height)
-        barWidth = width / floor(bufferLength.toDouble() / step)
-
-        for (i in 0 until bufferLength) {
-            y = max(fftScalar.scale(rawMaxTracker.data[i]).toDouble(), y)
-            if (++stepAccumulator < step) continue
-            stepAccumulator -= step
-
-            gc.lineTo(x, height - y * height)
-            x += barWidth
-            y = 0.0
-        }
-
-        gc.stroke()
     }
 
     override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {

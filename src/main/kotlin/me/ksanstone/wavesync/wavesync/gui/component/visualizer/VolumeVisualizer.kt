@@ -71,7 +71,7 @@ class VolumeVisualizer : AutoCanvas(false) {
     private val smoother = MultiplicativeSmoother()
 
     init {
-        smoother.factor = 0.9
+        smoother.factor = 0.3
         smoother.dataSize = 1
         smoother.boundMin = rangeMin.get().toFloat()
         rangeMin.addListener { _, _, v -> smoother.boundMin = v.toFloat() }

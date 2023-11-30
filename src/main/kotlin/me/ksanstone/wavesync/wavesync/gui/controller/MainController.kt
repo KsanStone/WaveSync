@@ -160,7 +160,7 @@ class MainController : Initializable {
 
         val masterVolumeVisualizer = VolumeVisualizer()
         audioCaptureService.channelVolumes.listeners.add {store ->
-            masterVolumeVisualizer.values = (0 until store.channels()).map { store[it].data[0].toDouble() }
+            masterVolumeVisualizer.values = (1 until store.channels()).map { store[it].data[0].toDouble() }
         }
         bottomBar.children.add(masterVolumeVisualizer)
     }
