@@ -49,8 +49,6 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
     private var verticalZeroLineVisible = true
 
     init {
-        listOf(xAxisShown, yAxisShown, widthProperty(), heightProperty())
-            .forEach { it.addListener { _ -> doLayout(); layoutTooltipCross() } }
         horizontalGridLines.styleClass.setAll("horizontal-grid-lines")
         verticalGridLines.styleClass.setAll("vertical-grid-lines")
         highlightedHorizontalGridLines.styleClass.setAll("horizontal-highlighted-grid-lines")
@@ -72,6 +70,9 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             canvas,
             tooltipContainer
         )
+
+        listOf(xAxisShown, yAxisShown, widthProperty(), heightProperty(), xAxis.heightProperty(), yAxis.widthProperty())
+            .forEach { it.addListener { _ -> doLayout(); layoutTooltipCross() } }
 
         yAxis.side = Side.LEFT
         yAxis.animated = false

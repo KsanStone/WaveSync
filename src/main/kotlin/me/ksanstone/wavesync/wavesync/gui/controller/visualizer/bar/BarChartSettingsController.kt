@@ -20,6 +20,9 @@ import java.util.*
 class BarChartSettingsController : Initializable {
 
     @FXML
+    lateinit var linearScalingSlider: Slider
+
+    @FXML
     lateinit var peakToggleSwitch: ToggleSwitch
 
     @FXML
@@ -110,7 +113,8 @@ class BarChartSettingsController : Initializable {
 
         barWidthSlider.value = tw.toDouble()
 
-        scalingSlider.value = visualizer.linearScaling.get().toDouble()
+        scalingSlider.value = visualizer.exaggeratedScalar.get().toDouble()
+        linearScalingSlider.value = visualizer.linearScalar.get().toDouble()
         dropRateSlider.value = visualizer.smoothing.get().toDouble()
         barWidthSlider.value = visualizer.targetBarWidth.get().toDouble()
         peakToggleSwitch.isSelected = visualizer.peakLineVisible.get()
@@ -131,7 +135,8 @@ class BarChartSettingsController : Initializable {
         visualizer.canvasContainer.xAxisShown.bind(graphStyleController.xAxisToggle.selectedProperty())
         visualizer.canvasContainer.horizontalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
         visualizer.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
-        visualizer.linearScaling.bind(scalingSlider.valueProperty())
+        visualizer.exaggeratedScalar.bind(scalingSlider.valueProperty())
+        visualizer.linearScalar.bind(linearScalingSlider.valueProperty())
         visualizer.smoothing.bind(dropRateSlider.valueProperty())
         visualizer.targetBarWidth.bind(barWidthSlider.valueProperty())
         visualizer.cutoff.bind(maxFreqSpinner.valueProperty())

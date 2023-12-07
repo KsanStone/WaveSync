@@ -1,12 +1,15 @@
 package me.ksanstone.wavesync.wavesync.service.fftScaling
 
 class LinearFFTScalar : FFTScalar<LinearFFTScalarParams> {
+
+    private var scale: Float = 1.0F
+
     override fun scale(res: Float): Float {
-        return res
+        return (res * scale).coerceIn(0.0F, 1.0F)
     }
 
     override fun scaleRaw(res: Float): Float {
-        return res
+        return res * scale
     }
 
     override fun getAxisScale(): AxisScale {
@@ -17,7 +20,11 @@ class LinearFFTScalar : FFTScalar<LinearFFTScalarParams> {
         )
     }
 
-    override fun update(params: LinearFFTScalarParams) {}
+    override fun update(params: LinearFFTScalarParams) {
+        this.scale = params.scaling
+    }
 }
 
-class LinearFFTScalarParams
+class LinearFFTScalarParams(
+    val scaling: Float = 1.0F
+)

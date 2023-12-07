@@ -21,6 +21,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MAX
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MIN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.LINEAR_BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.PEAK_LINE_VISIBLE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
@@ -56,7 +57,8 @@ class BarVisualizer : AutoCanvas() {
     val peakLineVisible: BooleanProperty = SimpleBooleanProperty(PEAK_LINE_VISIBLE)
 
     val scalarType: ObjectProperty<FFTScalarType> = SimpleObjectProperty(DEFAULT_SCALAR_TYPE)
-    val linearScaling: FloatProperty = SimpleFloatProperty(BAR_SCALING)
+    val exaggeratedScalar: FloatProperty = SimpleFloatProperty(BAR_SCALING)
+    val linearScalar: FloatProperty = SimpleFloatProperty(LINEAR_BAR_SCALING)
     val dbMin: FloatProperty = SimpleFloatProperty(DB_MIN)
     val dbMax: FloatProperty = SimpleFloatProperty(DB_MAX)
 
@@ -92,8 +94,8 @@ class BarVisualizer : AutoCanvas() {
 
         changeScalar()
         scalarType.addListener { _ -> changeScalar(); rawMaxTracker.zero() }
-        linearScaling.addListener { _ -> refreshScalar() }
-        dbMax.addListener { _ -> refreshScalar() }
+        listOf(exaggeratedScalar, dbMax, dbMin, linearScalar)
+            .forEach { it.addListener { _ -> refreshScalar() } }
         dbMin.addListener { _ -> refreshScalar() }
         peakLineVisible.addListener { _, _, v -> if(v) rawMaxTracker.zero() }
 
@@ -120,7 +122,8 @@ class BarVisualizer : AutoCanvas() {
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerProperty(smoothing, "smoothing", this.javaClass, id)
-        preferenceService.registerProperty(linearScaling, "scaling", this.javaClass, id)
+        preferenceService.registerProperty(exaggeratedScalar, "exaggeratedScaling", this.javaClass, id)
+        preferenceService.registerProperty(linearScalar, "linearScaling", this.javaClass, id)
         preferenceService.registerProperty(cutoff, "cutoff", this.javaClass, id)
         preferenceService.registerProperty(lowPass, "lowPass", this.javaClass, id)
         preferenceService.registerProperty(targetBarWidth, "targetBarWidth", this.javaClass, id)
@@ -174,11 +177,11 @@ class BarVisualizer : AutoCanvas() {
     private fun refreshScalar() {
         when (fftScalar) {
             is LinearFFTScalar -> {
-                (fftScalar as LinearFFTScalar).update(LinearFFTScalarParams())
+                (fftScalar as LinearFFTScalar).update(LinearFFTScalarParams(scaling = linearScalar.get()))
             }
 
             is ExaggeratedFFTScalar -> {
-                (fftScalar as ExaggeratedFFTScalar).update(ExaggeratedFFTScalarParams(scaling = linearScaling.get()))
+                (fftScalar as ExaggeratedFFTScalar).update(ExaggeratedFFTScalarParams(scaling = exaggeratedScalar.get()))
             }
 
             is DeciBelFFTScalar -> {
