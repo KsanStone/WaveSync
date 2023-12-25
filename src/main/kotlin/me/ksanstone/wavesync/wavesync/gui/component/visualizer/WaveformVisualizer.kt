@@ -29,19 +29,22 @@ import kotlin.math.roundToInt
 
 class WaveformVisualizer : AutoCanvas() {
 
-    val enableAutoAlign: BooleanProperty = SimpleBooleanProperty(false)
+    val enableAlign: BooleanProperty = SimpleBooleanProperty(false)
+    val autoAlign: BooleanProperty = SimpleBooleanProperty(false)
     val rangeMax: FloatProperty = SimpleFloatProperty(WAVEFORM_RANGE_MAX)
     val rangeMin: FloatProperty = SimpleFloatProperty(WAVEFORM_RANGE_MIN)
     val rangeLink: BooleanProperty = SimpleBooleanProperty(WAVEFORM_RANGE_LINK)
+    val targetAlignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
 
     private val buffer: RollingBuffer<Float> = RollingBuffer(10000, 0.0f)
     private val waveColor: StyleableProperty<Color> =
         FACTORY.createStyleableColorProperty(this, "waveColor", "-fx-color") { vis -> vis.waveColor }
     private val align: BooleanProperty = SimpleBooleanProperty(false)
-    private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     private val alignLowPass: DoubleProperty = SimpleDoubleProperty(20.0)
     private var sampleRate: IntegerProperty = SimpleIntegerProperty(48000)
     private val downSampledSize: IntegerProperty = SimpleIntegerProperty(buffer.size)
+    private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
+    private val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
 
     init {
         detachedWindowNameProperty.set("Waveform")
@@ -52,13 +55,14 @@ class WaveformVisualizer : AutoCanvas() {
         yAxis.lowerBoundProperty().bind(rangeMin.map { it.toString().toDouble() })
         yAxis.upperBoundProperty().bind(rangeMax.map { it.toString().toDouble() })
 
-        val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
+        autoAlign.addListener { _ -> bindAlign() }
+        bindAlign()
+
         val ls = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
-        alignFrequency.bind(acs.peakFrequency)
         alignLowPass.set(calcAlignLowPass())
         sampleRate.addListener { _ -> alignLowPass.value = calcAlignLowPass() }
         align.bind(
-            acs.peakValue.greaterThan(0.05f).and(enableAutoAlign).and(acs.peakFrequency.greaterThan(alignLowPass))
+            acs.peakValue.greaterThan(0.05f).and(enableAlign).and(acs.peakFrequency.greaterThan(alignLowPass))
                 .and(acs.peakFrequency.lessThanOrEqualTo(20000))
         )
 
@@ -79,12 +83,22 @@ class WaveformVisualizer : AutoCanvas() {
         stylesheets.add("/styles/waveform-visualizer.css")
     }
 
+    private fun bindAlign() {
+        alignFrequency.unbind()
+        if (autoAlign.get())
+            alignFrequency.bind(acs.peakFrequency)
+        else
+            alignFrequency.bind(targetAlignFrequency)
+    }
+
     private fun calcAlignLowPass(): Double {
         return 1 / (buffer.size.toDouble() / sampleRate.get().toDouble()) * 1.5
     }
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
-        preferenceService.registerProperty(enableAutoAlign, "autoAlign", this.javaClass, id)
+        preferenceService.registerProperty(targetAlignFrequency, "targetAlignFrequency", this.javaClass, id)
+        preferenceService.registerProperty(enableAlign, "enableAlign", this.javaClass, id)
+        preferenceService.registerProperty(autoAlign, "autoAlign", this.javaClass, id)
         preferenceService.registerProperty(rangeMax, "rangeMax", this.javaClass, id)
         preferenceService.registerProperty(rangeMin, "rangeMin", this.javaClass, id)
         preferenceService.registerProperty(rangeLink, "rangeLink", this.javaClass, id)

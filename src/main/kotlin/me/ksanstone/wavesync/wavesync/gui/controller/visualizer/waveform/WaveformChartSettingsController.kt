@@ -11,6 +11,12 @@ import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
 class WaveformChartSettingsController {
 
     @FXML
+    lateinit var alignFrequencyToggleSwitch: ToggleSwitch
+
+    @FXML
+    lateinit var alignFrequency: Spinner<Double>
+
+    @FXML
     lateinit var graphStyleController: GraphStyleController
 
     @FXML
@@ -26,8 +32,11 @@ class WaveformChartSettingsController {
     lateinit var autoAlignToggleSwitch: ToggleSwitch
 
     fun initialize(visualizer: WaveformVisualizer) {
-        autoAlignToggleSwitch.isSelected = visualizer.enableAutoAlign.get()
-        visualizer.enableAutoAlign.bind(autoAlignToggleSwitch.selectedProperty())
+        alignFrequencyToggleSwitch.isSelected = visualizer.enableAlign.get()
+        visualizer.enableAlign.bind(alignFrequencyToggleSwitch.selectedProperty())
+
+        autoAlignToggleSwitch.isSelected = visualizer.enableAlign.get()
+        visualizer.autoAlign.bind(autoAlignToggleSwitch.selectedProperty())
 
         waveformRangeMaxSpinner.valueFactory = DoubleSpinnerValueFactory(
             0.01,
@@ -43,6 +52,13 @@ class WaveformChartSettingsController {
             0.1
         )
 
+        alignFrequency.valueFactory = DoubleSpinnerValueFactory(
+            20.0,
+            20000.0,
+            visualizer.targetAlignFrequency.get(),
+            1.0
+        )
+
         linkToggleButton.isSelected = visualizer.rangeLink.get()
         linkToggleButton.selectedProperty().addListener { _ -> linkAdjust() }
         linkAdjust()
@@ -56,7 +72,11 @@ class WaveformChartSettingsController {
         visualizer.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
         visualizer.rangeMax.bind(waveformRangeMaxSpinner.valueFactory.valueProperty().map { it.toFloat() })
         visualizer.rangeMin.bind(waveformRangeMinSpinner.valueFactory.valueProperty().map { it.toFloat() })
+        visualizer.targetAlignFrequency.bind(alignFrequency.valueProperty())
         visualizer.rangeLink.bind(linkToggleButton.selectedProperty())
+
+        alignFrequency.disableProperty().bind(autoAlignToggleSwitch.selectedProperty().or(alignFrequencyToggleSwitch.selectedProperty().not()))
+        autoAlignToggleSwitch.disableProperty().bind(alignFrequencyToggleSwitch.selectedProperty().not())
     }
 
     private fun linkAdjust() {
