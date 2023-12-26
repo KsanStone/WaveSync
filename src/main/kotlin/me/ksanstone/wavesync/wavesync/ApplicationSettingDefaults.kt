@@ -1,5 +1,7 @@
 package me.ksanstone.wavesync.wavesync
 
+import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
+import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalarType
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
 
@@ -25,4 +27,6 @@ object ApplicationSettingDefaults {
     const val PEAK_LINE_VISIBLE = false
     val DEFAULT_SCALAR_TYPE = FFTScalarType.DECIBEL
     val DEFAULT_WINDOWING_FUNCTION = WindowFunctionType.HAMMING
+    val DEFAULT_BAR_RENDER_MODE = BarVisualizer.RenderMode.BARS
+    val DEFAULT_WAVEFORM_RENDER_MODE = WaveformVisualizer.RenderMode.LINE
 }

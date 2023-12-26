@@ -19,6 +19,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MAX
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MIN
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_RENDER_MODE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.LINEAR_BAR_SCALING
@@ -61,6 +62,7 @@ class BarVisualizer : AutoCanvas() {
     val linearScalar: FloatProperty = SimpleFloatProperty(LINEAR_BAR_SCALING)
     val dbMin: FloatProperty = SimpleFloatProperty(DB_MIN)
     val dbMax: FloatProperty = SimpleFloatProperty(DB_MAX)
+    val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_BAR_RENDER_MODE)
 
     private var source: SupportedCaptureSource? = null
     private var fftSize: Int = 1024
@@ -121,6 +123,7 @@ class BarVisualizer : AutoCanvas() {
 
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
+        preferenceService.registerProperty(renderMode, "renderMode", RenderMode::class.java, this.javaClass, id)
         preferenceService.registerProperty(smoothing, "smoothing", this.javaClass, id)
         preferenceService.registerProperty(exaggeratedScalar, "exaggeratedScaling", this.javaClass, id)
         preferenceService.registerProperty(linearScalar, "linearScaling", this.javaClass, id)
@@ -254,7 +257,44 @@ class BarVisualizer : AutoCanvas() {
             var barWidth = (width - (totalBars - 1) * localGap) / totalBars
             val buffer = smoother.data
             val padding = (barWidth * 0.33).coerceAtMost(1.0)
+            gc.stroke = startColor.get()
 
+            when (renderMode.get()!!) {
+                RenderMode.LINE -> drawLine(buffer, bufferLength, step, gc, barWidth, height)
+                RenderMode.BARS -> drawBars(buffer, bufferLength, step, gc, barWidth, localGap, padding, height)
+            }
+
+            if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
+
+            if (!peakLineVisible.get()) return
+            gc.stroke = peakLineColor.value
+            step = calculateStep(1, bufferLength, width)
+            barWidth = width / floor(bufferLength.toDouble() / step)
+            drawLine(rawMaxTracker.data.map { fftScalar.scale(it) }.toFloatArray(), bufferLength, step, gc, barWidth, height)
+        }
+    }
+
+    private fun drawLine(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, height: Double) {
+        var x = 0.0
+        var y = 0.0
+        var stepAccumulator = 0.0
+        gc.beginPath()
+        gc.moveTo(0.0, height - buffer[0].toDouble() * height)
+
+        for (i in 0 until bufferLength) {
+            y = max(buffer[i].toDouble(), y)
+            if (++stepAccumulator < step) continue
+            stepAccumulator -= step
+
+            gc.lineTo(x, height - y * height)
+            x += barWidth
+            y = 0.0
+        }
+
+        gc.stroke()
+    }
+
+    private fun drawBars(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, localGap: Int, padding: Double, height: Double) {
             var x = 0.0
             var y = 0.0
             var stepAccumulator = 0.0
@@ -272,33 +312,6 @@ class BarVisualizer : AutoCanvas() {
                 x += barWidth + localGap
                 y = 0.0
             }
-
-            if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
-
-            if (!peakLineVisible.get()) return
-
-            gc.stroke = peakLineColor.value
-
-            x = 0.0
-            y = 0.0
-            stepAccumulator = 0.0
-            step = calculateStep(1, bufferLength, width)
-            gc.beginPath()
-            gc.moveTo(0.0, height - rawMaxTracker.data[0].toDouble() * height)
-            barWidth = width / floor(bufferLength.toDouble() / step)
-
-            for (i in 0 until bufferLength) {
-                y = max(fftScalar.scale(rawMaxTracker.data[i]).toDouble(), y)
-                if (++stepAccumulator < step) continue
-                stepAccumulator -= step
-
-                gc.lineTo(x, height - y * height)
-                x += barWidth
-                y = 0.0
-            }
-
-            gc.stroke()
-        }
     }
 
     override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {
@@ -315,5 +328,10 @@ class BarVisualizer : AutoCanvas() {
         fun getClassCssMetaData(): List<CssMetaData<out Styleable?, *>> {
             return FACTORY.cssMetaData
         }
+    }
+
+    enum class RenderMode {
+        LINE,
+        BARS
     }
 }

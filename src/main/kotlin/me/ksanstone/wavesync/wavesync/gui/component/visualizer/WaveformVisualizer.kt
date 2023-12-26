@@ -12,6 +12,8 @@ import javafx.scene.control.Label
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WAVEFORM_RENDER_MODE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_LINK
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_MAX
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_MIN
@@ -35,6 +37,7 @@ class WaveformVisualizer : AutoCanvas() {
     val rangeMin: FloatProperty = SimpleFloatProperty(WAVEFORM_RANGE_MIN)
     val rangeLink: BooleanProperty = SimpleBooleanProperty(WAVEFORM_RANGE_LINK)
     val targetAlignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
+    val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_WAVEFORM_RENDER_MODE)
 
     private val buffer: RollingBuffer<Float> = RollingBuffer(10000, 0.0f)
     private val waveColor: StyleableProperty<Color> =
@@ -96,6 +99,7 @@ class WaveformVisualizer : AutoCanvas() {
     }
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
+        preferenceService.registerProperty(renderMode, "renderMode", RenderMode::class.java, this.javaClass, id)
         preferenceService.registerProperty(targetAlignFrequency, "targetAlignFrequency", this.javaClass, id)
         preferenceService.registerProperty(enableAlign, "enableAlign", this.javaClass, id)
         preferenceService.registerProperty(autoAlign, "autoAlign", this.javaClass, id)
@@ -146,6 +150,13 @@ class WaveformVisualizer : AutoCanvas() {
             take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15).roundToInt().coerceAtMost(buffer.size - drop)
         }
 
+        when(renderMode.get()!!) {
+            RenderMode.LINE -> drawLine(gc, drop, take, min, rangeBreadth)
+            RenderMode.POINT_CLOUD -> drawPoints(gc, drop, take, min, rangeBreadth)
+        }
+    }
+
+    private fun drawLine(gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float) {
         var stepAccumulator = 0.0
         val step = take.toDouble() / width.roundToInt()
 
@@ -161,6 +172,17 @@ class WaveformVisualizer : AutoCanvas() {
         }
         downSampledSize.set(acc)
         gc.stroke()
+    }
+
+    private fun drawPoints(gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float) {
+        val color = waveColor.value
+        for (i in drop until drop + take) {
+            val ai = i - drop
+            gc.pixelWriter.setColor((ai.toDouble() / take * width).roundToInt(),
+                ((buffer[i] - min).toDouble() / rangeBreadth * height).roundToInt(),
+                color
+            )
+        }
     }
 
     fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
@@ -182,5 +204,10 @@ class WaveformVisualizer : AutoCanvas() {
         fun getClassCssMetaData(): List<CssMetaData<out Styleable?, *>> {
             return FACTORY.cssMetaData
         }
+    }
+
+    enum class RenderMode {
+        LINE,
+        POINT_CLOUD
     }
 }
