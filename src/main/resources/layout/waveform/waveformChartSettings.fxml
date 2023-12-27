@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.*?>
 
+<?import atlantafx.base.layout.InputGroup?>
 <GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformChartSettingsController">
     <rowConstraints>
         <RowConstraints minHeight="30.0" prefHeight="30.0" />
@@ -56,7 +57,12 @@
                 <Label text="Hz" />
             </children>
         </HBox>
-        <fx:include source="/layout/graph/graphStyle.fxml" GridPane.columnIndex="1" GridPane.rowIndex="3"
-                    fx:id="graphStyle"/>
+        <HBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="3">
+            <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
+            <InputGroup>
+                <ToggleButton fx:id="pointCloud" text="%visualizer.waveform.settings.render.pointCloud" onAction="#renderCloud"/>
+                <ToggleButton fx:id="waveformLine" text="%visualizer.waveform.settings.render.lines" onAction="#renderLine"/>
+            </InputGroup>
+        </HBox>
     </children>
 </GridPane>

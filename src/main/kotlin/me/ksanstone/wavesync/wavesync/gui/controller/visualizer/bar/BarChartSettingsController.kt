@@ -3,10 +3,7 @@ package me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar
 import atlantafx.base.controls.ToggleSwitch
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.scene.control.Slider
-import javafx.scene.control.Spinner
-import javafx.scene.control.SpinnerValueFactory
-import javafx.scene.control.TabPane
+import javafx.scene.control.*
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
@@ -18,6 +15,12 @@ import java.net.URL
 import java.util.*
 
 class BarChartSettingsController : Initializable {
+
+    @FXML
+    lateinit var bar: ToggleButton
+
+    @FXML
+    lateinit var line: ToggleButton
 
     @FXML
     lateinit var linearScalingSlider: Slider
@@ -74,10 +77,29 @@ class BarChartSettingsController : Initializable {
         maxFreqSpinner.valueFactory.value = 20_000
     }
 
-    fun initialize(visualizer: BarVisualizer) {
+    @FXML
+    fun renderBar() {
+        visualizer.renderMode.set(BarVisualizer.RenderMode.BAR)
+        line.selectedProperty().set(false)
+        bar.selectedProperty().set(true)
+    }
 
+    @FXML
+    fun renderLine() {
+        visualizer.renderMode.set(BarVisualizer.RenderMode.LINE)
+        bar.selectedProperty().set(false)
+        line.selectedProperty().set(true)
+    }
+
+    lateinit var visualizer: BarVisualizer
+
+    fun initialize(visualizer: BarVisualizer) {
+        this.visualizer = visualizer
         val tw = visualizer.targetBarWidth.get()
         val maxFreq = audioCaptureService.source.get()?.getMaxFrequency() ?: 96000
+
+        line.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.LINE)
+        bar.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.BAR)
 
         maxFreqSpinner.valueFactory = SpinnerValueFactory.IntegerSpinnerValueFactory(
             ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW,

@@ -27,6 +27,6 @@ object ApplicationSettingDefaults {
     const val PEAK_LINE_VISIBLE = false
     val DEFAULT_SCALAR_TYPE = FFTScalarType.DECIBEL
     val DEFAULT_WINDOWING_FUNCTION = WindowFunctionType.HAMMING
-    val DEFAULT_BAR_RENDER_MODE = BarVisualizer.RenderMode.BARS
+    val DEFAULT_BAR_RENDER_MODE = BarVisualizer.RenderMode.BAR
     val DEFAULT_WAVEFORM_RENDER_MODE = WaveformVisualizer.RenderMode.LINE
 }

@@ -121,7 +121,6 @@ class BarVisualizer : AutoCanvas() {
         controlPane.children.add(controls)
     }
 
-
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerProperty(renderMode, "renderMode", RenderMode::class.java, this.javaClass, id)
         preferenceService.registerProperty(smoothing, "smoothing", this.javaClass, id)
@@ -261,7 +260,7 @@ class BarVisualizer : AutoCanvas() {
 
             when (renderMode.get()!!) {
                 RenderMode.LINE -> drawLine(buffer, bufferLength, step, gc, barWidth, height)
-                RenderMode.BARS -> drawBars(buffer, bufferLength, step, gc, barWidth, localGap, padding, height)
+                RenderMode.BAR -> drawBars(buffer, bufferLength, step, gc, barWidth, localGap, padding, height)
             }
 
             if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
@@ -332,6 +331,6 @@ class BarVisualizer : AutoCanvas() {
 
     enum class RenderMode {
         LINE,
-        BARS
+        BAR
     }
 }

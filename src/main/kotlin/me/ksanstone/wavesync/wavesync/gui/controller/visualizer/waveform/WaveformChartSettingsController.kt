@@ -11,6 +11,12 @@ import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
 class WaveformChartSettingsController {
 
     @FXML
+    lateinit var pointCloud: ToggleButton
+
+    @FXML
+    lateinit var waveformLine: ToggleButton
+
+    @FXML
     lateinit var alignFrequencyToggleSwitch: ToggleSwitch
 
     @FXML
@@ -31,7 +37,29 @@ class WaveformChartSettingsController {
     @FXML
     lateinit var autoAlignToggleSwitch: ToggleSwitch
 
+    @FXML
+    fun renderCloud() {
+        visualizer.renderMode.set(WaveformVisualizer.RenderMode.POINT_CLOUD)
+        waveformLine.selectedProperty().set(false)
+        pointCloud.selectedProperty().set(true)
+    }
+
+    @FXML
+    fun renderLine() {
+        visualizer.renderMode.set(WaveformVisualizer.RenderMode.LINE)
+        pointCloud.selectedProperty().set(false)
+        waveformLine.selectedProperty().set(true)
+    }
+
+    lateinit var visualizer: WaveformVisualizer
+
     fun initialize(visualizer: WaveformVisualizer) {
+        this.visualizer = visualizer
+
+        waveformLine.selectedProperty().set(visualizer.renderMode.get() == WaveformVisualizer.RenderMode.LINE)
+        pointCloud.selectedProperty().set(visualizer.renderMode.get() == WaveformVisualizer.RenderMode.POINT_CLOUD)
+
+
         alignFrequencyToggleSwitch.isSelected = visualizer.enableAlign.get()
         visualizer.enableAlign.bind(alignFrequencyToggleSwitch.selectedProperty())
 
