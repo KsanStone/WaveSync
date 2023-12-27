@@ -15,8 +15,8 @@
         <RowConstraints/>
         <RowConstraints/>
         <RowConstraints minHeight="10.0"/>
-        <RowConstraints minHeight="10.0" prefHeight="30.0"/>
-        <RowConstraints minHeight="10.0" prefHeight="30.0"/>
+        <RowConstraints minHeight="30.0" prefHeight="30.0" maxHeight="30.0"/>
+        <RowConstraints minHeight="30.0" prefHeight="30.0"/>
     </rowConstraints>
     <columnConstraints>
         <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0"/>
@@ -209,11 +209,11 @@
             </graphic>
         </Label>
         <ToggleSwitch fx:id="peakToggleSwitch" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
-        <HBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="5">
+        <HBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="5" alignment="CENTER_LEFT">
             <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
             <InputGroup>
-                <ToggleButton fx:id="bar" text="%visualizer.bar.settings.render.bar" onAction="#renderBar"/>
-                <ToggleButton fx:id="line" text="%visualizer.bar.settings.render.line" onAction="#renderLine"/>
+                <ToggleButton prefHeight="30.0" fx:id="bar" text="%visualizer.bar.settings.render.bar" onAction="#renderBar"/>
+                <ToggleButton prefHeight="30.0" fx:id="line" text="%visualizer.bar.settings.render.line" onAction="#renderLine"/>
             </InputGroup>
         </HBox>
     </children>

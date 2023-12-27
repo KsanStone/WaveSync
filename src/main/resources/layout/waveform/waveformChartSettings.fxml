@@ -11,7 +11,7 @@
         <RowConstraints minHeight="30.0" prefHeight="30.0" />
         <RowConstraints minHeight="30.0" />
         <RowConstraints minHeight="30.0" prefHeight="30.0" />
-        <RowConstraints />
+        <RowConstraints minHeight="30.0" prefHeight="30.0" maxHeight="30.0"/>
     </rowConstraints>
     <columnConstraints>
         <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0" />
@@ -57,11 +57,11 @@
                 <Label text="Hz" />
             </children>
         </HBox>
-        <HBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="3">
+        <HBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="3" alignment="CENTER_LEFT">
             <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
             <InputGroup>
-                <ToggleButton fx:id="pointCloud" text="%visualizer.waveform.settings.render.pointCloud" onAction="#renderCloud"/>
-                <ToggleButton fx:id="waveformLine" text="%visualizer.waveform.settings.render.lines" onAction="#renderLine"/>
+                <ToggleButton prefHeight="30.0" fx:id="pointCloud" text="%visualizer.waveform.settings.render.pointCloud" onAction="#renderCloud"/>
+                <ToggleButton prefHeight="30.0" fx:id="waveformLine" text="%visualizer.waveform.settings.render.lines" onAction="#renderLine"/>
             </InputGroup>
         </HBox>
     </children>

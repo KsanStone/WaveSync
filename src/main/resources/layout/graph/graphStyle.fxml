@@ -7,7 +7,7 @@
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController">
     <children>
-        <ToggleButton fx:id="yAxisToggle" mnemonicParsing="false">
+        <ToggleButton fx:id="yAxisToggle" mnemonicParsing="false" prefHeight="36" minHeight="36" maxHeight="36">
             <graphic>
                 <FontIcon iconLiteral="mdal-border_left" iconSize="18"/>
             </graphic>
@@ -15,7 +15,7 @@
                 <Tooltip text="%chart.settings.tooltip.yAxis"/>
             </tooltip>
         </ToggleButton>
-        <ToggleButton mnemonicParsing="false" fx:id="xAxisToggle">
+        <ToggleButton mnemonicParsing="false" fx:id="xAxisToggle" prefHeight="36" minHeight="36" maxHeight="36">
             <graphic>
                 <FontIcon iconLiteral="mdal-border_bottom" iconSize="18"/>
             </graphic>
@@ -23,7 +23,7 @@
                 <Tooltip text="%chart.settings.tooltip.xAxis"/>
             </tooltip>
         </ToggleButton>
-        <ToggleButton fx:id="gridToggle" mnemonicParsing="false">
+        <ToggleButton fx:id="gridToggle" mnemonicParsing="false" prefHeight="36" minHeight="36" maxHeight="36">
             <graphic>
                 <FontIcon iconLiteral="mdal-grid_on" iconSize="18"/>
             </graphic>
