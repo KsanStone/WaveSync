@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import atlantafx.base.controls.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-<?import org.kordamp.ikonli.javafx.*?>
-
+<?import atlantafx.base.controls.ToggleSwitch?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.layout.HBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 <HBox alignment="CENTER_LEFT" spacing="5.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.ThemeSelectorController">
     <ChoiceBox fx:id="themeChoiceBox" prefWidth="150.0" HBox.hgrow="ALWAYS" />
     <FontIcon iconLiteral="mdmz-wb_sunny" iconSize="25" />

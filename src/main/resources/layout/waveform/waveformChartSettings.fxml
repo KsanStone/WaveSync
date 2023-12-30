@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import atlantafx.base.controls.*?>
+<?import atlantafx.base.controls.ToggleSwitch?>
+<?import atlantafx.base.layout.InputGroup?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.*?>
-
-<?import atlantafx.base.layout.InputGroup?>
 <GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformChartSettingsController">
     <rowConstraints>
         <RowConstraints minHeight="30.0" prefHeight="30.0" />

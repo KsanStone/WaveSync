@@ -2,7 +2,6 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-
 <GridPane hgap="5.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController">
    <children>
       <Label prefHeight="0.0" prefWidth="182.0" text="%autoCanvas.info.targetFramerate" />
