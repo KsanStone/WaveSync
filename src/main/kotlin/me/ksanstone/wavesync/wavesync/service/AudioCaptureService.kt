@@ -61,7 +61,7 @@ class AudioCaptureService(
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
     var audioSystems: List<XtSystem> = listOf()
 
-    private val channelLabels = arrayOf(CommonChannel.MASTER, CommonChannel.LEFT, CommonChannel.RIGHT)
+    private val channelLabels = arrayOf(CommonChannel.MASTER.label)
 
 
     @PostConstruct
@@ -202,20 +202,23 @@ class AudioCaptureService(
                     val streamParams = XtStreamParams(true, this::onBuffer, null, null)
                     val deviceParams = XtDeviceStreamParams(streamParams, format, bufferSize.current)
 
+                    val channels = format.channels.inputs
+                    val rate = deviceParams.format.mix.rate
+                    val sample = deviceParams.format.mix.sample
+                    val channelNames = (0 until channels).map { idx -> device.getChannelName(false, idx) }
+
                     setScanWindowSize(fftSize.get())
                     val deviceStream = device.openStream(deviceParams, null)
                     deviceStream.use { stream ->
-                        logger.info("Stream opened")
-                        val channels = format.channels.inputs
-                        val rate = deviceParams.format.mix.rate
-                        val sample = deviceParams.format.mix.sample
+                        logger.info("Stream opened Input latency ${stream.latency.input}")
+                        logger.info("Channels: $channelNames")
                         this.currentStream = stream
                         XtSafeBuffer.register(stream).use { _ ->
                             pcmDataBuffer = ByteArray(
                                 stream.frames * channels * XtAudio.getSampleAttributes(sample).size
                             )
-                            samples.resize(1 + channels, stream.frames).label(*channelLabels)
-                            channelVolumes.resize(1 + channels, 1).label(*channelLabels)
+                            samples.resize(1 + channels, stream.frames).label(*channelLabels.plus(channelNames))
+                            channelVolumes.resize(1 + channels, 1).label(*channelLabels.plus(channelNames))
                             stream.start()
                             logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
                             lock.await()
