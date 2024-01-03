@@ -4,6 +4,7 @@ class FloatChanneledStore : ChannelStore<FloatArray>() {
 
     private lateinit var channelData: Array<Channel<FloatArray>>
 
+    @Suppress("UNCHECKED_CAST")
     override fun resize(channels: Int, channelSize: Int): FloatChanneledStore {
         val newData = arrayOfNulls<Channel<FloatArray>>(channels)
         for (i in 0 until channels) {
@@ -13,7 +14,14 @@ class FloatChanneledStore : ChannelStore<FloatArray>() {
         return this
     }
 
-    override fun label(vararg labels: String): ChannelStore<FloatArray> {
+    fun label(vararg labels: String): ChannelStore<FloatArray> {
+        if (labels.size > channelData.size) throw IllegalArgumentException("Too many labels :O")
+        for ((i, channelLabel) in labels.withIndex())
+            channelData[i].label = ChannelLabel.resolve(channelLabel)
+        return this
+    }
+
+    override fun label(vararg labels: ChannelLabel): ChannelStore<FloatArray> {
         if (labels.size > channelData.size) throw IllegalArgumentException("Too many labels :O")
         for ((i, channelLabel) in labels.withIndex())
             channelData[i].label = channelLabel

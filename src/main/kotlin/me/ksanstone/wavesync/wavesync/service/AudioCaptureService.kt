@@ -10,10 +10,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWI
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencyOfBin
 import me.ksanstone.wavesync.wavesync.service.windowing.*
-import me.ksanstone.wavesync.wavesync.utility.CommonChannel
-import me.ksanstone.wavesync.wavesync.utility.FloatChanneledStore
-import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
-import me.ksanstone.wavesync.wavesync.utility.toFloatArray
+import me.ksanstone.wavesync.wavesync.utility.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -61,7 +58,7 @@ class AudioCaptureService(
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
     var audioSystems: List<XtSystem> = listOf()
 
-    private val channelLabels = arrayOf(CommonChannel.MASTER.label)
+    private val defaultChannelLabels = arrayOf(CommonChannel.MASTER.label)
 
 
     @PostConstruct
@@ -205,20 +202,20 @@ class AudioCaptureService(
                     val channels = format.channels.inputs
                     val rate = deviceParams.format.mix.rate
                     val sample = deviceParams.format.mix.sample
-                    val channelNames = (0 until channels).map { idx -> device.getChannelName(false, idx) }
+                    val channelLabels = (0 until channels).map { idx -> ChannelLabel.resolve(device.getChannelName(false, idx)) }
 
                     setScanWindowSize(fftSize.get())
                     val deviceStream = device.openStream(deviceParams, null)
                     deviceStream.use { stream ->
                         logger.info("Stream opened Input latency ${stream.latency.input}")
-                        logger.info("Channels: $channelNames")
+                        logger.info("Channels: $channelLabels")
                         this.currentStream = stream
                         XtSafeBuffer.register(stream).use { _ ->
                             pcmDataBuffer = ByteArray(
                                 stream.frames * channels * XtAudio.getSampleAttributes(sample).size
                             )
-                            samples.resize(1 + channels, stream.frames).label(*channelLabels.plus(channelNames))
-                            channelVolumes.resize(1 + channels, 1).label(*channelLabels.plus(channelNames))
+                            samples.resize(1 + channels, stream.frames).label(*defaultChannelLabels.plus(channelLabels))
+                            channelVolumes.resize(1 + channels, 1).label(*defaultChannelLabels.plus(channelLabels))
                             stream.start()
                             logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
                             lock.await()
