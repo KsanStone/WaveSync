@@ -28,9 +28,25 @@ data class Channel<E>(
 )
 
 enum class CommonChannel(val label: ChannelLabel) {
-    MASTER(ChannelLabel("master", "A")),
-    LEFT(ChannelLabel("left", "L")),
-    RIGHT(ChannelLabel("right", "R"));
+    MASTER(ChannelLabel("master", "M")),
+    FRONT_LEFT(ChannelLabel("front left", "L")),
+    FRONT_RIGHT(ChannelLabel("front right", "R")),
+    FRONT_CENTER(ChannelLabel("front center", "C")),
+    LOW_FREQUENCY(ChannelLabel("low frequency", "LF")),
+    BACK_LEFT(ChannelLabel("back left", "BL")),
+    BACK_RIGHT(ChannelLabel("back right", "BR")),
+    FRONT_LEFT_OF_CENTER(ChannelLabel("front left of center", "FLC")),
+    FRONT_RIGHT_OF_CENTER(ChannelLabel("front right of center", "FRC")),
+    BACK_CENTER(ChannelLabel("back center", "BC")),
+    SIDE_LEFT(ChannelLabel("side left", "SL")),
+    SIDE_RIGHT(ChannelLabel("side right", "SR")),
+    TOP_CENTER(ChannelLabel("top center", "TC")),
+    TOP_FRONT_LEFT(ChannelLabel("top front left", "TFL")),
+    TOP_FRONT_CENTER(ChannelLabel("top front center", "TFC")),
+    TOP_FRONT_RIGHT(ChannelLabel("top front right", "TFR")),
+    TOP_BACK_LEFT(ChannelLabel("top back left", "TBL")),
+    TOP_BACK_CENTER(ChannelLabel("top back center", "TBC")),
+    TOP_BACK_RIGHT(ChannelLabel("top back right", "TBR"));
 
     companion object {
 
@@ -38,10 +54,25 @@ enum class CommonChannel(val label: ChannelLabel) {
          * Attempts to resolve a [CommonChannel] from the channel name
          */
         fun resolve(name: String): CommonChannel? {
-            // TODO
-            return when(name) {
-                "SPEAKER_FRONT_LEFT" -> LEFT
-                "SPEAKER_FRONT_RIGHT" -> RIGHT
+            return when (name) {
+                "SPEAKER_FRONT_LEFT" -> FRONT_LEFT
+                "SPEAKER_FRONT_RIGHT" -> FRONT_RIGHT
+                "SPEAKER_FRONT_CENTER" -> FRONT_CENTER
+                "SPEAKER_LOW_FREQUENCY" -> LOW_FREQUENCY
+                "SPEAKER_BACK_LEFT" -> BACK_LEFT
+                "SPEAKER_BACK_RIGHT" -> BACK_RIGHT
+                "SPEAKER_FRONT_LEFT_OF_CENTER" -> FRONT_LEFT_OF_CENTER
+                "SPEAKER_FRONT_RIGHT_OF_CENTER" -> FRONT_RIGHT_OF_CENTER
+                "SPEAKER_BACK_CENTER" -> BACK_CENTER
+                "SPEAKER_SIDE_LEFT" -> SIDE_LEFT
+                "SPEAKER_SIDE_RIGHT" -> SIDE_RIGHT
+                "SPEAKER_TOP_CENTER" -> TOP_CENTER
+                "SPEAKER_TOP_FRONT_LEFT" -> TOP_FRONT_LEFT
+                "SPEAKER_TOP_FRONT_CENTER" -> TOP_FRONT_CENTER
+                "SPEAKER_TOP_FRONT_RIGHT" -> TOP_FRONT_RIGHT
+                "SPEAKER_TOP_BACK_LEFT" -> TOP_BACK_LEFT
+                "SPEAKER_TOP_BACK_CENTER" -> TOP_BACK_CENTER
+                "SPEAKER_TOP_BACK_RIGHT" -> TOP_BACK_RIGHT
                 else -> null
             }
         }
