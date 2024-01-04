@@ -23,6 +23,7 @@ import javafx.scene.text.Text
 import javafx.scene.text.TextAlignment
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
+import me.ksanstone.wavesync.wavesync.utility.ChannelLabel
 import java.text.DecimalFormat
 
 class VolumeVisualizer : AutoCanvas(false) {
@@ -30,6 +31,7 @@ class VolumeVisualizer : AutoCanvas(false) {
     override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {
         return FACTORY.cssMetaData
     }
+
     companion object {
         private val FACTORY: StyleablePropertyFactory<VolumeVisualizer> =
             StyleablePropertyFactory<VolumeVisualizer>(
@@ -49,7 +51,11 @@ class VolumeVisualizer : AutoCanvas(false) {
     private val tickColor: StyleableProperty<Color> =
         FACTORY.createStyleableColorProperty(this, "tickColor", "-fx-tick-color") { vis -> vis.tickColor }
     private val tickLabelFillColor: StyleableProperty<Color> =
-        FACTORY.createStyleableColorProperty(this, "tickLabelFill", "-fx-tick-label-fill") {vis -> vis.tickLabelFillColor}
+        FACTORY.createStyleableColorProperty(
+            this,
+            "tickLabelFill",
+            "-fx-tick-label-fill"
+        ) { vis -> vis.tickLabelFillColor }
 
     val orientationProperty = SimpleObjectProperty<Orientation>()
     var values: List<Double>
@@ -60,6 +66,14 @@ class VolumeVisualizer : AutoCanvas(false) {
             }
         }
 
+    var labels: List<ChannelLabel>
+        get() = FXCollections.unmodifiableObservableList(labelProperty) as ObservableList<ChannelLabel>
+        set(value) {
+            synchronized(labelProperty) {
+                labelProperty.setAll(value)
+            }
+        }
+
     val rangeMin = SimpleDoubleProperty(-90.0)
     val rangeMax = SimpleDoubleProperty(0.0)
     val tickUnit = SimpleDoubleProperty(10.0)
@@ -67,6 +81,7 @@ class VolumeVisualizer : AutoCanvas(false) {
     val range = rangeMax.subtract(rangeMin)
 
     private val valueProperty = FXCollections.observableArrayList<Double>()
+    private val labelProperty = FXCollections.observableArrayList<ChannelLabel>()
     private val tickFormat = DecimalFormat()
     private val smoother = MultiplicativeSmoother()
 
@@ -89,15 +104,21 @@ class VolumeVisualizer : AutoCanvas(false) {
         this.stylesheets.add("/styles/volume-visualizer.css")
 
         orientationProperty.addListener { _, _, orientation ->
-            when(orientation!!) {
-                Orientation.HORIZONTAL -> {prefWidth = 300.0; prefHeight = 25.0}
-                Orientation.VERTICAL -> {prefWidth = 25.0; prefHeight = 300.0}
+            when (orientation!!) {
+                Orientation.HORIZONTAL -> {
+                    prefWidth = 300.0; prefHeight = 25.0
+                }
+
+                Orientation.VERTICAL -> {
+                    prefWidth = 25.0; prefHeight = 300.0
+                }
             }
         }
         orientationProperty.set(Orientation.HORIZONTAL)
         valueProperty.addListener(ListChangeListener { c ->
-            while (c.next()) { /* wait for changes to settle */ }
-            if(smoother.dataSize != valueProperty.size)
+            while (c.next()) { /* wait for changes to settle */
+            }
+            if (smoother.dataSize != valueProperty.size)
                 smoother.dataSize = valueProperty.size
             valueProperty.forEachIndexed { i, it -> smoother.dataTarget[i] = it.toFloat() }
         })
@@ -113,21 +134,27 @@ class VolumeVisualizer : AutoCanvas(false) {
         val tickUnit = tickUnit.get()
 
         var tick = min - min % tickUnit + tickUnit
-        while (tick < max) { newTickMarks.add(tick); tick += tickUnit}
+        while (tick < max) {
+            newTickMarks.add(tick); tick += tickUnit
+        }
         newTickMarks.addAll(listOf(min, max))
         val tickMarkList = newTickMarks.toMutableList()
 
         tickMarks.setAll(tickMarkList.map { it to tickFormat.format(it) })
     }
 
-    private fun getTickPosition(tick: Double): Double {
+    private fun getTickPosition(tick: Double, s: Double): Double {
         return ((tick - rangeMin.get()) / range.get()) *
-                when (orientationProperty.get()!!) {Orientation.HORIZONTAL -> width - 1; Orientation.VERTICAL -> height - 1}
+                when (orientationProperty.get()!!) {
+                    Orientation.HORIZONTAL -> s - 1; Orientation.VERTICAL -> s - 1
+                }
     }
 
-    private fun getTextAlign(tickPosition: Double, textWidth: Double): Double {
-        val alignFactor = when (orientationProperty.get()!!) {Orientation.HORIZONTAL -> width; Orientation.VERTICAL -> height}
-        if (tickPosition < textWidth) return 1.0
+    private fun getTextAlign(tickPosition: Double, textWidth: Double, offset: Double): Double {
+        val alignFactor = when (orientationProperty.get()!!) {
+            Orientation.HORIZONTAL -> width - offset; Orientation.VERTICAL -> height - offset
+        }
+        if (tickPosition < textWidth + offset) return 1.0
         if (tickPosition > alignFactor - textWidth) return 0.0
         return 0.5
     }
@@ -138,14 +165,60 @@ class VolumeVisualizer : AutoCanvas(false) {
         return text.boundsInLocal
     }
 
+    private fun shouldDrawLabels(size: Double, measures: List<Double>): Boolean {
+        return labelProperty.size == valueProperty.size &&
+                measures.stream().map { it + 2 }.reduce(0.0) { a, b -> a + b } <= size
+    }
+
+    private fun measureLabels(size: Double, font: Font): List<Triple<Bounds, Double, String>> {
+        val f = size / labelProperty.size.toDouble()
+        return labelProperty.mapIndexed { i, it ->
+            return@mapIndexed Triple(measureText(it.shortcut, font), f * (i.toDouble() + 0.5), it.shortcut)
+        }
+    }
+
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         smoother.applySmoothing(deltaT)
+        var w = width
+        var h = height
         val min = rangeMin.get()
         val range = range.get()
         val orientation = orientationProperty.get()
+        val shortcutFont = Font.font(12.0)
         var dataCopy: Array<Double>
+        var drawShortcuts: Boolean
+        var shortcuts: List<Triple<Bounds, Double, String>>
+        var barOffset: Double = 0.0
+
         synchronized(valueProperty) {
             dataCopy = valueProperty.toTypedArray()
+        }
+
+        synchronized(labelProperty) {
+            val size = when (orientation!!) {
+                Orientation.VERTICAL -> width
+                Orientation.HORIZONTAL -> height
+            }
+            shortcuts = measureLabels(size, shortcutFont)
+            drawShortcuts = shouldDrawLabels(size, shortcuts.map {
+                when (orientation) {
+                    Orientation.VERTICAL -> it.first.width
+                    Orientation.HORIZONTAL -> it.first.height
+                }
+            })
+        }
+
+        if (drawShortcuts) {
+            barOffset = shortcuts.maxOf {
+                when (orientation!!) {
+                    Orientation.VERTICAL -> it.first.height
+                    Orientation.HORIZONTAL -> it.first.width
+                }
+            } + 2.0
+            when (orientation!!) {
+                Orientation.VERTICAL -> h -= barOffset
+                Orientation.HORIZONTAL -> w -= barOffset
+            }
         }
 
         // Drawing the bar
@@ -153,25 +226,26 @@ class VolumeVisualizer : AutoCanvas(false) {
         val stops = arrayOf(Stop(0.0, bottomColor.value), Stop(1.0, peakColor.value))
         when (orientation!!) {
             Orientation.HORIZONTAL -> {
-                val sliceSize = height / dataCopy.size
+                val sliceSize = h / dataCopy.size
                 for ((i, d) in dataCopy.withIndex()) {
                     val v = (d - min).coerceIn(0.0, range) / range
                     gc.fill = LinearGradient(
-                        0.0, 0.0, width, 0.0,
+                        barOffset, 0.0, w, 0.0,
                         false, CycleMethod.NO_CYCLE, *stops
                     )
-                    gc.fillRect(0.0, sliceSize * i, width * v, sliceSize)
+                    gc.fillRect(barOffset, sliceSize * i, w * v, sliceSize)
                 }
             }
+
             Orientation.VERTICAL -> {
-                val sliceSize = width / dataCopy.size
+                val sliceSize = w / dataCopy.size
                 for ((i, d) in dataCopy.withIndex()) {
                     val v = (d - min).coerceIn(0.0, range) / range
                     gc.fill = LinearGradient(
-                        0.0, height, 0.0, 0.0,
+                        0.0, h, 0.0, 0.0,
                         false, CycleMethod.NO_CYCLE, *stops
                     )
-                    gc.fillRect(sliceSize * i, height * (1.0 - v), sliceSize, height * v)
+                    gc.fillRect(sliceSize * i, h * (1.0 - v), sliceSize, h * v)
                 }
             }
         }
@@ -188,41 +262,66 @@ class VolumeVisualizer : AutoCanvas(false) {
                 var previousText = 0.0
                 val lastText = measureText(tickMarks.last().second, gc.font).width
                 tickMarks.forEachIndexed { i, it ->
-                    val pos = getTickPosition(it.first)
+                    val pos = getTickPosition(it.first, w) + barOffset
                     gc.strokeLine(pos, 0.0, pos, tickSize)
-                    gc.strokeLine(pos, height - tickSize, pos, height)
+                    gc.strokeLine(pos, h - tickSize, pos, h)
 
                     val measure = measureText(it.second, gc.font)
-                    val align = getTextAlign(pos, 5.0)
-                    val notObstructingLast = pos + measure.width * align < width - lastText - tickPad
+                    val align = getTextAlign(pos, 5.0, barOffset)
+                    val notObstructingLast = pos + measure.width * align < w - lastText - tickPad
                     val notObstructingPrevious = previousText < pos - (measure.width * (1.0 - align)) - tickPad
 
                     if (i == 0 || i == tickMarks.size - 1 || (notObstructingPrevious && notObstructingLast)) {
-                        gc.textAlign = when (align) {1.0 -> TextAlignment.LEFT; 0.0 -> TextAlignment.RIGHT; else -> TextAlignment.CENTER; }
-                        gc.fillText(it.second, pos, height / 2)
+                        gc.textAlign = when (align) {
+                            1.0 -> TextAlignment.LEFT; 0.0 -> TextAlignment.RIGHT; else -> TextAlignment.CENTER; }
+                        gc.fillText(it.second, pos, h / 2)
                         previousText = pos + measure.width * align
                     }
                 }
             }
+
             Orientation.VERTICAL -> {
                 gc.textAlign = TextAlignment.CENTER
                 var previousText = 0.0
                 val lastText = measureText(tickMarks.last().second, gc.font).height
                 tickMarks.forEachIndexed { i, it ->
-                    val pos = getTickPosition(it.first)
+                    val pos = getTickPosition(it.first, h)
                     gc.strokeLine(0.0, pos, tickSize, pos)
-                    gc.strokeLine(width - tickSize, pos, width, pos)
+                    gc.strokeLine(w - tickSize, pos, w, pos)
 
                     val measure = measureText(it.second, gc.font)
-                    val align = getTextAlign(pos, 5.0)
-                    val notObstructingLast = pos + measure.height * align < height - lastText - tickPad
+                    val align = getTextAlign(pos, 5.0, barOffset)
+                    val notObstructingLast = pos + measure.height * align < h - lastText - tickPad
                     val notObstructingPrevious = previousText < pos - (measure.height * (1.0 - align)) - tickPad
 
                     if (i == 0 || i == tickMarks.size - 1 || (notObstructingPrevious && notObstructingLast)) {
-                        gc.textBaseline = when (align) {1.0 -> VPos.TOP; 0.0 -> VPos.BOTTOM; else -> VPos.CENTER; }
-                        gc.fillText(it.second, width / 2, pos)
+                        gc.textBaseline = when (align) {
+                            1.0 -> VPos.TOP; 0.0 -> VPos.BOTTOM; else -> VPos.CENTER; }
+                        gc.fillText(it.second, w / 2, pos)
                         previousText = pos + measure.height * align
                     }
+                }
+            }
+        }
+
+        // Drawing channel labels
+        if (!drawShortcuts) return
+        gc.font = shortcutFont
+        gc.fill = tickLabelFillColor.value
+        when (orientation) {
+            Orientation.HORIZONTAL -> {
+                gc.textAlign = TextAlignment.LEFT
+                gc.textBaseline = VPos.CENTER
+                shortcuts.forEach { pair ->
+                    gc.fillText(pair.third, 0.0, pair.second)
+                }
+            }
+
+            Orientation.VERTICAL -> {
+                gc.textAlign = TextAlignment.CENTER
+                gc.textBaseline = VPos.BOTTOM
+                shortcuts.forEach { pair ->
+                    gc.fillText(pair.third, pair.second, height)
                 }
             }
         }

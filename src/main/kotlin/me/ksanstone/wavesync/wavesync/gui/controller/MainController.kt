@@ -4,6 +4,7 @@ import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
+import javafx.geometry.Orientation
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
@@ -161,6 +162,7 @@ class MainController : Initializable {
         val masterVolumeVisualizer = VolumeVisualizer()
         audioCaptureService.channelVolumes.listeners.add {store ->
             masterVolumeVisualizer.values = (1 until store.channels()).map { store[it].data[0].toDouble() }
+            masterVolumeVisualizer.labels = (1 until store.channels()).map { store[it].label }
         }
         bottomBar.children.add(masterVolumeVisualizer)
     }
