@@ -43,7 +43,7 @@ object FourierMath {
 
     fun transform(sign: Int, n: Int, ar: FloatArray, ai: FloatArray, windowSum: Float) {
         val scale = if (sign > 0) 2.0f / windowSum else 0.5f
-        val numBits = numBits(n)
+        val numBits = log2nlz(n)
         val reverseTable = getReverseTable(numBits)
         val sineTable = getFloatSineTable(numBits)
         val mask = n - 1
@@ -123,7 +123,7 @@ object FourierMath {
      * @param powerOf2 must be a power of two, for example, 512 or 1024
      * @return for example, 9 for an input value of 512
      */
-    private fun numBits(powerOf2: Int): Int {
+    fun numBitsWhile(powerOf2: Int): Int {
         var of2 = powerOf2
         assert(
             of2 and of2 - 1 == 0 // is it a power of 2?
@@ -135,6 +135,35 @@ object FourierMath {
         }
         return i
     }
+
+    fun log2nlz(bits: Int): Int {
+        if (bits == 0) return 0
+
+        return 31 - Integer.numberOfLeadingZeros(bits)
+    }
+
+    fun binlog(bits: Int): Int {
+        var bits = bits
+        var log = 0
+        if ((bits and -0x10000) != 0) {
+            bits = bits ushr 16
+            log = 16
+        }
+        if (bits >= 256) {
+            bits = bits ushr 8
+            log += 8
+        }
+        if (bits >= 16) {
+            bits = bits ushr 4
+            log += 4
+        }
+        if (bits >= 4) {
+            bits = bits ushr 2
+            log += 2
+        }
+        return log + (bits ushr 1)
+    }
+
 
     class FloatSineTable internal constructor(numBits: Int) {
         var sineValues: FloatArray
