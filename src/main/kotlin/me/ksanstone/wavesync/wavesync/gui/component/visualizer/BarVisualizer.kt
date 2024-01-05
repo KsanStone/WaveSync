@@ -141,29 +141,46 @@ class BarVisualizer : AutoCanvas() {
     }
 
     private fun refreshTooltipLabel() {
-            if (source == null) {
-                tooltip.text = "---"
-                return
-            }
+            try {
+                if (source == null) {
+                    tooltip.text = "---"
+                    return
+                }
 
-            val x = canvasContainer.tooltipPosition.get().x
-            val bufferLength = smoother.dataSize
-            val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
-            val totalBars = floor(bufferLength.toDouble() / step)
-            val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
-            val bar = floor(x / barWidth)
-            val binStart = floor(bar * step).toInt()
-            val binEnd = floor((bar + 1) * step).toInt()
-            val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
-            val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
-            val maxValue = rawMaxTracker.data.slice(binStart .. binEnd).max()
-            val rawValue = fftDataArray.slice(binStart + frequencyBinSkip .. binEnd + frequencyBinSkip).max()
-            tooltip.text =
-                "Bar: ${localizationService.formatNumber(bar)} \n" +
-                "FFT: ${localizationService.formatNumber(binStart)} - ${localizationService.formatNumber(binEnd)}\n" +
-                "Freq: ${localizationService.formatNumber(minFreq, "Hz")} - ${localizationService.formatNumber(maxFreq, "Hz")}\n" +
-                "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
-            if (peakLineVisible.get()) tooltip.text += "\nMax: ${localizationService.formatNumber(fftScalar.scaleRaw(maxValue))}"
+                val x = canvasContainer.tooltipPosition.get().x
+                val bufferLength = smoother.dataSize
+                val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
+                val totalBars = floor(bufferLength.toDouble() / step)
+                val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
+                val bar = floor(x / barWidth)
+                val binStart = floor(bar * step).toInt()
+                val binEnd = floor((bar + 1) * step).toInt()
+                val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
+                val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
+                val maxValue = rawMaxTracker.data.slice(binStart .. binEnd).max()
+                val rawValue = fftDataArray.slice(binStart + frequencyBinSkip .. binEnd + frequencyBinSkip).max()
+                tooltip.text =
+                    "Bar: ${localizationService.formatNumber(bar)} \n" +
+                            "FFT: ${localizationService.formatNumber(binStart)} - ${
+                                localizationService.formatNumber(
+                                    binEnd
+                                )
+                            }\n" +
+                            "Freq: ${
+                                localizationService.formatNumber(
+                                    minFreq,
+                                    "Hz"
+                                )
+                            } - ${localizationService.formatNumber(maxFreq, "Hz")}\n" +
+                            "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
+                if (peakLineVisible.get()) tooltip.text += "\nMax: ${
+                    localizationService.formatNumber(
+                        fftScalar.scaleRaw(
+                            maxValue
+                        )
+                    )
+                }"
+            } catch(e: IndexOutOfBoundsException) { /* kys */ }
     }
 
     private fun changeScalar() {
