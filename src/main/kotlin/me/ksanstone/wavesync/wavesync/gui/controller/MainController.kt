@@ -4,7 +4,6 @@ import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.geometry.Orientation
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
@@ -15,10 +14,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
-import me.ksanstone.wavesync.wavesync.service.LocalizationService
-import me.ksanstone.wavesync.wavesync.service.PreferenceService
-import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
+import me.ksanstone.wavesync.wavesync.service.*
 import java.net.URL
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -39,6 +35,7 @@ class MainController : Initializable {
 
     private val deviceList: MutableList<SupportedCaptureSource> = ArrayList()
     private var audioCaptureService: AudioCaptureService
+    private var recordingModeService: RecordingModeService
     private var localizationService: LocalizationService
     private var menuInitializer: MenuInitializer
     private var preferenceService: PreferenceService
@@ -52,6 +49,7 @@ class MainController : Initializable {
         instance = this
 
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
+        recordingModeService = WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class.java)
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
@@ -165,6 +163,8 @@ class MainController : Initializable {
             masterVolumeVisualizer.labels = (1 until store.channels()).map { store[it].label }
         }
         bottomBar.children.add(masterVolumeVisualizer)
+        bottomBar.visibleProperty().bind(recordingModeService.recordingMode.not())
+        bottomBar.managedProperty().bind(bottomBar.visibleProperty())
     }
 
     companion object {

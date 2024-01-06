@@ -26,8 +26,10 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.RecordingModeService
 import me.ksanstone.wavesync.wavesync.utility.FPSCounter
 import org.kordamp.ikonli.javafx.FontIcon
+import org.springframework.beans.factory.getBean
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.pow
 import kotlin.math.roundToLong
@@ -52,6 +54,7 @@ abstract class AutoCanvas(private val detachable: Boolean = true) : AnchorPane()
     private val frameTime = SimpleDoubleProperty(0.0)
     private val fpsCounter = FPSCounter()
     private val detachedProperty = SimpleBooleanProperty(false)
+    private var recordingModeService: RecordingModeService = WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class)
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
@@ -130,6 +133,7 @@ abstract class AutoCanvas(private val detachable: Boolean = true) : AnchorPane()
 
     private fun initializeControlPane() {
         controlPane = HBox()
+        controlPane.visibleProperty().bind(recordingModeService.recordingMode.not())
         controlPane.styleClass.add("control-box")
         controlPane.stylesheets.add("/styles/canvas-control.css")
         controlPane.hoverProperty().addListener { _, _, v ->
