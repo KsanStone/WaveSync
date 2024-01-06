@@ -134,13 +134,14 @@ class BarChartSettingsController : Initializable {
         }
 
         barWidthSlider.value = tw.toDouble()
-
+        gapSlider.disableProperty().bind(line.selectedProperty())
         scalingSlider.value = visualizer.exaggeratedScalar.get().toDouble()
         linearScalingSlider.value = visualizer.linearScalar.get().toDouble()
         dropRateSlider.value = visualizer.smoothing.get().toDouble()
         barWidthSlider.value = visualizer.targetBarWidth.get().toDouble()
         peakToggleSwitch.isSelected = visualizer.peakLineVisible.get()
         gapSlider.value = visualizer.gap.get().toDouble()
+        gapSlider.valueProperty().addListener { _, _, v -> if (barWidthSlider.value <= v.toDouble()) barWidthSlider.value = v.toDouble() + 1 }
         scalarTypeTabPane.selectionModel.select(
             when (visualizer.scalarType.value) {
                 FFTScalarType.LINEAR -> 0

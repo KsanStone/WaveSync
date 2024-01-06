@@ -266,7 +266,7 @@ class BarVisualizer : AutoCanvas() {
 
             gc.clearRect(0.0, 0.0, width, height)
 
-            val localGap = gap.get()
+            val localGap = if (renderMode.get()!! == RenderMode.BAR) gap.get() else 0
             val bufferLength = smoother.dataSize
             var step = calculateStep(targetBarWidth.get(), bufferLength, width)
             val totalBars = floor(bufferLength.toDouble() / step)
