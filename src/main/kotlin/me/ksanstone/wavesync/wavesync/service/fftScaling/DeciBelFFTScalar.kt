@@ -9,11 +9,11 @@ class DeciBelFFTScalar : FFTScalar<DeciBelFFTScalarParameters> {
     private var scale = rangeMax - rangeMin
 
     override fun scale(res: Float): Float {
-        return (20 * log10(res) - rangeMin).coerceIn(0.0F, scale) / scale
+        return (10 * log10(res) - rangeMin).coerceIn(0.0F, scale) / scale
     }
 
     override fun scaleRaw(res: Float): Float {
-        return 20 * log10(res)
+        return 10 * log10(res)
     }
 
     override fun getAxisScale(): AxisScale {

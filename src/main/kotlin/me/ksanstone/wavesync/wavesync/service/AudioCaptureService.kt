@@ -153,7 +153,7 @@ class AudioCaptureService(
         windowFunction!!.applyFunctionInterlaced(samples)
         fftTransformerService.scaleAndPutSamples(samples, windowFunction!!.getSum())
         fftTransformerService.transform()
-        fftTransformerService.computeMagnitudes(fftResult[0].data)
+        fftTransformerService.computeMagnitudesSquared(fftResult[0].data)
         calcPeak(fftResult[0].data)
         fftObservers.forEach { it.accept(fftResult[0].data, source.get()) }
     }

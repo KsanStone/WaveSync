@@ -7,7 +7,6 @@ import org.bytedeco.fftw.global.fftw3.*
 import org.bytedeco.javacpp.FloatPointer
 import org.bytedeco.javacpp.Loader
 import org.springframework.stereotype.Service
-import kotlin.math.sqrt
 
 @Service
 class FFTTransformerService {
@@ -37,10 +36,10 @@ class FFTTransformerService {
         signal.put(samples, 0, samples.size)
     }
 
-    fun computeMagnitudes(output: FloatArray) {
+    fun computeMagnitudesSquared(output: FloatArray) {
         result.get(resulAuxArray)
         for (i in 0 until numPoints / 2) {
-            output[i] = sqrt(resulAuxArray[2 * i + REAL] * resulAuxArray[2 * i + REAL] + resulAuxArray[2 * i + IMAG] * resulAuxArray[2 * i + IMAG])
+            output[i] = resulAuxArray[2 * i + REAL] * resulAuxArray[2 * i + REAL] + resulAuxArray[2 * i + IMAG] * resulAuxArray[2 * i + IMAG]
         }
     }
 

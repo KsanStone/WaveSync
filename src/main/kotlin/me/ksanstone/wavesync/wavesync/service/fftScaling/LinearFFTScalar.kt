@@ -1,15 +1,17 @@
 package me.ksanstone.wavesync.wavesync.service.fftScaling
 
+import kotlin.math.sqrt
+
 class LinearFFTScalar : FFTScalar<LinearFFTScalarParams> {
 
     private var scale: Float = 1.0F
 
     override fun scale(res: Float): Float {
-        return (res * scale).coerceIn(0.0F, 1.0F)
+        return (sqrt(res) * scale).coerceIn(0.0F, 1.0F)
     }
 
     override fun scaleRaw(res: Float): Float {
-        return res * scale
+        return sqrt(res) * scale
     }
 
     override fun getAxisScale(): AxisScale {
