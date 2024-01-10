@@ -188,7 +188,7 @@ class VolumeVisualizer : AutoCanvas(false) {
         var dataCopy: Array<Double>
         var drawShortcuts: Boolean
         var shortcuts: List<Triple<Bounds, Double, String>>
-        var barOffset: Double = 0.0
+        var barOffset = 0.0
 
         synchronized(valueProperty) {
             dataCopy = valueProperty.toTypedArray()

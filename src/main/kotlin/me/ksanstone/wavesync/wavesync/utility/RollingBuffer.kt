@@ -67,10 +67,8 @@ class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Ite
     }
 }
 
-fun RollingBuffer<Float>.toFloatArray(): FloatArray {
-    val array = FloatArray(this.size)
-    // sadly, we can't use System.arraycopy here
-    for (i in currentHeadPosition + 1 until size) array[i - currentHeadPosition - 1] = data[i] as Float
-    for (i in 0 until currentHeadPosition + 1) array[i + size - currentHeadPosition - 1] = data[i] as Float
-    return array
+fun RollingBuffer<Float>.toFloatArrayInterlaced(preset: FloatArray): FloatArray {
+    for (i in currentHeadPosition + 1 until size) preset[(i - currentHeadPosition - 1)*2] = data[i] as Float
+    for (i in 0 until currentHeadPosition + 1) preset[(i + size - currentHeadPosition - 1)*2] = data[i] as Float
+    return preset
 }

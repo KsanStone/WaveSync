@@ -11,10 +11,24 @@ abstract class WindowFunction(private var windowSize: Int) {
         factors = getPrecomputedFactors(windowSize)
     }
 
+    @Suppress("unused")
     fun applyFunction(window: FloatArray) {
         if (window.size == this.windowSize) {
             for (i in window.indices) {
                 window[i] *= factors!![i]
+            }
+        } else {
+            throw IllegalArgumentException(
+                ("Incompatible window size for this WindowFunction instance : " +
+                        "expected " + windowSize) + ", received " + window.size
+            )
+        }
+    }
+
+    fun applyFunctionInterlaced(window: FloatArray) {
+        if (window.size == this.windowSize * 2) {
+            for (i in factors!!.indices) {
+                window[i * 2] *= factors!![i]
             }
         } else {
             throw IllegalArgumentException(

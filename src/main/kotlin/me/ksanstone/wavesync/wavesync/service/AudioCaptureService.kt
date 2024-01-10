@@ -11,6 +11,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencyOfBin
 import me.ksanstone.wavesync.wavesync.service.windowing.*
 import me.ksanstone.wavesync.wavesync.utility.*
+import org.bytedeco.javacpp.FloatPointer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -30,13 +31,17 @@ import kotlin.math.sqrt
 
 @Service
 class AudioCaptureService(
-    private val preferenceService: PreferenceService
+    private val preferenceService: PreferenceService,
+    private var fftTransformerService: FFTTransformerService
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
 
     private lateinit var pcmDataBuffer: ByteArray
     private lateinit var fftSampleBuffer: RollingBuffer<Float>
+    private lateinit var fftwSignal: FloatPointer
+    private lateinit var fftwResult: FloatPointer
+    private lateinit var fftwSignalArray: FloatArray
     private var currentStream: XtStream? = null
     private var lock: CountDownLatch = CountDownLatch(0)
     private var recordingFuture: CompletableFuture<Void>? = null
@@ -119,7 +124,7 @@ class AudioCaptureService(
             samples[0].data[frame] = sample
             fftSampleBuffer.insert(sample)
             if (fftSampleBuffer.written % targetSamplesUntilRefresh == 0L) {
-                doFFT(fftSampleBuffer.toFloatArray(), source.get().format.mix.rate)
+                doFFT(fftSampleBuffer.toFloatArrayInterlaced(fftwSignalArray), source.get().format.mix.rate)
             }
         }
         processSamples(frames)
@@ -145,10 +150,10 @@ class AudioCaptureService(
     }
 
     fun doFFT(samples: FloatArray, rate: Int) {
-        windowFunction!!.applyFunction(samples)
-        val imag = FloatArray(samples.size)
-        FourierMath.transform(1, samples.size, samples, imag, windowFunction!!.getSum())
-        FourierMath.calculateMagnitudes(samples, imag, fftResult[0].data)
+        windowFunction!!.applyFunctionInterlaced(samples)
+        fftTransformerService.scaleAndPutSamples(samples, windowFunction!!.getSum())
+        fftTransformerService.transform()
+        fftTransformerService.computeMagnitudes(fftResult[0].data)
         calcPeak(fftResult[0].data)
         fftObservers.forEach { it.accept(fftResult[0].data, source.get()) }
     }
@@ -216,8 +221,8 @@ class AudioCaptureService(
                             )
                             samples.resize(1 + channels, stream.frames).label(*defaultChannelLabels.plus(channelLabels))
                             channelVolumes.resize(1 + channels, 1).label(*defaultChannelLabels.plus(channelLabels))
-                            stream.start()
                             logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
+                            stream.start()
                             lock.await()
                             stream.stop()
                             logger.info("Capture finished")
@@ -254,6 +259,16 @@ class AudioCaptureService(
         logger.info("Using window size $size")
         fftSampleBuffer = RollingBuffer(size, 0.0f)
         fftResult.resize(1, size / 2).label(CommonChannel.MASTER)
+        if(this::fftwSignal.isInitialized) {
+            this.fftwSignal.deallocate()
+        }
+        if(this::fftwResult.isInitialized) {
+            this.fftwResult.deallocate()
+        }
+        fftwSignal = FloatPointer(size * 2L)
+        fftwResult = FloatPointer(size * 2L)
+        fftwSignalArray = FloatArray(size * 2)
+        fftTransformerService.initializePlan(fftwSignal, fftwResult, size)
         changeWindowingFunction()
     }
 

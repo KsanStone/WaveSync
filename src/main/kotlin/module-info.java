@@ -17,4 +17,6 @@ open module wavesync {
     requires spring.boot.autoconfigure;
     requires java.desktop;
     requires org.kordamp.ikonli.javafx;
+    requires org.bytedeco.javacpp;
+    requires org.bytedeco.fftw;
 }
