@@ -35,7 +35,7 @@ import kotlin.math.pow
 import kotlin.math.roundToLong
 
 
-abstract class AutoCanvas(private val detachable: Boolean = true) : AnchorPane() {
+abstract class AutoCanvas(private val detachable: Boolean = true, private val glCanvas: Boolean = true) : AnchorPane() {
 
     protected var canvas: Canvas = Canvas()
     protected lateinit var infoPane: GridPane
@@ -203,7 +203,7 @@ abstract class AutoCanvas(private val detachable: Boolean = true) : AnchorPane()
     private val isDrawing = AtomicBoolean(false)
 
     private fun drawCall() {
-        if (isDrawing.get()) return
+        if (isDrawing.get() || glCanvas) return
 
         val now = System.nanoTime()
         val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0
