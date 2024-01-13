@@ -10,6 +10,8 @@ import java.util.prefs.Preferences
 @Service
 class PreferenceService {
 
+    val preferredRenderer: Renderer = Renderer.OPENGL
+
     private val properties = mutableListOf<Property<*>>()
     private lateinit var rootPreferences: Preferences
 
@@ -113,4 +115,9 @@ class PreferenceService {
     companion object {
         const val DEFAULT_ID = "main"
     }
+}
+
+enum class Renderer {
+    OPENGL,
+    CANVAS
 }

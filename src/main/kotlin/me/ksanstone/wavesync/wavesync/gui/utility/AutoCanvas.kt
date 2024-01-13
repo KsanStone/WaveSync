@@ -1,5 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
+import com.huskerdev.openglfx.canvas.GLCanvas
+import com.huskerdev.openglfx.canvas.GLCanvasAnimator
 import javafx.animation.Animation
 import javafx.animation.FadeTransition
 import javafx.animation.KeyFrame
@@ -26,16 +28,22 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.RecordingModeService
+import me.ksanstone.wavesync.wavesync.service.Renderer
 import me.ksanstone.wavesync.wavesync.utility.FPSCounter
 import org.kordamp.ikonli.javafx.FontIcon
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.getBean
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
 
-abstract class AutoCanvas(private val detachable: Boolean = true, private val glCanvas: Boolean = true) : AnchorPane() {
+abstract class AutoCanvas(private val detachable: Boolean = true, waitForGlCanvas: Boolean = false) : AnchorPane() {
+
+    val logger: Logger = LoggerFactory.getLogger(this.javaClass)
 
     protected var canvas: Canvas = Canvas()
     protected lateinit var infoPane: GridPane
@@ -45,7 +53,8 @@ abstract class AutoCanvas(private val detachable: Boolean = true, private val gl
     protected var xAxis = NumberAxis(0.0, 100.0, 10.0)
     protected var yAxis = NumberAxis(0.0, 100.0, 10.0)
 
-    var canvasContainer: GraphCanvas
+    lateinit var canvasContainer: GraphCanvas
+    var glCanvas: GLCanvas? = null
     val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.REFRESH_RATE)
     val info: BooleanProperty = SimpleBooleanProperty(INFO_SHOWN)
 
@@ -55,12 +64,17 @@ abstract class AutoCanvas(private val detachable: Boolean = true, private val gl
     private val fpsCounter = FPSCounter()
     private val detachedProperty = SimpleBooleanProperty(false)
     private var recordingModeService: RecordingModeService = WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class)
+    private var preferenceService: PreferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class)
 
     init {
+        if (!waitForGlCanvas) init()
+    }
+
+    fun init() {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
 
-        canvasContainer = GraphCanvas(xAxis, yAxis, canvas)
+        canvasContainer = GraphCanvas(xAxis, yAxis, CanvasNode(canvas, glCanvas))
         setBottomAnchor(canvasContainer, 0.0)
         setRightAnchor(canvasContainer, 0.0)
         setTopAnchor(canvasContainer, 0.0)
@@ -79,6 +93,27 @@ abstract class AutoCanvas(private val detachable: Boolean = true, private val gl
     }
 
     private fun initializeDrawLoop() {
+        if (preferenceService.preferredRenderer == Renderer.CANVAS) {
+            canvasDrawLoop()
+        } else if (preferenceService.preferredRenderer == Renderer.OPENGL && glCanvas == null) {
+            canvasDrawLoop()
+        } else {
+            glCanvasDrawLoop()
+        }
+    }
+
+    private fun glCanvasDrawLoop() {
+        // TODO
+        logger.info("OpenGL draw")
+        Thread() {
+            Thread.sleep(10000)
+            logger.info("OpenGL draw2")
+//            glCanvas!!.executor.initGLFunctions()
+            glCanvas!!.repaint()
+        }.start()
+    }
+
+    private fun canvasDrawLoop() {
         val drawLoop = Timeline(
             KeyFrame(Duration.seconds(1.0 / framerate.get()), { drawCall() })
         )
@@ -203,7 +238,7 @@ abstract class AutoCanvas(private val detachable: Boolean = true, private val gl
     private val isDrawing = AtomicBoolean(false)
 
     private fun drawCall() {
-        if (isDrawing.get() || glCanvas) return
+        if (isDrawing.get() || glCanvas != null) return
 
         val now = System.nanoTime()
         val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0

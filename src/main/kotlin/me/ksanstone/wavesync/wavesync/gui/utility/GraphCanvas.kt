@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
+import com.huskerdev.openglfx.canvas.GLCanvas
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.FXCollections
@@ -20,7 +21,7 @@ import javafx.scene.text.Text
 import java.lang.Double.isNaN
 import java.text.DecimalFormat
 
-class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, private val canvas: Canvas) : Pane() {
+class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, private val canvas: CanvasNode) : Pane() {
 
     companion object {
         const val TOOLTIP_OFFSET = 5.0
@@ -67,7 +68,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             tooltipCross,
             xAxis,
             yAxis,
-            canvas,
+            canvas.backingNode,
             tooltipContainer
         )
 
@@ -115,20 +116,20 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
                 }
             } as ListChangeListener<Node?>?)
 
-        canvas.setOnMouseMoved {
+        canvas.backingNode.setOnMouseMoved {
             tooltipPosition.set(Point2D(it.x, it.y))
         }
 
-        tooltipContainer.visibleProperty().bind(canvas.hoverProperty().and(tooltipEnabled))
+        tooltipContainer.visibleProperty().bind(canvas.backingNode.hoverProperty().and(tooltipEnabled))
         tooltipContainer.isMouseTransparent = true
 
         // the canvas is not always snapped to x=0, but it is snapped to the right edge, thus we use `this`.width
         tooltipContainer.layoutXProperty().bind(tooltipPosition.map
-        { (canvas.localToParent(it).x).let { x -> if (x > this.width - TOOLTIP_OFFSET - tooltipContainer.width) (x - tooltipContainer.width - TOOLTIP_OFFSET).coerceAtLeast(0.0) else x + TOOLTIP_OFFSET } })
+        { (canvas.backingNode.localToParent(it).x).let { x -> if (x > this.width - TOOLTIP_OFFSET - tooltipContainer.width) (x - tooltipContainer.width - TOOLTIP_OFFSET).coerceAtLeast(0.0) else x + TOOLTIP_OFFSET } })
 
         // the canvas is always snapped to the top, so we use canvas.height, to make the tooltip not cover the x-axis
         tooltipContainer.layoutYProperty().bind(tooltipPosition.map
-        { (canvas.localToParent(it).y).let { y -> if (y > canvas.height - TOOLTIP_OFFSET - tooltipContainer.height) (y - tooltipContainer.height - TOOLTIP_OFFSET).coerceAtLeast(0.0) else y + TOOLTIP_OFFSET } })
+        { (canvas.backingNode.localToParent(it).y).let { y -> if (y > canvas.height - TOOLTIP_OFFSET - tooltipContainer.height) (y - tooltipContainer.height - TOOLTIP_OFFSET).coerceAtLeast(0.0) else y + TOOLTIP_OFFSET } })
 
         listOf(
             tooltipContainer.visibleProperty(),
@@ -171,7 +172,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
 
         canvas.width = width - leftPad
         canvas.height = height - bottomPad
-        canvas.resizeRelocate(leftPad, 0.0, canvas.width, canvas.height)
+        canvas.backingNode.resizeRelocate(leftPad, 0.0, canvas.width, canvas.height)
 
         layoutGrid()
     }
@@ -188,13 +189,13 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
 
         val axisTickOverlap = 5.5
 
-        var s1 = canvas.localToParent(Point2D(0.0, p.y))
-        var s2 = canvas.localToParent(Point2D(canvas.width, p.y))
+        var s1 = canvas.backingNode.localToParent(Point2D(0.0, p.y))
+        var s2 = canvas.backingNode.localToParent(Point2D(canvas.width, p.y))
         tooltipCross.elements.add(MoveTo(s1.x - (if(xAxisShown.get()) axisTickOverlap else 0.0), s1.y + 0.5))
         tooltipCross.elements.add(LineTo(s2.x, s2.y + 0.5))
 
-        s1 = canvas.localToParent(Point2D(p.x, 0.0))
-        s2 = canvas.localToParent(Point2D(p.x, canvas.height))
+        s1 = canvas.backingNode.localToParent(Point2D(p.x, 0.0))
+        s2 = canvas.backingNode.localToParent(Point2D(p.x, canvas.height))
         tooltipCross.elements.add(MoveTo(s2.x + 0.5, s2.y + (if(xAxisShown.get()) axisTickOverlap else 0.0)))
         tooltipCross.elements.add(LineTo(s1.x + 0.5, s1.y))
     }

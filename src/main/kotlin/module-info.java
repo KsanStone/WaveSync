@@ -19,4 +19,9 @@ open module wavesync {
     requires org.kordamp.ikonli.javafx;
     requires org.bytedeco.javacpp;
     requires org.bytedeco.fftw;
+    requires openglfx;
+    requires openglfx.lwjgl;
+    requires org.lwjgl;
+    requires org.lwjgl.opengl;
+    requires org.lwjgl.glfw;
 }

@@ -1,5 +1,9 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
+import com.huskerdev.openglfx.canvas.events.GLDisposeEvent
+import com.huskerdev.openglfx.canvas.events.GLInitializeEvent
+import com.huskerdev.openglfx.canvas.events.GLRenderEvent
+import com.huskerdev.openglfx.canvas.events.GLReshapeEvent
 import javafx.beans.property.*
 import javafx.css.CssMetaData
 import javafx.css.Styleable
@@ -27,7 +31,13 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.PEAK_LINE_VISIB
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarSettingsController
-import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.gui.utility.GlAutoCanvas
+import me.ksanstone.wavesync.wavesync.gui.utility.glGraphics.Cube
+import me.ksanstone.wavesync.wavesync.gui.utility.glGraphics.Mesh
+import me.ksanstone.wavesync.wavesync.gui.utility.glGraphics.Plane
+import me.ksanstone.wavesync.wavesync.gui.utility.glGraphics.Shader
+import me.ksanstone.wavesync.wavesync.gui.utility.glMath.Matrix4
+import me.ksanstone.wavesync.wavesync.gui.utility.glMath.Vec3
 import me.ksanstone.wavesync.wavesync.service.FourierMath
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
@@ -36,11 +46,15 @@ import me.ksanstone.wavesync.wavesync.service.fftScaling.*
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import me.ksanstone.wavesync.wavesync.utility.MaxTracker
-import kotlin.math.floor
-import kotlin.math.max
+import org.lwjgl.glfw.GLFW.glfwInit
+import org.lwjgl.glfw.GLFWErrorCallback
+import org.lwjgl.opengl.GL
+import org.lwjgl.opengl.GL30.*
+import java.lang.Math.random
+import kotlin.math.*
 
 
-class BarVisualizer : AutoCanvas() {
+class BarVisualizer : GlAutoCanvas() {
 
     private var frequencyAxis: NumberAxis = xAxis
     private var smoother: MagnitudeSmoother
@@ -99,7 +113,7 @@ class BarVisualizer : AutoCanvas() {
         listOf(exaggeratedScalar, dbMax, dbMin, linearScalar)
             .forEach { it.addListener { _ -> refreshScalar() } }
         dbMin.addListener { _ -> refreshScalar() }
-        peakLineVisible.addListener { _, _, v -> if(v) rawMaxTracker.zero() }
+        peakLineVisible.addListener { _, _, v -> if (v) rawMaxTracker.zero() }
 
         canvasContainer.tooltipPosition.addListener { _ -> refreshTooltipLabel() }
 
@@ -136,51 +150,62 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(peakLineVisible, "peakLineVisible", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(
+            canvasContainer.horizontalLinesVisible,
+            "horizontalLinesVisible",
+            this.javaClass,
+            id
+        )
+        preferenceService.registerProperty(
+            canvasContainer.verticalLinesVisible,
+            "verticalLinesVisible",
+            this.javaClass,
+            id
+        )
     }
 
     private fun refreshTooltipLabel() {
-            try {
-                if (source == null) {
-                    tooltip.text = "---"
-                    return
-                }
+        try {
+            if (source == null) {
+                tooltip.text = "---"
+                return
+            }
 
-                val x = canvasContainer.tooltipPosition.get().x
-                val bufferLength = smoother.dataSize
-                val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
-                val totalBars = floor(bufferLength.toDouble() / step)
-                val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
-                val bar = floor(x / barWidth)
-                val binStart = floor(bar * step).toInt()
-                val binEnd = floor((bar + 1) * step).toInt()
-                val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
-                val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
-                val maxValue = rawMaxTracker.data.slice(binStart .. binEnd).max()
-                val rawValue = fftDataArray.slice(binStart + frequencyBinSkip .. binEnd + frequencyBinSkip).max()
-                tooltip.text =
-                    "Bar: ${localizationService.formatNumber(bar)} \n" +
-                            "FFT: ${localizationService.formatNumber(binStart)} - ${
-                                localizationService.formatNumber(
-                                    binEnd
-                                )
-                            }\n" +
-                            "Freq: ${
-                                localizationService.formatNumber(
-                                    minFreq,
-                                    "Hz"
-                                )
-                            } - ${localizationService.formatNumber(maxFreq, "Hz")}\n" +
-                            "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
-                if (peakLineVisible.get()) tooltip.text += "\nMax: ${
-                    localizationService.formatNumber(
-                        fftScalar.scaleRaw(
-                            maxValue
-                        )
+            val x = canvasContainer.tooltipPosition.get().x
+            val bufferLength = smoother.dataSize
+            val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
+            val totalBars = floor(bufferLength.toDouble() / step)
+            val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
+            val bar = floor(x / barWidth)
+            val binStart = floor(bar * step).toInt()
+            val binEnd = floor((bar + 1) * step).toInt()
+            val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
+            val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
+            val maxValue = rawMaxTracker.data.slice(binStart..binEnd).max()
+            val rawValue = fftDataArray.slice(binStart + frequencyBinSkip..binEnd + frequencyBinSkip).max()
+            tooltip.text =
+                "Bar: ${localizationService.formatNumber(bar)} \n" +
+                        "FFT: ${localizationService.formatNumber(binStart)} - ${
+                            localizationService.formatNumber(
+                                binEnd
+                            )
+                        }\n" +
+                        "Freq: ${
+                            localizationService.formatNumber(
+                                minFreq,
+                                "Hz"
+                            )
+                        } - ${localizationService.formatNumber(maxFreq, "Hz")}\n" +
+                        "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
+            if (peakLineVisible.get()) tooltip.text += "\nMax: ${
+                localizationService.formatNumber(
+                    fftScalar.scaleRaw(
+                        maxValue
                     )
-                }"
-            } catch(e: IndexOutOfBoundsException) { /* kys */ }
+                )
+            }"
+        } catch (e: IndexOutOfBoundsException) { /* kys */
+        }
     }
 
     private fun changeScalar() {
@@ -260,6 +285,122 @@ class BarVisualizer : AutoCanvas() {
         return (targetWidth.toDouble() / estimatedWidth).coerceAtLeast(1.0)
     }
 
+    private var time = 0f
+
+    private var transformLocation = 0
+    private var viewLocation = 0
+    private var projectionLocation = 0
+
+    private val meshes = arrayListOf<Mesh>()
+
+    override fun initialize(event: GLInitializeEvent) {
+
+//        GLFWErrorCallback.createPrint(System.err).set()
+//        // Initialize GLFW. Most GLFW functions will not work before doing this.
+//		if ( !glfwInit() )
+//			throw IllegalStateException("Unable to initialize GLFW");
+//
+//        GL.createCapabilities();
+
+        logger.info("GlInit")
+        val shader = Shader(
+            """
+                #version 330 core
+                layout (location = 0) in vec3 aPos;
+                layout (location = 1) in vec4 aColor;
+                out vec4 color;
+                
+                uniform float time;
+                uniform mat4 transform;
+                uniform mat4 view;
+                uniform mat4 projection;
+                
+                void main() {
+                    gl_Position = projection * view * transform * vec4(aPos, 1.0);
+                    color = aColor;
+                }
+            """.trimIndent(),
+            """
+                #version 330 core
+                out vec4 FragColor;
+                in vec4 color;
+                
+                void main() {
+                    FragColor = vec4(color);
+                }
+            """.trimIndent()
+        )
+
+        println("Use program")
+        glUseProgram(shader.program)
+        transformLocation = glGetUniformLocation(shader.program, "transform")
+        viewLocation = glGetUniformLocation(shader.program, "view")
+        projectionLocation = glGetUniformLocation(shader.program, "projection")
+
+        println("Adding meshes")
+        for (x in -10..10 step 2) {
+            for (z in -10..10 step 2) {
+                if (random() > 0.7)
+                    continue
+                val rotate = random() * PI * 4
+
+                meshes.add(
+                    Cube(
+                        Color.color((x + 10) / 20.0, (z + 10) / 20.0, 1.0),
+                        Matrix4.rotationX(rotate.toFloat()) *
+                                Matrix4.rotationY(rotate.toFloat()) *
+                                Matrix4.translate(x.toFloat(), 0f, z.toFloat())
+                    )
+                )
+            }
+        }
+        meshes.add(Plane(15f, 15f, color = Color.color(0.0, 0.0, 0.0, 0.6)))
+
+        println("Enable funcs")
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_BLEND)
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE)
+    }
+
+    override fun render(event: GLRenderEvent) {
+        glClearColor(0f, 0f, 0f, 0f)
+        glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+
+        glUniformMatrix4fv(transformLocation, true, Matrix4.identity.toByteBuffer())
+        glUniformMatrix4fv(
+            viewLocation, true, (
+                    Matrix4.lookAt(
+                        Vec3(
+                            cos(time / 10) * (cos(time / 10) * 5 + 7),
+                            cos(time / 10) * 2f + 4f,
+                            sin(time / 10) * (cos(time / 10) * 5 + 7),
+                        ),
+                        Vec3(0f, 0f, 0f)
+                    )
+                    ).toByteBuffer()
+        )
+
+        for (mesh in meshes)
+            mesh.render(transformLocation)
+
+        time += event.delta.toFloat() * 2f
+    }
+
+    override fun reshape(event: GLReshapeEvent) {
+        glUniformMatrix4fv(
+            projectionLocation, true,
+            Matrix4.perspective(
+                Math.toRadians(90.0).toFloat(),
+                event.width.toFloat() / event.height.toFloat(),
+                0.001f, 100f
+            ).toByteBuffer()
+        )
+    }
+
+    override fun dispose(event: GLDisposeEvent) {
+        TODO("Not yet implemented")
+    }
+
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         synchronized(bufferResizeLock) {
             smoother.applySmoothing(deltaT)
@@ -286,11 +427,25 @@ class BarVisualizer : AutoCanvas() {
             gc.stroke = peakLineColor.value
             step = calculateStep(1, bufferLength, width)
             barWidth = width / floor(bufferLength.toDouble() / step)
-            drawLine(rawMaxTracker.data.map { fftScalar.scale(it) }.toFloatArray(), bufferLength, step, gc, barWidth, height)
+            drawLine(
+                rawMaxTracker.data.map { fftScalar.scale(it) }.toFloatArray(),
+                bufferLength,
+                step,
+                gc,
+                barWidth,
+                height
+            )
         }
     }
 
-    private fun drawLine(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, height: Double) {
+    private fun drawLine(
+        buffer: FloatArray,
+        bufferLength: Int,
+        step: Double,
+        gc: GraphicsContext,
+        barWidth: Double,
+        height: Double
+    ) {
         var x = 0.0
         var y = 0.0
         var stepAccumulator = 0.0
@@ -310,24 +465,33 @@ class BarVisualizer : AutoCanvas() {
         gc.stroke()
     }
 
-    private fun drawBars(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, localGap: Int, padding: Double, height: Double) {
-            var x = 0.0
-            var y = 0.0
-            var stepAccumulator = 0.0
+    private fun drawBars(
+        buffer: FloatArray,
+        bufferLength: Int,
+        step: Double,
+        gc: GraphicsContext,
+        barWidth: Double,
+        localGap: Int,
+        padding: Double,
+        height: Double
+    ) {
+        var x = 0.0
+        var y = 0.0
+        var stepAccumulator = 0.0
 
-            for (i in 0 until bufferLength) {
-                y = max(buffer[i].toDouble(), y)
-                if (++stepAccumulator < step) continue
-                stepAccumulator -= step
+        for (i in 0 until bufferLength) {
+            y = max(buffer[i].toDouble(), y)
+            if (++stepAccumulator < step) continue
+            stepAccumulator -= step
 
-                val barHeight = y * height
-                val color = startColor.get().interpolate(endColor.get(), y)
+            val barHeight = y * height
+            val color = startColor.get().interpolate(endColor.get(), y)
 
-                gc.fill = color
-                gc.fillRect(x, height - barHeight, barWidth + padding, barHeight)
-                x += barWidth + localGap
-                y = 0.0
-            }
+            gc.fill = color
+            gc.fillRect(x, height - barHeight, barWidth + padding, barHeight)
+            x += barWidth + localGap
+            y = 0.0
+        }
     }
 
     override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {

@@ -1,0 +1,30 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="WaveSyncApplicationKt" type="JetRunConfigurationType" nameIsGenerated="true">
+    <option name="MAIN_CLASS_NAME" value="me.ksanstone.wavesync.wavesync.WaveSyncApplicationKt" />
+    <module name="wavesync" />
+    <shortenClasspath name="NONE" />
+    <option name="VM_PARAMETERS" value="-Dspring.profiles.active=dev
+    --add-opens
+    javafx.base/com.sun.javafx=openglfx
+    --add-opens
+    javafx.graphics/com.sun.prism=openglfx
+    --add-opens
+    javafx.graphics/com.sun.prism.d3d=openglfx
+    --add-opens
+    javafx.graphics/com.sun.javafx.scene.layout=openglfx
+    --add-opens
+    javafx.graphics/com.sun.javafx.scene=openglfx
+    --add-opens
+    javafx.graphics/com.sun.javafx.sg.prism=openglfx
+    --add-opens
+    javafx.graphics/com.sun.javafx.tk=openglfx
+    --add-opens
+    javafx.graphics/com.sun.javafx.geom=openglfx
+    --add-opens
+    javafx.graphics/javafx.scene.image=openglfx"
+    />
+   <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
