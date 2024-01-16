@@ -9,7 +9,6 @@ import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
 import javafx.scene.layout.HBox
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
-import me.ksanstone.wavesync.wavesync.event.FXMLInitializeEvent
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
@@ -126,7 +125,6 @@ class MainController : Initializable {
     @FXML
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         this.resources = resources!!
-        WaveSyncBootApplication.applicationContext.publishEvent(FXMLInitializeEvent(this))
 
         refreshDeviceList()
         selectDefaultDevice()
