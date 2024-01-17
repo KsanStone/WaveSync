@@ -1,7 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
 import com.huskerdev.openglfx.canvas.GLCanvas
-import com.huskerdev.openglfx.canvas.GLCanvasAnimator
 import javafx.animation.Animation
 import javafx.animation.FadeTransition
 import javafx.animation.KeyFrame
@@ -63,8 +62,10 @@ abstract class AutoCanvas(private val detachable: Boolean = true, waitForGlCanva
     private val frameTime = SimpleDoubleProperty(0.0)
     private val fpsCounter = FPSCounter()
     private val detachedProperty = SimpleBooleanProperty(false)
-    private var recordingModeService: RecordingModeService = WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class)
-    private var preferenceService: PreferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class)
+    private var recordingModeService: RecordingModeService =
+        WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class)
+    private var preferenceService: PreferenceService =
+        WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class)
 
     init {
         if (!waitForGlCanvas) init()
@@ -74,7 +75,7 @@ abstract class AutoCanvas(private val detachable: Boolean = true, waitForGlCanva
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
 
-        canvasContainer = GraphCanvas(xAxis, yAxis, CanvasNode(canvas, glCanvas))
+        canvasContainer = GraphCanvas(xAxis, yAxis, CanvasNode(if (glCanvas != null) null else canvas, glCanvas))
         setBottomAnchor(canvasContainer, 0.0)
         setRightAnchor(canvasContainer, 0.0)
         setTopAnchor(canvasContainer, 0.0)
@@ -103,14 +104,15 @@ abstract class AutoCanvas(private val detachable: Boolean = true, waitForGlCanva
     }
 
     private fun glCanvasDrawLoop() {
-        // TODO
-        logger.info("OpenGL draw")
-        Thread() {
-            Thread.sleep(10000)
-            logger.info("OpenGL draw2")
-//            glCanvas!!.executor.initGLFunctions()
-            glCanvas!!.repaint()
-        }.start()
+//        // TODO
+//        logger.info("OpenGL draw init")
+//        Thread {
+//            while (true) {
+//
+//                glCanvas!!.repaint()
+//            }
+//        }.start()
+        canvasDrawLoop()
     }
 
     private fun canvasDrawLoop() {
@@ -141,7 +143,8 @@ abstract class AutoCanvas(private val detachable: Boolean = true, waitForGlCanva
                 if (detachedStage == null) {
                     detachedStage = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
                         .createEmptyStage("", Label())
-                    detachedStage!!.titleProperty().bind(detachedWindowNameProperty.map { if (it.isNotEmpty()) "WaveSync • $it" else "WaveSync" })
+                    detachedStage!!.titleProperty()
+                        .bind(detachedWindowNameProperty.map { if (it.isNotEmpty()) "WaveSync • $it" else "WaveSync" })
                     detachedStage!!.showingProperty()
                         .addListener { _, _, showing -> if (!showing) detachedProperty.set(false) }
                 }
@@ -188,7 +191,7 @@ abstract class AutoCanvas(private val detachable: Boolean = true, waitForGlCanva
         setTopAnchor(controlPane, 5.0)
         setRightAnchor(controlPane, 5.0)
 
-        if(detachable) {
+        if (detachable) {
             val detachButton = Button()
             detachButton.styleClass.add("button-icon")
             detachButton.graphic = FontIcon(if (detachedProperty.get()) "mdmz-south_west" else "mdmz-open_in_new")
@@ -238,7 +241,11 @@ abstract class AutoCanvas(private val detachable: Boolean = true, waitForGlCanva
     private val isDrawing = AtomicBoolean(false)
 
     private fun drawCall() {
-        if (isDrawing.get() || glCanvas != null) return
+        if (isDrawing.get()) return
+        if(glCanvas != null) {
+            glCanvas!!.repaint()
+            return
+        }
 
         val now = System.nanoTime()
         val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0

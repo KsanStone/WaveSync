@@ -13,7 +13,6 @@ abstract class GlAutoCanvas : AutoCanvas(waitForGlCanvas = true) {
 
     init {
         glCanvas = createGlCanvas()
-        glCanvas!!.animator = GLCanvasAnimator(fps = 60.0)
         init()
     }
 

@@ -15,6 +15,7 @@
     <description>wavesync</description>
     <properties>
         <java.version>17</java.version>
+        <javafx.version>20.0.2</javafx.version>
         <kotlin.version>1.9.10</kotlin.version>
         <lwjgl.version>3.3.3</lwjgl.version>
         <lwjgl.natives>natives-windows</lwjgl.natives>
@@ -48,7 +49,7 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
-            <version>20</version>
+            <version>${javafx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.kordamp.ikonli</groupId>
@@ -93,7 +94,7 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
-            <version>20</version>
+            <version>${javafx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjdk.jmh</groupId>

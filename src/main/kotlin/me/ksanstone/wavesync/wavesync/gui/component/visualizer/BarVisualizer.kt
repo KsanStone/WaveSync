@@ -295,13 +295,6 @@ class BarVisualizer : GlAutoCanvas() {
 
     override fun initialize(event: GLInitializeEvent) {
 
-//        GLFWErrorCallback.createPrint(System.err).set()
-//        // Initialize GLFW. Most GLFW functions will not work before doing this.
-//		if ( !glfwInit() )
-//			throw IllegalStateException("Unable to initialize GLFW");
-//
-//        GL.createCapabilities();
-
         logger.info("GlInit")
         val shader = Shader(
             """
@@ -380,8 +373,9 @@ class BarVisualizer : GlAutoCanvas() {
                     ).toByteBuffer()
         )
 
-        for (mesh in meshes)
+        for (mesh in meshes) {
             mesh.render(transformLocation)
+        }
 
         time += event.delta.toFloat() * 2f
     }

@@ -11,6 +11,7 @@ import javafx.geometry.Side
 import javafx.scene.Node
 import javafx.scene.canvas.Canvas
 import javafx.scene.chart.NumberAxis
+import javafx.scene.layout.BorderPane
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.shape.Line
@@ -173,8 +174,17 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         canvas.width = width - leftPad
         canvas.height = height - bottomPad
         canvas.backingNode.resizeRelocate(leftPad, 0.0, canvas.width, canvas.height)
+        fixWidth()
 
         layoutGrid()
+    }
+
+    private fun fixWidth() {
+        val node = canvas.backingNode
+        if (node is BorderPane) {
+            node.prefWidth = node.width
+            node.prefHeight = node.height
+        }
     }
 
     private fun layoutGrid() {
