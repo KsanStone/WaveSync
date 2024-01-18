@@ -4,3 +4,4 @@
 
 ## TODO
 - Customizable UI
+- Spectrogram
