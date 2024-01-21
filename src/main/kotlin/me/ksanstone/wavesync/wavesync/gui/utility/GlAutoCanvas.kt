@@ -7,6 +7,7 @@ import com.huskerdev.openglfx.canvas.events.GLDisposeEvent
 import com.huskerdev.openglfx.canvas.events.GLInitializeEvent
 import com.huskerdev.openglfx.canvas.events.GLRenderEvent
 import com.huskerdev.openglfx.canvas.events.GLReshapeEvent
+import com.huskerdev.openglfx.internal.GLInteropType
 import com.huskerdev.openglfx.lwjgl.LWJGLExecutor
 
 abstract class GlAutoCanvas : AutoCanvas(waitForGlCanvas = true) {
@@ -18,6 +19,7 @@ abstract class GlAutoCanvas : AutoCanvas(waitForGlCanvas = true) {
 
     private fun createGlCanvas(): GLCanvas {
         val canvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.Core)
+        println("interop ${canvas.interopType}")
         canvas.addOnInitEvent(this::initialize)
         canvas.addOnRenderEvent(this::render)
         canvas.addOnReshapeEvent(this::reshape)

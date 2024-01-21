@@ -41,7 +41,7 @@ class WaveSyncStageInitializer(
 
         themeService.applyCurrent()
 
-        stageSizingService.registerStageSize(stage, "main")
+//        stageSizingService.registerStageSize(stage, "main")
 
         stage.title = "WaveSync"
         stage.minWidth = 500.0

@@ -32,12 +32,8 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDT
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.GlAutoCanvas
-import me.ksanstone.wavesync.wavesync.gui.utility.glGraphics.Cube
+import me.ksanstone.wavesync.wavesync.gui.utility.glGraphics.ComputeShader
 import me.ksanstone.wavesync.wavesync.gui.utility.glGraphics.Mesh
-import me.ksanstone.wavesync.wavesync.gui.utility.glGraphics.Plane
-import me.ksanstone.wavesync.wavesync.gui.utility.glGraphics.Shader
-import me.ksanstone.wavesync.wavesync.gui.utility.glMath.Matrix4
-import me.ksanstone.wavesync.wavesync.gui.utility.glMath.Vec3
 import me.ksanstone.wavesync.wavesync.service.FourierMath
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
@@ -46,12 +42,9 @@ import me.ksanstone.wavesync.wavesync.service.fftScaling.*
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import me.ksanstone.wavesync.wavesync.utility.MaxTracker
-import org.lwjgl.glfw.GLFW.glfwInit
-import org.lwjgl.glfw.GLFWErrorCallback
-import org.lwjgl.opengl.GL
-import org.lwjgl.opengl.GL30.*
-import java.lang.Math.random
-import kotlin.math.*
+import org.lwjgl.opengl.GL43.*
+import kotlin.math.floor
+import kotlin.math.max
 
 
 class BarVisualizer : GlAutoCanvas() {
@@ -285,110 +278,37 @@ class BarVisualizer : GlAutoCanvas() {
         return (targetWidth.toDouble() / estimatedWidth).coerceAtLeast(1.0)
     }
 
-    private var time = 0f
-
-    private var transformLocation = 0
-    private var viewLocation = 0
-    private var projectionLocation = 0
-
-    private val meshes = arrayListOf<Mesh>()
+    private lateinit var computeShader: ComputeShader
+    private var texWidth = 872
+    private var texHeight = 224
 
     override fun initialize(event: GLInitializeEvent) {
-
         logger.info("GlInit")
-        val shader = Shader(
-            """
-                #version 330 core
-                layout (location = 0) in vec3 aPos;
-                layout (location = 1) in vec4 aColor;
-                out vec4 color;
-                
-                uniform float time;
-                uniform mat4 transform;
-                uniform mat4 view;
-                uniform mat4 projection;
-                
-                void main() {
-                    gl_Position = projection * view * transform * vec4(aPos, 1.0);
-                    color = aColor;
-                }
-            """.trimIndent(),
-            """
-                #version 330 core
-                out vec4 FragColor;
-                in vec4 color;
-                
-                void main() {
-                    FragColor = vec4(color);
-                }
-            """.trimIndent()
-        )
 
-        println("Use program")
-        glUseProgram(shader.program)
-        transformLocation = glGetUniformLocation(shader.program, "transform")
-        viewLocation = glGetUniformLocation(shader.program, "view")
-        projectionLocation = glGetUniformLocation(shader.program, "projection")
+        computeShader = ComputeShader("shader/barCompute.glsl")
+        glUseProgram(computeShader.createProgram())
+        glClearColor(0.0f, 1.0f, 0.0f, 0.5f)
+        glClear(GL_COLOR_BUFFER_BIT)
+//        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE)
 
-        println("Adding meshes")
-        for (x in -10..10 step 2) {
-            for (z in -10..10 step 2) {
-                if (random() > 0.7)
-                    continue
-                val rotate = random() * PI * 4
-
-                meshes.add(
-                    Cube(
-                        Color.color((x + 10) / 20.0, (z + 10) / 20.0, 1.0),
-                        Matrix4.rotationX(rotate.toFloat()) *
-                                Matrix4.rotationY(rotate.toFloat()) *
-                                Matrix4.translate(x.toFloat(), 0f, z.toFloat())
-                    )
-                )
-            }
-        }
-        meshes.add(Plane(15f, 15f, color = Color.color(0.0, 0.0, 0.0, 0.6)))
-
-        println("Enable funcs")
-        glEnable(GL_DEPTH_TEST)
-        glEnable(GL_BLEND)
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE)
+        computeShader.bindBuffers(texWidth, texHeight)
     }
 
     override fun render(event: GLRenderEvent) {
-        glClearColor(0f, 0f, 0f, 0f)
-        glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
-
-        glUniformMatrix4fv(transformLocation, true, Matrix4.identity.toByteBuffer())
-        glUniformMatrix4fv(
-            viewLocation, true, (
-                    Matrix4.lookAt(
-                        Vec3(
-                            cos(time / 10) * (cos(time / 10) * 5 + 7),
-                            cos(time / 10) * 2f + 4f,
-                            sin(time / 10) * (cos(time / 10) * 5 + 7),
-                        ),
-                        Vec3(0f, 0f, 0f)
-                    )
-                    ).toByteBuffer()
+        glDispatchCompute(texWidth / 8, texHeight / 8, 1);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glBlitFramebuffer(
+            0, 0, texWidth, texHeight,
+            0, 0, texWidth, texHeight,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST
         )
-
-        for (mesh in meshes) {
-            mesh.render(transformLocation)
-        }
-
-        time += event.delta.toFloat() * 2f
     }
 
     override fun reshape(event: GLReshapeEvent) {
-        glUniformMatrix4fv(
-            projectionLocation, true,
-            Matrix4.perspective(
-                Math.toRadians(90.0).toFloat(),
-                event.width.toFloat() / event.height.toFloat(),
-                0.001f, 100f
-            ).toByteBuffer()
-        )
+        texHeight = event.height
+        texWidth = event.width
+        computeShader.bindBuffers(texWidth, texHeight)
+        glClearColor(0.0f, 1.0f, 0.0f, 0.5f)
     }
 
     override fun dispose(event: GLDisposeEvent) {
