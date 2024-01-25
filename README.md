@@ -5,3 +5,4 @@
 ## TODO
 * Customizable UI
 * Spectrogram
+  - OpenGL render
