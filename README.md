@@ -5,4 +5,4 @@
 ## TODO
 * Customizable UI
 * Spectrogram
-  - OpenGL render
+  - OpenGL render, as doing it on the cpu would be too slow
