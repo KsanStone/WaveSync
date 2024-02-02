@@ -9,6 +9,7 @@ import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
 import javafx.scene.layout.HBox
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
@@ -153,7 +154,10 @@ class MainController : Initializable {
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
         visualizerPane.items.add(barVisualizer)
-        visualizerPane.items.add(waveformVisualizer)
+//        visualizerPane.items.add(waveformVisualizer)
+
+        val dl = DragLayout()
+        visualizerPane.items.add(dl)
 
         val masterVolumeVisualizer = VolumeVisualizer()
         audioCaptureService.channelVolumes.listeners.add {store ->
