@@ -16,7 +16,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutN
 class DragLayout : Pane() {
 
     private val dragCueShowing = SimpleBooleanProperty(false)
-    private val drawCueRect: Rectangle = Rectangle()
+    private val drawCueRect: Pane = Pane()
     val layoutRoot: DragLayoutNode = DragLayoutNode("root")
 
     init {
@@ -25,7 +25,9 @@ class DragLayout : Pane() {
         setOnDragExited { dragCueShowing.value = false }
         setOnDragDropped(this::dropHandler)
         drawCueRect.visibleProperty().bind(dragCueShowing)
-        drawCueRect.fill = Color.FUCHSIA.let { Color(it.red, it.green, it.blue, 0.5) }
+        drawCueRect.styleClass.add("drag-cue")
+        styleClass.setAll("drag-layout")
+        stylesheets.add("/styles/drag-layout.css")
     }
 
     private fun onDragOver(e: DragEvent) {
@@ -36,8 +38,6 @@ class DragLayout : Pane() {
         if (noteId == intersectedNode.id) return
 
         e.acceptTransferModes(TransferMode.MOVE)
-        drawCueRect.width = intersectedNode.boundCache!!.width
-        drawCueRect.height = intersectedNode.boundCache!!.height
         drawCueRect.resizeRelocate(intersectedNode.boundCache!!)
         dragCueShowing.value = true
     }

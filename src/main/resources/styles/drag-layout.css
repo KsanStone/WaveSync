@@ -1,0 +1,26 @@
+.drag-divider {
+    -fx-background-color: -color-border-subtle;
+}
+
+.drag-divider:pressed {
+    -fx-background-color: -color-accent-muted !important;
+}
+
+
+.drag-divider:hover {
+    -fx-background-color: -color-border-default;
+}
+
+.drag-divider-cue {
+    -fx-fill: -color-accent-emphasis !important;
+}
+
+.drag-cue {
+    -fx-border-color: -color-accent-emphasis;
+    -fx-border-width: 10;
+    -fx-border-insets: 15;
+    -fx-border-radius: 10;
+    -fx-border-style: solid;
+}
+
+.drag-layout {}

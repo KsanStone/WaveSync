@@ -159,46 +159,13 @@ class MainController : Initializable {
         waveformVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-//        visualizerPane.items.add(barVisualizer)
-//        visualizerPane.items.add(waveformVisualizer)
-
         val dl = DragLayout()
         dl.layoutRoot.orientation = Orientation.VERTICAL
         dl.layoutRoot.children = mutableListOf(
             DragLayoutLeaf(component = barVisualizer),
-            DragLayoutLeaf(
-                node = DragLayoutNode(
-                    "ghijk", Orientation.HORIZONTAL,
-                    children = mutableListOf(
-                        DragLayoutLeaf(component = Button("abcdef").apply {
-                            this.background = Background.fill(Color.DARKSLATEGRAY)
-                            this.maxWidth = Double.MAX_VALUE
-                            this.maxHeight = Double.MAX_VALUE
-                        }),
-                        DragLayoutLeaf(
-                            node = DragLayoutNode(
-                                "123123", Orientation.VERTICAL, mutableListOf(
-                                    DragLayoutLeaf(component = Button("456").apply {
-                                        this.background = Background.fill(Color.DARKMAGENTA)
-                                        this.maxWidth = Double.MAX_VALUE
-                                        this.maxHeight = Double.MAX_VALUE
-                                    }),
-                                    DragLayoutLeaf(component = Button("123").apply {
-                                        this.background = Background.fill(Color.DARKBLUE)
-                                        this.maxWidth = Double.MAX_VALUE
-                                        this.maxHeight = Double.MAX_VALUE
-                                    }),
-                                ), mutableListOf(0.4)
-                            )
-                        ),
-                        DragLayoutLeaf(component = waveformVisualizer)
-                    ),
-                    dividerLocations = mutableListOf(0.33, 0.6)
-                ),
-            )
+            DragLayoutLeaf(component = waveformVisualizer)
         )
-        dl.layoutRoot.dividerLocations = mutableListOf(0.55)
-//        dl.layoutRoot.intersect(Point2D(0.6, 0.7))
+        dl.layoutRoot.dividerLocations = mutableListOf(0.5)
         dl.updateChildren()
         visualizerPane.items.add(dl)
 

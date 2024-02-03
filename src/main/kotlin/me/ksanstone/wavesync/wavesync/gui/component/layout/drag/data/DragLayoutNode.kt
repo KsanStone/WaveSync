@@ -22,7 +22,13 @@ data class DragLayoutNode(
 
     fun createDividers() {
         this.dividers.clear()
-        this.dividers.addAll(this.dividerLocations.indices.map { DragDivider(orientation, this, it) })
+        this.dividers.addAll(this.dividerLocations.indices.map {
+            DragDivider(
+                orientation.run { if (orientation == Orientation.VERTICAL) Orientation.HORIZONTAL else Orientation.VERTICAL },
+                this,
+                it
+            )
+        })
 
         this.iterateNodes {
             it.node.createDividers()
@@ -34,11 +40,18 @@ data class DragLayoutNode(
             Orientation.HORIZONTAL -> newPos / boundCache!!.width
             Orientation.VERTICAL -> newPos / boundCache!!.height
         }
+        val dividerWidth = when(orientation) {
+            Orientation.HORIZONTAL -> DIVIDER_SIZE / boundCache!!.width
+            Orientation.VERTICAL -> DIVIDER_SIZE / boundCache!!.height
+        }
+        val minSizePx = 40
+        val minSizePadding = when(orientation) {
+            Orientation.HORIZONTAL -> minSizePx / boundCache!!.width
+            Orientation.VERTICAL -> minSizePx / boundCache!!.height
+        }
 
-        // TODO proper bound check
-        val padding = 0.05
-        val dividerPrev = dividerLocations.getOrElse(id - 1) { _ -> 0.0 } + padding
-        val dividerNext = dividerLocations.getOrElse(id + 1) { _ -> 1.0 } - padding
+        val dividerPrev = dividerLocations.getOrElse(id - 1) { _ -> 0.0 - dividerWidth / 2 } + dividerWidth + minSizePadding
+        val dividerNext = dividerLocations.getOrElse(id + 1) { _ -> 1.0 + dividerWidth / 2 } - dividerPrev - minSizePadding
 
         dividerLocations[id] = newDividerValue.coerceIn(dividerPrev, dividerNext)
     }

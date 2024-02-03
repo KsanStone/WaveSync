@@ -7,7 +7,7 @@ import java.util.*
 data class DragLayoutLeaf(
     var component: Node? = null,
     var node: DragLayoutNode? = null,
-    var id: String = UUID.randomUUID().toString()
+    var id: String = UUID.randomUUID().toString(),
 ) {
 
     var boundCache: Rectangle2D? = null
