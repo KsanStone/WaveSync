@@ -4,12 +4,18 @@ import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
+import javafx.geometry.Orientation
+import javafx.scene.control.Button
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
+import javafx.scene.layout.Background
 import javafx.scene.layout.HBox
+import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
@@ -153,14 +159,51 @@ class MainController : Initializable {
         waveformVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-        visualizerPane.items.add(barVisualizer)
+//        visualizerPane.items.add(barVisualizer)
 //        visualizerPane.items.add(waveformVisualizer)
 
         val dl = DragLayout()
+        dl.layoutRoot.orientation = Orientation.VERTICAL
+        dl.layoutRoot.children = mutableListOf(
+            DragLayoutLeaf(component = barVisualizer),
+            DragLayoutLeaf(
+                node = DragLayoutNode(
+                    "ghijk", Orientation.HORIZONTAL,
+                    children = mutableListOf(
+                        DragLayoutLeaf(component = Button("abcdef").apply {
+                            this.background = Background.fill(Color.DARKSLATEGRAY)
+                            this.maxWidth = Double.MAX_VALUE
+                            this.maxHeight = Double.MAX_VALUE
+                        }),
+                        DragLayoutLeaf(
+                            node = DragLayoutNode(
+                                "123123", Orientation.VERTICAL, mutableListOf(
+                                    DragLayoutLeaf(component = Button("456").apply {
+                                        this.background = Background.fill(Color.DARKMAGENTA)
+                                        this.maxWidth = Double.MAX_VALUE
+                                        this.maxHeight = Double.MAX_VALUE
+                                    }),
+                                    DragLayoutLeaf(component = Button("123").apply {
+                                        this.background = Background.fill(Color.DARKBLUE)
+                                        this.maxWidth = Double.MAX_VALUE
+                                        this.maxHeight = Double.MAX_VALUE
+                                    }),
+                                ), mutableListOf(0.4)
+                            )
+                        ),
+                        DragLayoutLeaf(component = waveformVisualizer)
+                    ),
+                    dividerLocations = mutableListOf(0.33, 0.6)
+                ),
+            )
+        )
+        dl.layoutRoot.dividerLocations = mutableListOf(0.55)
+//        dl.layoutRoot.intersect(Point2D(0.6, 0.7))
+        dl.updateChildren()
         visualizerPane.items.add(dl)
 
         val masterVolumeVisualizer = VolumeVisualizer()
-        audioCaptureService.channelVolumes.listeners.add {store ->
+        audioCaptureService.channelVolumes.listeners.add { store ->
             masterVolumeVisualizer.values = (1 until store.channels()).map { store[it].data[0].toDouble() }
             masterVolumeVisualizer.labels = (1 until store.channels()).map { store[it].label }
         }
