@@ -12,7 +12,9 @@
 }
 
 .drag-divider-cue {
-    -fx-fill: -color-accent-emphasis !important;
+    -fx-background-color: -color-accent-emphasis;
+    -fx-background-radius: 2;
+    -fx-background-insets: 1;
 }
 
 .drag-cue {

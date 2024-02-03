@@ -50,8 +50,8 @@ data class DragLayoutNode(
             Orientation.VERTICAL -> minSizePx / boundCache!!.height
         }
 
-        val dividerPrev = dividerLocations.getOrElse(id - 1) { _ -> 0.0 - dividerWidth / 2 } + dividerWidth + minSizePadding
-        val dividerNext = dividerLocations.getOrElse(id + 1) { _ -> 1.0 + dividerWidth / 2 } - dividerPrev - minSizePadding
+        val dividerPrev = dividerLocations.getOrElse(id - 1) { _ -> 0.0 - dividerWidth } + dividerWidth + minSizePadding
+        val dividerNext = dividerLocations.getOrElse(id + 1) { _ -> 1.0 + dividerWidth } - dividerWidth - minSizePadding
 
         dividerLocations[id] = newDividerValue.coerceIn(dividerPrev, dividerNext)
     }

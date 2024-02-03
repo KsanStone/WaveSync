@@ -15,11 +15,14 @@ class DragDivider(
     private val dividerId: Int
 ) : Region() {
 
-    private val cue: Rectangle = Rectangle()
+    private val cue: Pane = Pane()
 
     init {
         maxWidth = Double.MAX_VALUE
         maxHeight = Double.MAX_VALUE
+        cue.maxWidth = Double.MAX_VALUE
+        cue.maxHeight = Double.MAX_VALUE
+        cue.isManaged = false
 
         cursor = when (orientation) {
             Orientation.HORIZONTAL -> Cursor.V_RESIZE
@@ -52,17 +55,8 @@ class DragDivider(
 
     private fun layoutCue() {
         when (orientation) {
-            Orientation.HORIZONTAL -> {
-                cue.relocate(width / 2 - cueSize / 2, 0.0)
-                cue.width = cueSize
-                cue.height = height
-            }
-
-            Orientation.VERTICAL -> {
-                cue.relocate(0.0, height / 2 - cueSize / 2)
-                cue.width = width
-                cue.height = cueSize
-            }
+            Orientation.HORIZONTAL -> { cue.resizeRelocate(width / 2 - cueSize / 2, 0.0, cueSize, height) }
+            Orientation.VERTICAL -> { cue.resizeRelocate(0.0, height / 2 - cueSize / 2, width, cueSize) }
         }
     }
 }
