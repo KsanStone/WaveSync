@@ -1,15 +1,16 @@
 package me.ksanstone.wavesync.wavesync.gui.component.layout.drag
 
 import javafx.beans.property.SimpleBooleanProperty
+import javafx.geometry.Bounds
 import javafx.geometry.Point2D
 import javafx.geometry.Rectangle2D
 import javafx.scene.Node
+import javafx.scene.SnapshotParameters
 import javafx.scene.input.ClipboardContent
 import javafx.scene.input.DragEvent
 import javafx.scene.input.TransferMode
 import javafx.scene.layout.Pane
-import javafx.scene.paint.Color
-import javafx.scene.shape.Rectangle
+import javafx.scene.transform.Transform
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DIVIDER_SIZE
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 
@@ -21,7 +22,7 @@ class DragLayout : Pane() {
 
     init {
         setOnDragOver(this::onDragOver)
-        setOnDragEntered {  }
+        setOnDragEntered { }
         setOnDragExited { dragCueShowing.value = false }
         setOnDragDropped(this::dropHandler)
         drawCueRect.visibleProperty().bind(dragCueShowing)
@@ -38,7 +39,12 @@ class DragLayout : Pane() {
         if (noteId == intersectedNode.id) return
 
         e.acceptTransferModes(TransferMode.MOVE)
-        drawCueRect.resizeRelocate(intersectedNode.boundCache!!)
+        var queBounds = intersectedNode.boundCache!!
+        val side = intersectedNode.getSideSections().intersect(Point2D(e.x, e.y))
+        if (side != null)
+            queBounds = side.first
+
+        drawCueRect.resizeRelocate(queBounds)
         dragCueShowing.value = true
     }
 
@@ -65,7 +71,7 @@ class DragLayout : Pane() {
         this.children.clear()
         layoutRoot.createDividers()
         layoutRoot.iterateComponents {
-            it.node.setOnDragDetected { me ->
+            it.node.setOnDragDetected { _ ->
                 val db = it.node.startDragAndDrop(TransferMode.MOVE)
                 val content = ClipboardContent()
                 content.putString(encodeNodeId(it.nodeId))
@@ -79,6 +85,23 @@ class DragLayout : Pane() {
         }
 
         this.children.add(drawCueRect)
+    }
+
+    @Suppress("unused")
+    private fun getSnapshotParameters(bb: Bounds): SnapshotParameters {
+        val desiredWidth = 170
+        val desiredHeight = 170
+
+        var xScale = desiredWidth / bb.width
+        var yScale = xScale
+        if (yScale * bb.height > desiredHeight) {
+            yScale = desiredHeight / bb.height
+            xScale = yScale
+        }
+
+        val params = SnapshotParameters()
+        params.transform = Transform.scale(xScale, yScale)
+        return params
     }
 
     override fun layoutChildren() {

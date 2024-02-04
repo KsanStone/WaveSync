@@ -1,6 +1,8 @@
 package me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data
 
+import javafx.geometry.Point2D
 import javafx.geometry.Rectangle2D
+import javafx.geometry.Side
 import javafx.scene.Node
 import java.util.*
 
@@ -27,6 +29,36 @@ data class DragLayoutLeaf(
         id = tempId
         node = tempNode
         component = tempComp
+    }
+
+    /**
+     * @return Bounding boxes of side sections
+     */
+    fun getSideSections(bounds: Rectangle2D? = null): SideSections {
+        val bb = bounds ?: (boundCache ?: throw IllegalArgumentException("No bounds"))
+        val marginX = SIDE_CUE_SIZE.coerceAtMost(bb.width / 2.2)
+        val marginY = SIDE_CUE_SIZE.coerceAtMost(bb.height / 2.2)
+        return SideSections(
+            top = Rectangle2D(bb.minX + marginX, bb.minY, bb.width - marginX * 2, marginY),
+            bottom = Rectangle2D(bb.minX + marginX, bb.height - marginY + bb.minY, bb.width - marginX * 2, marginY),
+            left = Rectangle2D(bb.minX, bb.minY + marginY, marginX, bb.height - 2 * marginY),
+            right = Rectangle2D(bb.width - marginX + bb.minX, bb.minY + marginY, marginX, bb.height - 2 * marginY)
+        )
+    }
+
+    data class SideSections(
+        val top: Rectangle2D,
+        val bottom: Rectangle2D,
+        val left: Rectangle2D,
+        val right: Rectangle2D
+    ) {
+        fun intersect(p: Point2D): Pair<Rectangle2D, Side>? {
+            if (top.contains(p)) return top to Side.TOP
+            if (bottom.contains(p)) return bottom to Side.BOTTOM
+            if (left.contains(p)) return left to Side.LEFT
+            if (right.contains(p)) return right to Side.RIGHT
+            return null
+        }
     }
 
     val isComponent: Boolean

@@ -9,6 +9,7 @@ import java.util.function.Consumer
 import kotlin.math.abs
 
 const val DIVIDER_SIZE = 5.0
+const val SIDE_CUE_SIZE = 60.0
 
 data class DragLayoutNode(
     var id: String,
@@ -44,7 +45,7 @@ data class DragLayoutNode(
             Orientation.HORIZONTAL -> DIVIDER_SIZE / boundCache!!.width
             Orientation.VERTICAL -> DIVIDER_SIZE / boundCache!!.height
         }
-        val minSizePx = 40
+        val minSizePx = 40 // TODO, make components be able to declare this on their own
         val minSizePadding = when(orientation) {
             Orientation.HORIZONTAL -> minSizePx / boundCache!!.width
             Orientation.VERTICAL -> minSizePx / boundCache!!.height
@@ -154,6 +155,11 @@ data class DragLayoutNode(
         return handleChildIntersect(children.size - 1, point, dividerMargin)
     }
 
+    /**
+     * If the intersected node contains another node,
+     * recursively call its intersect method with the
+     * appropriately scaled intersection point.
+     */
     private fun handleChildIntersect(i: Int, point: Point2D, dividerMargin: Point2D): DragLayoutLeaf? {
         return if (children[i].isComponent) children[i]
         else if (children[i].isNode) children[i].node!!.intersect(
