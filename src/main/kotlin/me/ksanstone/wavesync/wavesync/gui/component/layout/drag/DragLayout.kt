@@ -4,6 +4,7 @@ import javafx.beans.property.SimpleBooleanProperty
 import javafx.geometry.Bounds
 import javafx.geometry.Point2D
 import javafx.geometry.Rectangle2D
+import javafx.geometry.Side
 import javafx.scene.Node
 import javafx.scene.SnapshotParameters
 import javafx.scene.input.ClipboardContent
@@ -19,6 +20,7 @@ class DragLayout : Pane() {
     private val dragCueShowing = SimpleBooleanProperty(false)
     private val drawCueRect: Pane = Pane()
     val layoutRoot: DragLayoutNode = DragLayoutNode("root")
+    private val layoutLock = Object()
 
     init {
         setOnDragOver(this::onDragOver)
@@ -54,7 +56,12 @@ class DragLayout : Pane() {
         if (intersectedNode.boundCache == null) return
         if (noteId == intersectedNode.id) return
 
-        swapNodes(noteId, intersectedNode.id)
+        val side = intersectedNode.getSideSections().intersect(Point2D(e.x, e.y))
+        if (side != null) {
+            splitSide(side.second, noteId, intersectedNode.id)
+        } else {
+            swapNodes(noteId, intersectedNode.id)
+        }
     }
 
     private fun swapNodes(target: String, dest: String) {
@@ -62,6 +69,18 @@ class DragLayout : Pane() {
         val destNode = layoutRoot.findComponentLeaf(dest) ?: return
         targetNode.swapOnto(destNode)
         layoutChildren()
+    }
+
+    private fun splitSide(side: Side, source: String, target: String) {
+        synchronized(layoutLock) {
+            val sourceNode = layoutRoot.cutComponentLeaf(source) ?: return
+            val targetNode = layoutRoot.findComponentLeaf(target) ?: return
+            targetNode.insertAtSide(side, sourceNode)
+            layoutRoot.simplify()
+            layoutRoot.createDividers()
+            updateChildren()
+            layoutChildren()
+        }
     }
 
     /**
@@ -105,7 +124,9 @@ class DragLayout : Pane() {
     }
 
     override fun layoutChildren() {
-        layoutNode(layoutRoot, Rectangle2D(0.0, 0.0, width, height))
+        synchronized(layoutLock) {
+            layoutNode(layoutRoot, Rectangle2D(0.0, 0.0, width, height))
+        }
     }
 
     private fun layoutNode(node: DragLayoutNode, place: Rectangle2D) {

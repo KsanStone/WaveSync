@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data
 
+import javafx.geometry.Orientation
 import javafx.geometry.Point2D
 import javafx.geometry.Rectangle2D
 import javafx.geometry.Side
@@ -12,11 +13,39 @@ data class DragLayoutLeaf(
     var id: String = UUID.randomUUID().toString(),
 ) {
 
+    var parent: DragLayoutNode? = null
     var boundCache: Rectangle2D? = null
 
     init {
         if (isComponent && isNode) throw IllegalArgumentException("The leaf can only contain one type")
         if (!isComponent && !isNode) throw IllegalArgumentException("The leaf must contain exactly one type")
+        if (isNode)
+            this.node!!.parent = this
+    }
+
+    private fun findOrientedParent(orientation: Orientation): Pair<DragLayoutNode, Int> {
+        return parent!! to 2
+    }
+
+    fun insertAtSide(side: Side, node: DragLayoutLeaf) {
+        val parent = findOrientedParent(when(side) {
+            Side.TOP -> Orientation.VERTICAL
+            Side.BOTTOM -> Orientation.VERTICAL
+            Side.LEFT -> Orientation.HORIZONTAL
+            Side.RIGHT -> Orientation.HORIZONTAL
+        })
+
+        parent.first.spliceNodes(parent.second, listOf(node))
+    }
+
+    /**
+     * Unwraps the first child of the contained node
+     */
+    fun unwrap() {
+        if (!this.isNode) throw IllegalStateException("This leaf does not contain a node")
+        val c = this.node!!.children[0]
+        this.node!!.children.clear()
+        c.swapOnto(this)
     }
 
     fun swapOnto(other: DragLayoutLeaf) {

@@ -16,7 +16,8 @@ data class DragLayoutNode(
     var orientation: Orientation = Orientation.HORIZONTAL,
     var children: MutableList<DragLayoutLeaf> = mutableListOf(),
     var dividerLocations: MutableList<Double> = mutableListOf(),
-    val dividers: MutableList<DragDivider> = mutableListOf()
+    val dividers: MutableList<DragDivider> = mutableListOf(),
+    var parent: DragLayoutLeaf? = null
 ) {
 
     var boundCache: Rectangle2D? = null
@@ -34,19 +35,24 @@ data class DragLayoutNode(
         this.iterateNodes {
             it.node.createDividers()
         }
+
+        children.forEach { it.parent = this }
     }
 
+    /**
+     * Relocates the given divider. Its position will be clamped
+     */
     fun relocateDivider(id: Int, newPos: Double) {
-        val newDividerValue = when(orientation) {
+        val newDividerValue = when (orientation) {
             Orientation.HORIZONTAL -> newPos / boundCache!!.width
             Orientation.VERTICAL -> newPos / boundCache!!.height
         }
-        val dividerWidth = when(orientation) {
+        val dividerWidth = when (orientation) {
             Orientation.HORIZONTAL -> DIVIDER_SIZE / boundCache!!.width
             Orientation.VERTICAL -> DIVIDER_SIZE / boundCache!!.height
         }
         val minSizePx = 40 // TODO, make components be able to declare this on their own
-        val minSizePadding = when(orientation) {
+        val minSizePadding = when (orientation) {
             Orientation.HORIZONTAL -> minSizePx / boundCache!!.width
             Orientation.VERTICAL -> minSizePx / boundCache!!.height
         }
@@ -55,6 +61,76 @@ data class DragLayoutNode(
         val dividerNext = dividerLocations.getOrElse(id + 1) { _ -> 1.0 + dividerWidth } - dividerWidth - minSizePadding
 
         dividerLocations[id] = newDividerValue.coerceIn(dividerPrev, dividerNext)
+    }
+
+    /**
+     * Simplifies the tree structure, conjoining any aligned and orphaned nodes
+     */
+    fun simplify() {
+        for (child in children) {
+            if (child.isNode)
+                child.node!!.simplify()
+        }
+
+        val toRemove = mutableListOf<Int>()
+        for (i in children.indices) {
+            val child = children[i]
+            if (child.isNode && child.node!!.children.size == 1) { // Remove useless container
+                child.unwrap()
+            } else if (child.isNode && child.node!!.children.size == 0) { // Remove useless container
+                toRemove.add(0, i)
+            } else if (child.isNode && child.node!!.orientation == orientation) { // Unwrap useless container
+                unwrapNode(i, child.node!!.children, child.node!!.dividerLocations)
+            }
+        }
+
+        for (i in toRemove.reversed()) {
+            children.removeAt(i)
+            var j = i
+            if (i >= dividerLocations.size) j--
+            dividerLocations.removeAt(j)
+            dividers.removeAt(j)
+        }
+    }
+
+    private fun unwrapNode(pos: Int, children: MutableList<DragLayoutLeaf>, dividers: List<Double>) {
+        this.children.removeAt(pos)
+        this.children.addAll(pos, children)
+
+        val divPrev = dividers.getOrElse(pos - 1) { _ -> 0.0 }
+        val divScale = dividers.getOrElse(pos) { _ -> 1.0 } - divPrev
+        for (i in dividers.indices) {
+            this.dividerLocations.add(pos + i, (dividers[i] / divScale) + divPrev)
+        }
+    }
+
+    fun spliceNodes(pos: Int, nodes: List<DragLayoutLeaf>) {
+        val insertedRangeSize = nodes.size.toDouble() / (children.size + nodes.size)
+
+        val rangeStart = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } - insertedRangeSize / 2
+        val rangeEnd = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } + insertedRangeSize / 2
+
+        // TODO, edges
+
+        val rangeMid = (rangeEnd + rangeStart) / 2
+
+        val divBeforeScalar = rangeStart / rangeMid
+        val divAfterScalar = rangeMid / rangeStart
+
+        for (i in 0 until pos) {
+            dividerLocations[i] *= divBeforeScalar
+        }
+        for (i in pos until dividerLocations.size) {
+            dividerLocations[i] *= divAfterScalar
+        }
+
+        for (i in nodes.indices) {
+            dividerLocations.add(pos + i, insertedRangeSize * ( i + 1 ) + rangeStart)
+        }
+
+        children.addAll(pos, nodes)
+        println(children.size)
+        println(dividerLocations)
     }
 
     /**
@@ -93,7 +169,7 @@ data class DragLayoutNode(
                 }
                 Orientation.VERTICAL -> {
                     rects[i] = Rectangle2D(rects[i].minX, rects[i].minY, rects[i].width, rects[i].height - DIVIDER_SIZE / 2)
-                    rects[i + 1] = Rectangle2D(rects[i + 1].minX, rects[i + 1].minY + DIVIDER_SIZE / 2, rects[i + 1].width, rects[ + 1].height)
+                    rects[i + 1] = Rectangle2D(rects[i + 1].minX, rects[i + 1].minY + DIVIDER_SIZE / 2, rects[i + 1].width, rects[i + 1].height)
                 }
             }
         }
@@ -101,6 +177,9 @@ data class DragLayoutNode(
         return rects
     }
 
+    /**
+     * @return the bounds of all the dividers contained within this node
+     */
     fun getDividerBounds(box: Rectangle2D): List<Rectangle2D> {
         validateArrayLengths()
 
@@ -135,8 +214,8 @@ data class DragLayoutNode(
         // Check for divider intersection
         for (i in dividerLocations) {
             when (orientation) {
-                Orientation.HORIZONTAL -> if(abs(point.x - i) <= dividerMargin.x) return null
-                Orientation.VERTICAL -> if(abs(point.y - i) <= dividerMargin.y) return null
+                Orientation.HORIZONTAL -> if (abs(point.x - i) <= dividerMargin.x) return null
+                Orientation.VERTICAL -> if (abs(point.y - i) <= dividerMargin.y) return null
             }
         }
 
@@ -224,6 +303,32 @@ data class DragLayoutNode(
         this.dividers.indices.forEach {
             callback.accept(DividerCallbackResult(dividers[it], dividerLocations[it]))
         }
+    }
+
+
+    /**
+     * Finds a leaf with the given id if that leaf contains a javafx [Node],
+     * and removes it from children
+     * @return [DragLayoutLeaf] or null if no such leaf exists
+     */
+    fun cutComponentLeaf(id: String): DragLayoutLeaf? {
+        for (i in children.indices) {
+            val it = children[i]
+            if (it.isComponent) {
+                if (it.id == id) {
+                    children.removeAt(i)
+                    var j = i
+                    if (i >= dividerLocations.size) j--
+                    dividerLocations.removeAt(j)
+                    dividers.removeAt(j)
+                    return it
+                }
+            } else if (it.isNode) {
+                val childSearchResult = it.node!!.findComponentLeaf(id)
+                if (childSearchResult != null) return childSearchResult
+            }
+        }
+        return null
     }
 
     /**

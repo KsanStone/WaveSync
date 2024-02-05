@@ -19,4 +19,5 @@ open module wavesync {
     requires org.kordamp.ikonli.javafx;
     requires org.bytedeco.javacpp;
     requires org.bytedeco.fftw;
+    requires com.google.gson;
 }
