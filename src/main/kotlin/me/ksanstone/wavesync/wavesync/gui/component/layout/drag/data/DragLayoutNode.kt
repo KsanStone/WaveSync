@@ -107,30 +107,42 @@ data class DragLayoutNode(
     fun spliceNodes(pos: Int, nodes: List<DragLayoutLeaf>) {
         val insertedRangeSize = nodes.size.toDouble() / (children.size + nodes.size)
 
-        val rangeStart = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } - insertedRangeSize / 2
-        val rangeEnd = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } + insertedRangeSize / 2
+        var rangeStart = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } - insertedRangeSize / 2
+        var rangeEnd = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } + insertedRangeSize / 2
+        var offset = 0
 
         // TODO, edges
+
+        if (pos == 0) {
+            rangeStart = 0.0
+            rangeEnd = insertedRangeSize
+        } else if (pos == children.size) {
+            rangeStart = 1.0 - insertedRangeSize
+            rangeEnd = 1.0
+            offset = -1
+            dividerLocations.add(rangeStart)
+        }
 
         val rangeMid = (rangeEnd + rangeStart) / 2
 
         val divBeforeScalar = rangeStart / rangeMid
-        val divAfterScalar = rangeMid / rangeStart
+        val divAfterScalar = rangeMid / rangeEnd
 
-        for (i in 0 until pos) {
+        for (i in 0 until pos) { // scale before dividers
             dividerLocations[i] *= divBeforeScalar
         }
-        for (i in pos until dividerLocations.size) {
-            dividerLocations[i] *= divAfterScalar
+        for (i in pos until dividerLocations.size) { // scale after dividers
+            dividerLocations[i] = 1 - ( (1 - dividerLocations[i]) * divAfterScalar)
         }
-
-        for (i in nodes.indices) {
+        for (i in nodes.indices.first .. nodes.indices.last + offset) {
             dividerLocations.add(pos + i, insertedRangeSize * ( i + 1 ) + rangeStart)
+            println("${pos + i} ${insertedRangeSize * ( i + 1 ) + rangeStart}")
         }
 
         children.addAll(pos, nodes)
         println(children.size)
         println(dividerLocations)
+        println("[$pos] $divBeforeScalar $divAfterScalar")
     }
 
     /**
@@ -305,6 +317,9 @@ data class DragLayoutNode(
         }
     }
 
+    fun indexOf(leaf: DragLayoutLeaf): Int {
+        return children.indexOf(leaf)
+    }
 
     /**
      * Finds a leaf with the given id if that leaf contains a javafx [Node],

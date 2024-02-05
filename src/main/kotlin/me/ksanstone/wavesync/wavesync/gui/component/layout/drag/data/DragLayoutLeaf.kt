@@ -23,16 +23,17 @@ data class DragLayoutLeaf(
             this.node!!.parent = this
     }
 
-    private fun findOrientedParent(orientation: Orientation): Pair<DragLayoutNode, Int> {
-        return parent!! to 2
+    private fun findOrientedParent(dir: Pair<Orientation, Int>): Pair<DragLayoutNode, Int> {
+        val index = parent!!.indexOf(this)
+        return parent!! to index + dir.second
     }
 
     fun insertAtSide(side: Side, node: DragLayoutLeaf) {
         val parent = findOrientedParent(when(side) {
-            Side.TOP -> Orientation.VERTICAL
-            Side.BOTTOM -> Orientation.VERTICAL
-            Side.LEFT -> Orientation.HORIZONTAL
-            Side.RIGHT -> Orientation.HORIZONTAL
+            Side.TOP -> Orientation.VERTICAL to 0
+            Side.BOTTOM -> Orientation.VERTICAL to 1
+            Side.LEFT -> Orientation.HORIZONTAL to 0
+            Side.RIGHT -> Orientation.HORIZONTAL to 1
         })
 
         parent.first.spliceNodes(parent.second, listOf(node))
