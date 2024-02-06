@@ -12,8 +12,10 @@ import javafx.scene.input.DragEvent
 import javafx.scene.input.TransferMode
 import javafx.scene.layout.Pane
 import javafx.scene.transform.Transform
+import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DIVIDER_SIZE
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
+import me.ksanstone.wavesync.wavesync.service.DragLayoutSerializerService
 
 class DragLayout : Pane() {
 
@@ -21,6 +23,7 @@ class DragLayout : Pane() {
     private val drawCueRect: Pane = Pane()
     val layoutRoot: DragLayoutNode = DragLayoutNode("root")
     private val layoutLock = Object()
+    private var serializer: DragLayoutSerializerService = WaveSyncBootApplication.applicationContext.getBean(DragLayoutSerializerService::class.java)
 
     init {
         setOnDragOver(this::onDragOver)
@@ -51,16 +54,20 @@ class DragLayout : Pane() {
     }
 
     private fun dropHandler(e: DragEvent) {
-        val noteId = decodeNoteId(e.dragboard.string) ?: return
-        val intersectedNode = layoutRoot.intersect(xyToAbsolute(Point2D(e.x, e.y)), getDividerMargin()) ?: return
-        if (intersectedNode.boundCache == null) return
-        if (noteId == intersectedNode.id) return
+        try {
+            val noteId = decodeNoteId(e.dragboard.string) ?: return
+            val intersectedNode = layoutRoot.intersect(xyToAbsolute(Point2D(e.x, e.y)), getDividerMargin()) ?: return
+            if (intersectedNode.boundCache == null) return
+            if (noteId == intersectedNode.id) return
 
-        val side = intersectedNode.getSideSections().intersect(Point2D(e.x, e.y))
-        if (side != null) {
-            splitSide(side.second, noteId, intersectedNode.id)
-        } else {
-            swapNodes(noteId, intersectedNode.id)
+            val side = intersectedNode.getSideSections().intersect(Point2D(e.x, e.y))
+            if (side != null) {
+                splitSide(side.second, noteId, intersectedNode.id)
+            } else {
+                swapNodes(noteId, intersectedNode.id)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -78,6 +85,7 @@ class DragLayout : Pane() {
             targetNode.insertAtSide(side, sourceNode)
             layoutRoot.simplify()
             layoutRoot.createDividers()
+            println(serializer.serialize(layoutRoot))
             updateChildren()
             layoutChildren()
         }

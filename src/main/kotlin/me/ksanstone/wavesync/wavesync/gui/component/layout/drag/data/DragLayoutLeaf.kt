@@ -24,8 +24,24 @@ data class DragLayoutLeaf(
     }
 
     private fun findOrientedParent(dir: Pair<Orientation, Int>): Pair<DragLayoutNode, Int> {
-        val index = parent!!.indexOf(this)
-        return parent!! to index + dir.second
+        if (dir.first == parent!!.orientation) {
+            // Inline with parent
+            val index = parent!!.indexOf(this)
+            return parent!! to index + dir.second
+        } else {
+            // Wrap self in new node with the correct orientation
+            val newParent = DragLayoutNode(
+                parent = this,
+                children = mutableListOf(),
+                dividerLocations = mutableListOf(),
+                orientation = dir.first,
+                id = ""
+            )
+            val newThis = DragLayoutLeaf(node = newParent)
+            this.swapOnto(newThis)
+            newParent.children.add(newThis)
+            return newParent to 0 + dir.second
+        }
     }
 
     fun insertAtSide(side: Side, node: DragLayoutLeaf) {

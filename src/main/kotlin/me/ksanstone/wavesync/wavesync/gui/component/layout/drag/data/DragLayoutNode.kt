@@ -16,7 +16,7 @@ data class DragLayoutNode(
     var orientation: Orientation = Orientation.HORIZONTAL,
     var children: MutableList<DragLayoutLeaf> = mutableListOf(),
     var dividerLocations: MutableList<Double> = mutableListOf(),
-    val dividers: MutableList<DragDivider> = mutableListOf(),
+    var dividers: MutableList<DragDivider> = mutableListOf(),
     var parent: DragLayoutLeaf? = null
 ) {
 
@@ -91,6 +91,15 @@ data class DragLayoutNode(
             dividerLocations.removeAt(j)
             dividers.removeAt(j)
         }
+
+        if (children.size == 1 && children[0].isNode) { // We only contain one node, unwrap
+            val node = children[0].node!!
+            this.children = node.children
+            this.dividers = node.dividers
+            this.dividerLocations = node.dividerLocations
+            this.orientation = node.orientation
+            this.id = node.id
+        }
     }
 
     private fun unwrapNode(pos: Int, children: MutableList<DragLayoutLeaf>, dividers: List<Double>) {
@@ -110,8 +119,6 @@ data class DragLayoutNode(
         var rangeStart = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } - insertedRangeSize / 2
         var rangeEnd = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } + insertedRangeSize / 2
         var offset = 0
-
-        // TODO, edges
 
         if (pos == 0) {
             rangeStart = 0.0
@@ -136,13 +143,9 @@ data class DragLayoutNode(
         }
         for (i in nodes.indices.first .. nodes.indices.last + offset) {
             dividerLocations.add(pos + i, insertedRangeSize * ( i + 1 ) + rangeStart)
-            println("${pos + i} ${insertedRangeSize * ( i + 1 ) + rangeStart}")
         }
 
         children.addAll(pos, nodes)
-        println(children.size)
-        println(dividerLocations)
-        println("[$pos] $divBeforeScalar $divAfterScalar")
     }
 
     /**
@@ -339,7 +342,7 @@ data class DragLayoutNode(
                     return it
                 }
             } else if (it.isNode) {
-                val childSearchResult = it.node!!.findComponentLeaf(id)
+                val childSearchResult = it.node!!.cutComponentLeaf(id)
                 if (childSearchResult != null) return childSearchResult
             }
         }
