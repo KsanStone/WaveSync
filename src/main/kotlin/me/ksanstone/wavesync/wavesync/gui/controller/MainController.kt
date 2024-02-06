@@ -4,18 +4,11 @@ import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.geometry.Orientation
-import javafx.scene.control.Button
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
-import javafx.scene.layout.Background
 import javafx.scene.layout.HBox
-import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
-import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
-import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
-import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
@@ -48,12 +41,13 @@ class MainController : Initializable {
     private var lastDeviceId: String? = null
     private var barVisualizer: BarVisualizer
     private var waveformVisualizer: WaveformVisualizer
+    private var layoutService: LayoutService
     private lateinit var resources: ResourceBundle
     val infoShown = SimpleBooleanProperty(false)
 
     init {
         instance = this
-
+        layoutService = WaveSyncBootApplication.applicationContext.getBean(LayoutService::class.java)
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         recordingModeService = WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class.java)
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
@@ -159,15 +153,7 @@ class MainController : Initializable {
         waveformVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-        val dl = DragLayout()
-        dl.layoutRoot.orientation = Orientation.VERTICAL
-        dl.layoutRoot.children = mutableListOf(
-            DragLayoutLeaf(component = barVisualizer),
-            DragLayoutLeaf(component = waveformVisualizer)
-        )
-        dl.layoutRoot.dividerLocations = mutableListOf(0.5)
-        dl.updateChildren()
-        visualizerPane.items.add(dl)
+        visualizerPane.items.add(layoutService.getMainLayout(waveformVisualizer, barVisualizer))
 
         val masterVolumeVisualizer = VolumeVisualizer()
         audioCaptureService.channelVolumes.listeners.add { store ->

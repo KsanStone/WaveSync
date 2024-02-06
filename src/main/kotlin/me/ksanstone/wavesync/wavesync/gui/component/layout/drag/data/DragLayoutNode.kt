@@ -5,6 +5,8 @@ import javafx.geometry.Point2D
 import javafx.geometry.Rectangle2D
 import javafx.scene.Node
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragDivider
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.fire
 import java.util.function.Consumer
 import kotlin.math.abs
 
@@ -20,8 +22,23 @@ data class DragLayoutNode(
     var parent: DragLayoutLeaf? = null
 ) {
 
+    private val layoutChangeListeners = mutableListOf<DragLayout.LayoutChangeListener>()
+
     var boundCache: Rectangle2D? = null
 
+    fun addLayoutChangeListener(listener: DragLayout.LayoutChangeListener) {
+        layoutChangeListeners.add(listener)
+    }
+
+    private fun fireChange() {
+        layoutChangeListeners.fire(this)
+        parent?.parent?.fireChange()
+    }
+
+    /**
+     * Creates [DragDivider] instances for this node, and its children.
+     * Old instances are deleted
+     */
     fun createDividers() {
         this.dividers.clear()
         this.dividers.addAll(this.dividerLocations.indices.map {
@@ -61,6 +78,7 @@ data class DragLayoutNode(
         val dividerNext = dividerLocations.getOrElse(id + 1) { _ -> 1.0 + dividerWidth } - dividerWidth - minSizePadding
 
         dividerLocations[id] = newDividerValue.coerceIn(dividerPrev, dividerNext)
+        fireChange()
     }
 
     /**

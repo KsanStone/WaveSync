@@ -12,18 +12,16 @@ import javafx.scene.input.DragEvent
 import javafx.scene.input.TransferMode
 import javafx.scene.layout.Pane
 import javafx.scene.transform.Transform
-import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DIVIDER_SIZE
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
-import me.ksanstone.wavesync.wavesync.service.DragLayoutSerializerService
 
 class DragLayout : Pane() {
 
     private val dragCueShowing = SimpleBooleanProperty(false)
     private val drawCueRect: Pane = Pane()
-    val layoutRoot: DragLayoutNode = DragLayoutNode("root")
+    private var layoutRoot: DragLayoutNode = DragLayoutNode("root")
     private val layoutLock = Object()
-    private var serializer: DragLayoutSerializerService = WaveSyncBootApplication.applicationContext.getBean(DragLayoutSerializerService::class.java)
+    private val layoutChangeListeners = mutableListOf<LayoutChangeListener>()
 
     init {
         setOnDragOver(this::onDragOver)
@@ -34,6 +32,18 @@ class DragLayout : Pane() {
         drawCueRect.styleClass.add("drag-cue")
         styleClass.setAll("drag-layout")
         stylesheets.add("/styles/drag-layout.css")
+    }
+
+    fun addLayoutChangeListener(listener: LayoutChangeListener) {
+        layoutChangeListeners.add(listener)
+    }
+
+    fun load(node: DragLayoutNode) {
+        layoutRoot = node
+        layoutRoot.addLayoutChangeListener {
+            layoutChangeListeners.fire(layoutRoot)
+        }
+        updateChildren()
     }
 
     private fun onDragOver(e: DragEvent) {
@@ -66,6 +76,7 @@ class DragLayout : Pane() {
             } else {
                 swapNodes(noteId, intersectedNode.id)
             }
+            layoutChangeListeners.fire(layoutRoot)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -85,7 +96,6 @@ class DragLayout : Pane() {
             targetNode.insertAtSide(side, sourceNode)
             layoutRoot.simplify()
             layoutRoot.createDividers()
-            println(serializer.serialize(layoutRoot))
             updateChildren()
             layoutChildren()
         }
@@ -176,6 +186,15 @@ class DragLayout : Pane() {
             return encoded.substring(15, encoded.length - 1)
         return null
     }
+
+    @FunctionalInterface
+    fun interface LayoutChangeListener {
+        fun change(node: DragLayoutNode)
+    }
+}
+
+fun MutableList<DragLayout.LayoutChangeListener>.fire(e: DragLayoutNode) {
+    this.forEach { it.change(e) }
 }
 
 fun Node.resizeRelocate(bound: Rectangle2D) {

@@ -52,6 +52,7 @@ class DragLayoutSerializerService {
     }
 
     fun deserialize(input: String, nodeFactory: NodeFactory): DragLayoutNode {
+        if (input == "") throw IllegalArgumentException("Input cannot be empty")
         val obj = gson.fromJson(input, JsonObject::class.java)
         return deserializeNode(obj, nodeFactory)
     }
@@ -77,12 +78,12 @@ class DragLayoutSerializerService {
     }
 
     @FunctionalInterface
-    interface NodeFactory {
+    fun interface NodeFactory {
 
         /**
          * Constructs an instance of the javafx [Node] with the given id
          */
-        fun createNode(nodeId: String): Node
+        fun createNode(nodeId: String): Node?
     }
 
 }
