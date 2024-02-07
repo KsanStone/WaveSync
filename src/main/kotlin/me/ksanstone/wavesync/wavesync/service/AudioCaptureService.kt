@@ -8,7 +8,9 @@ import javafx.beans.property.*
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_UPSAMPLING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
+import me.ksanstone.wavesync.wavesync.gui.utility.roundTo
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencyOfBin
+import me.ksanstone.wavesync.wavesync.service.interpolation.ParabolicInterpolator
 import me.ksanstone.wavesync.wavesync.service.windowing.*
 import me.ksanstone.wavesync.wavesync.utility.*
 import org.bytedeco.javacpp.FloatPointer
@@ -158,26 +160,16 @@ class AudioCaptureService(
         fftObservers.forEach { it.accept(fftResult[0].data, source.get()) }
     }
 
+    private val interpolator = ParabolicInterpolator()
+
     private fun calcPeak(fftResult: FloatArray) {
         val maxIdx = fftResult.indices.maxBy { fftResult[it] }
         if (maxIdx == -1) return
 
         val peakV = fftResult[maxIdx]
-
         if (peakV < 0.001f) return
 
-        val n1 = (fftResult.getOrNull(maxIdx - 1) ?: 0.0f).toDouble()
-        val n2 = (fftResult.getOrNull(maxIdx + 1) ?: 0.0f).toDouble()
-
-        val n1r = n1 / peakV
-        val n2r = n2 / peakV
-
-        val factor = n2r - n1r
-        var offset = frequencyOfBin(source.get().format.mix.rate, fftResult.size * 2) * factor
-        offset = offset.coerceIn(-1.0, 1.0)
-
-        peakFrequency.value =
-            frequencyOfBin(maxIdx, source.get().format.mix.rate, fftResult.size * 2).toDouble() + offset
+        peakFrequency.value = interpolator.calcPeak(fftResult, maxIdx, source.get().format.mix.rate).toDouble()
         peakValue.value = peakV
     }
 

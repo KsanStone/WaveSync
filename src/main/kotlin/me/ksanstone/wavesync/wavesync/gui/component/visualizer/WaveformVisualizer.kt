@@ -19,6 +19,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.gui.utility.roundTo
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -88,7 +89,7 @@ class WaveformVisualizer : AutoCanvas() {
     private fun bindAlign() {
         alignFrequency.unbind()
         if (autoAlign.get())
-            alignFrequency.bind(acs.peakFrequency)
+            alignFrequency.bind(acs.peakFrequency.map { it.toDouble().roundTo(0) })
         else
             alignFrequency.bind(targetAlignFrequency)
     }
