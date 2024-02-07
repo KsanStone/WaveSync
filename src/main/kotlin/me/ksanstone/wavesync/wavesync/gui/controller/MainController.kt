@@ -4,11 +4,13 @@ import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
+import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
 import javafx.scene.layout.HBox
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
@@ -19,6 +21,12 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class MainController : Initializable {
+
+    @FXML
+    lateinit var barOnOff: CheckMenuItem
+
+    @FXML
+    lateinit var waveformOnOff: CheckMenuItem
 
     @FXML
     lateinit var bottomBar: HBox
@@ -123,6 +131,29 @@ class MainController : Initializable {
         }
     }
 
+    private fun initializeWindowControls(layout: DragLayout) {
+        waveformOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(WaveformVisualizer::class.java))
+        barOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(BarVisualizer::class.java))
+
+        barOnOff.selectedProperty().addListener { _, _, v ->
+            if (v) {
+                layout.addComponent(barVisualizer, LayoutService.MAIN_BAR_VISUALIZER_ID)
+            } else {
+                layout.layoutRoot.removeComponentOfClass(BarVisualizer::class.java)
+            }
+            layout.fullUpdate()
+        }
+
+        waveformOnOff.selectedProperty().addListener { _, _, v ->
+            if (v) {
+                layout.addComponent(waveformVisualizer, LayoutService.MAIN_WAVEFORM_VISUALIZER_ID)
+            } else {
+                layout.layoutRoot.removeComponentOfClass(WaveformVisualizer::class.java)
+            }
+            layout.fullUpdate()
+        }
+    }
+
     @FXML
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         this.resources = resources!!
@@ -153,7 +184,9 @@ class MainController : Initializable {
         waveformVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-        visualizerPane.items.add(layoutService.getMainLayout(waveformVisualizer, barVisualizer))
+        val layout = layoutService.getMainLayout(waveformVisualizer, barVisualizer)
+        initializeWindowControls(layout)
+        visualizerPane.items.add(layout)
 
         val masterVolumeVisualizer = VolumeVisualizer()
         audioCaptureService.channelVolumes.listeners.add { store ->

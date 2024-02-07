@@ -8,6 +8,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragDivider
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.fire
 import java.util.function.Consumer
+import java.util.function.Predicate
 import kotlin.math.abs
 
 const val DIVIDER_SIZE = 5.0
@@ -95,7 +96,7 @@ data class DragLayoutNode(
             val child = children[i]
             if (child.isNode && child.node!!.children.size == 1) { // Remove useless container
                 child.unwrap()
-            } else if (child.isNode && child.node!!.children.size == 0) { // Remove useless container
+            } else if (child.isNode && child.node!!.isEmpty()) { // Remove useless container
                 toRemove.add(0, i)
             } else if (child.isNode && child.node!!.orientation == orientation) { // Unwrap useless container
                 unwrapNode(i, child.node!!.children, child.node!!.dividerLocations)
@@ -141,6 +142,7 @@ data class DragLayoutNode(
         if (pos == 0) {
             rangeStart = 0.0
             rangeEnd = insertedRangeSize
+            if(children.size == 0) offset = -1
         } else if (pos == children.size) {
             rangeStart = 1.0 - insertedRangeSize
             rangeEnd = 1.0
@@ -298,12 +300,18 @@ data class DragLayoutNode(
      * Recursively iterates over every javafx [Node] in this layout node
      *
      * @param callback Callback to be called on each node
+     * @return true if iteration has been stopped preemptively by calling [ComponentCallbackResult.stop]
      */
-    fun iterateComponents(callback: Consumer<ComponentCallbackResult>) {
+    fun iterateComponents(callback: Consumer<ComponentCallbackResult>): Boolean {
         this.children.forEach {
-            if (it.isComponent) callback.accept(ComponentCallbackResult(it.component!!, it.id))
-            else if (it.isNode) it.node!!.iterateComponents(callback)
-        }
+            if (it.isComponent) {
+                val res = ComponentCallbackResult(it.component!!, it.id)
+                callback.accept(res)
+                if (res.stop) return true
+            } else if (it.isNode) {
+                if(it.node!!.iterateComponents(callback)) return true
+            }
+        }; return false
     }
 
     /**
@@ -342,19 +350,24 @@ data class DragLayoutNode(
         return children.indexOf(leaf)
     }
 
+    fun isEmpty(): Boolean {
+        return children.size == 0
+    }
+
     /**
-     * Finds a leaf with the given id if that leaf contains a javafx [Node],
+     * Finds a leaf matching the given predicate if that leaf contains a javafx [Node],
      * and removes it from children
      * @return [DragLayoutLeaf] or null if no such leaf exists
      */
-    fun cutComponentLeaf(id: String): DragLayoutLeaf? {
+    fun cutComponent(predicate: Predicate<DragLayoutLeaf>): DragLayoutLeaf? {
         for (i in children.indices) {
             val it = children[i]
             if (it.isComponent) {
-                if (it.id == id) {
+                if (predicate.test(it)) {
                     children.removeAt(i)
                     var j = i
                     if (i >= dividerLocations.size) j--
+                    if (!dividerLocations.indices.contains(j)) return it
                     dividerLocations.removeAt(j)
                     dividers.removeAt(j)
                     return it
@@ -365,6 +378,15 @@ data class DragLayoutNode(
             }
         }
         return null
+    }
+
+    /**
+     * Finds a leaf with the given id if that leaf contains a javafx [Node],
+     * and removes it from children
+     * @return [DragLayoutLeaf] or null if no such leaf exists
+     */
+    fun cutComponentLeaf(id: String): DragLayoutLeaf? {
+        return cutComponent {it.id == id}
     }
 
     /**
@@ -383,15 +405,53 @@ data class DragLayoutNode(
         return null
     }
 
+    /**
+     * Checks whether an instance of the given class is present
+     * in this node's tree
+     */
+    fun queryComponentOfClassExists(clazz: Class<*>): Boolean {
+        var found = false
+        this.iterateComponents {
+            if (it.node.javaClass == clazz) {
+                it.stop()
+                found = true
+            }
+        }
+        return found
+    }
+
+    /**
+     * Removes a component of the given class
+     * @return true if any component was removed
+     */
+    fun removeComponentOfClass(clazz: Class<*>): Boolean {
+        val cutComp = cutComponent {it.component!!.javaClass == clazz}
+        if (cutComp != null) {
+            fireChange()
+            return true
+        }
+        return false
+    }
+
     private fun validateArrayLengths() {
-        if (dividerLocations.size != children.size - 1) throw IllegalArgumentException("Divider and children lists are mismatched")
+        if (dividerLocations.size != children.size - 1)
+            throw IllegalArgumentException("Divider [${dividerLocations.size}] and children [${children.size}] lists are mismatched")
     }
 }
 
 data class ComponentCallbackResult(
     val node: Node,
     val nodeId: String
-)
+) {
+    internal var stop: Boolean = false
+
+    /**
+     * Preemptively stop iteration
+     */
+    fun stop() {
+        this.stop = true
+    }
+}
 
 data class NodeCallbackResult(
     val node: DragLayoutNode,

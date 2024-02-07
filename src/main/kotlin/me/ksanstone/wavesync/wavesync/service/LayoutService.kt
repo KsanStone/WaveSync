@@ -30,8 +30,8 @@ class LayoutService(
             orientation = Orientation.VERTICAL,
             parent = null,
             children = mutableListOf(
-                DragLayoutLeaf(component = bVis, id = "barVisualizer"),
-                DragLayoutLeaf(component = wVis, id = "waveformVisualizer")
+                DragLayoutLeaf(component = bVis, id = MAIN_BAR_VISUALIZER_ID),
+                DragLayoutLeaf(component = wVis, id = MAIN_WAVEFORM_VISUALIZER_ID)
             ),
             dividerLocations = mutableListOf(0.5),
             id = "",
@@ -54,6 +54,11 @@ class LayoutService(
             mainLayout.set(layoutSerializerService.serialize(it))
         }
         return layout
+    }
+
+    companion object {
+        const val MAIN_BAR_VISUALIZER_ID = "barVisualizer"
+        const val MAIN_WAVEFORM_VISUALIZER_ID = "waveformVisualizer"
     }
 
 }

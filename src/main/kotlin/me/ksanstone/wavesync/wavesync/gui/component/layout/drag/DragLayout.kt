@@ -13,13 +13,15 @@ import javafx.scene.input.TransferMode
 import javafx.scene.layout.Pane
 import javafx.scene.transform.Transform
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DIVIDER_SIZE
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 
 class DragLayout : Pane() {
 
+    var layoutRoot: DragLayoutNode = DragLayoutNode("root")
+
     private val dragCueShowing = SimpleBooleanProperty(false)
     private val drawCueRect: Pane = Pane()
-    private var layoutRoot: DragLayoutNode = DragLayoutNode("root")
     private val layoutLock = Object()
     private val layoutChangeListeners = mutableListOf<LayoutChangeListener>()
 
@@ -44,6 +46,10 @@ class DragLayout : Pane() {
             layoutChangeListeners.fire(layoutRoot)
         }
         updateChildren()
+    }
+
+    fun addComponent(comp: Node, id: String) {
+        layoutRoot.spliceNodes(0, mutableListOf(DragLayoutLeaf(component = comp, id = id)))
     }
 
     private fun onDragOver(e: DragEvent) {
@@ -101,10 +107,16 @@ class DragLayout : Pane() {
         }
     }
 
+    fun fullUpdate() {
+        this.layoutRoot.simplify()
+        this.updateChildren()
+        this.layoutChildren()
+    }
+
     /**
      * Ensures all the layout child nodes are added to this component's children list
      */
-    fun updateChildren() {
+    private fun updateChildren() {
         this.children.clear()
         layoutRoot.createDividers()
         layoutRoot.iterateComponents {
@@ -143,7 +155,9 @@ class DragLayout : Pane() {
 
     override fun layoutChildren() {
         synchronized(layoutLock) {
-            layoutNode(layoutRoot, Rectangle2D(0.0, 0.0, width, height))
+            if (!layoutRoot.isEmpty()) {
+                layoutNode(layoutRoot, Rectangle2D(0.0, 0.0, width, height))
+            }
         }
     }
 
