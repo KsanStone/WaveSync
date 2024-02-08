@@ -389,7 +389,7 @@ data class DragLayoutNode(
                     return it
                 }
             } else if (it.isNode) {
-                val childSearchResult = it.node!!.cutComponentLeaf(id)
+                val childSearchResult = it.node!!.cutComponent(predicate)
                 if (childSearchResult != null) return childSearchResult
             }
         }
@@ -441,9 +441,8 @@ data class DragLayoutNode(
      * @return true if any component was removed
      */
     fun removeComponentOfClass(clazz: Class<*>): Boolean {
-        val cutComp = cutComponent {
-            it.component!!::class.java == clazz
-        }
+        println(clazz.name)
+        val cutComp = cutComponent { t -> t.component!!::class.java.name == clazz.name }
         if (cutComp != null) {
             fireChange()
             return true
