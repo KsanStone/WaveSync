@@ -1,5 +1,8 @@
 package me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data
 
+import javafx.collections.FXCollections
+import javafx.collections.ListChangeListener
+import javafx.collections.ObservableList
 import javafx.geometry.Orientation
 import javafx.geometry.Point2D
 import javafx.geometry.Rectangle2D
@@ -17,7 +20,7 @@ const val SIDE_CUE_SIZE = 60.0
 data class DragLayoutNode(
     var id: String,
     var orientation: Orientation = Orientation.HORIZONTAL,
-    var children: MutableList<DragLayoutLeaf> = mutableListOf(),
+    val children: ObservableList<DragLayoutLeaf> = FXCollections.observableArrayList(),
     var dividerLocations: MutableList<Double> = mutableListOf(),
     var dividers: MutableList<DragDivider> = mutableListOf(),
     var parent: DragLayoutLeaf? = null
@@ -26,6 +29,19 @@ data class DragLayoutNode(
     private val layoutChangeListeners = mutableListOf<DragLayout.LayoutChangeListener>()
 
     var boundCache: Rectangle2D? = null
+
+    init {
+        children.addListener(ListChangeListener { change ->
+            change.next()
+            if (change.wasRemoved()) {
+                change.removed.forEach { it.parent = null }
+            }
+            if (change.wasAdded()) {
+                change.addedSubList.forEach { it.parent = this }
+            }
+        })
+        children.forEach { it.parent = this }
+    }
 
     fun addLayoutChangeListener(listener: DragLayout.LayoutChangeListener) {
         layoutChangeListeners.add(listener)
@@ -113,7 +129,7 @@ data class DragLayoutNode(
 
         if (children.size == 1 && children[0].isNode) { // We only contain one node, unwrap
             val node = children[0].node!!
-            this.children = node.children
+            this.children.setAll(node.children)
             this.dividers = node.dividers
             this.dividerLocations = node.dividerLocations
             this.orientation = node.orientation
@@ -425,7 +441,9 @@ data class DragLayoutNode(
      * @return true if any component was removed
      */
     fun removeComponentOfClass(clazz: Class<*>): Boolean {
-        val cutComp = cutComponent {it.component!!.javaClass == clazz}
+        val cutComp = cutComponent {
+            it.component!!::class.java == clazz
+        }
         if (cutComp != null) {
             fireChange()
             return true

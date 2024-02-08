@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import javafx.collections.FXCollections
 import javafx.geometry.Orientation
 import javafx.scene.Node
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
@@ -62,7 +63,7 @@ class DragLayoutSerializerService {
         val dividers = obj.getAsJsonArray("dividers").map { it.asDouble }
         val orientation = gson.fromJson(obj.get("orientation"), Orientation::class.java)
 
-        return DragLayoutNode("", children = children.toMutableList(),
+        return DragLayoutNode("", children = FXCollections.observableList(children.toMutableList()),
             dividerLocations = dividers.toMutableList(), orientation = orientation)
     }
 

@@ -19,6 +19,10 @@ data class DragLayoutLeaf(
     init {
         if (isComponent && isNode) throw IllegalArgumentException("The leaf can only contain one type")
         if (!isComponent && !isNode) throw IllegalArgumentException("The leaf must contain exactly one type")
+        adjustParent()
+    }
+
+    private fun adjustParent() {
         if (isNode)
             this.node!!.parent = this
     }
@@ -32,7 +36,6 @@ data class DragLayoutLeaf(
             // Wrap self in new node with the correct orientation
             val newParent = DragLayoutNode(
                 parent = this,
-                children = mutableListOf(),
                 dividerLocations = mutableListOf(),
                 orientation = dir.first,
                 id = ""
@@ -69,12 +72,17 @@ data class DragLayoutLeaf(
         val tempNode = other.node
         val tempComp = other.component
         val tempId = other.id
+        val tempParent = other.parent
         other.node = node
         other.component = component
         other.id = id
+        other.parent = tempParent
         id = tempId
         node = tempNode
         component = tempComp
+        parent = tempParent
+        this.adjustParent()
+        other.adjustParent()
     }
 
     /**

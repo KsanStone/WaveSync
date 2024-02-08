@@ -10,6 +10,7 @@ import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
 import javafx.scene.layout.HBox
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
@@ -21,6 +22,9 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class MainController : Initializable {
+
+    @FXML
+    lateinit var fftInfoOnOff: CheckMenuItem
 
     @FXML
     lateinit var barOnOff: CheckMenuItem
@@ -49,6 +53,7 @@ class MainController : Initializable {
     private var lastDeviceId: String? = null
     private var barVisualizer: BarVisualizer
     private var waveformVisualizer: WaveformVisualizer
+    private var fftInfo: FFTInfo
     private var layoutService: LayoutService
     private lateinit var resources: ResourceBundle
     val infoShown = SimpleBooleanProperty(false)
@@ -63,6 +68,7 @@ class MainController : Initializable {
         preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
         waveformVisualizer = WaveformVisualizer()
         barVisualizer = BarVisualizer()
+        fftInfo = FFTInfo()
     }
 
     @FXML
@@ -134,22 +140,23 @@ class MainController : Initializable {
     private fun initializeWindowControls(layout: DragLayout) {
         waveformOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(WaveformVisualizer::class.java))
         barOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(BarVisualizer::class.java))
+        fftInfoOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(FFTInfo::class.java))
 
         barOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) {
-                layout.addComponent(barVisualizer, LayoutService.MAIN_BAR_VISUALIZER_ID)
-            } else {
-                layout.layoutRoot.removeComponentOfClass(BarVisualizer::class.java)
-            }
+            if (v) layout.addComponent(barVisualizer, LayoutService.MAIN_BAR_VISUALIZER_ID)
+            else layout.layoutRoot.removeComponentOfClass(BarVisualizer::class.java)
             layout.fullUpdate()
         }
 
         waveformOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) {
-                layout.addComponent(waveformVisualizer, LayoutService.MAIN_WAVEFORM_VISUALIZER_ID)
-            } else {
-                layout.layoutRoot.removeComponentOfClass(WaveformVisualizer::class.java)
-            }
+            if (v) layout.addComponent(waveformVisualizer, LayoutService.MAIN_WAVEFORM_VISUALIZER_ID)
+            else layout.layoutRoot.removeComponentOfClass(WaveformVisualizer::class.java)
+            layout.fullUpdate()
+        }
+
+        fftInfoOnOff.selectedProperty().addListener { _, _, v ->
+            if (v) layout.addComponent(fftInfo, LayoutService.MAIN_FFT_INFO_ID)
+            else layout.layoutRoot.removeComponentOfClass(FFTInfo::class.java)
             layout.fullUpdate()
         }
     }
@@ -184,7 +191,7 @@ class MainController : Initializable {
         waveformVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-        val layout = layoutService.getMainLayout(waveformVisualizer, barVisualizer)
+        val layout = layoutService.getMainLayout(waveformVisualizer, barVisualizer, fftInfo)
         initializeWindowControls(layout)
         visualizerPane.items.add(layout)
 
