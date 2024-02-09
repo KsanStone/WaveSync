@@ -9,5 +9,11 @@
             <Label text="%component.fftInfo.peak" />
             <Label fx:id="peakLabel" />
         </HBox>
+      <HBox layoutX="10.0" layoutY="10.0" spacing="5">
+         <children>
+            <Label text="%component.fftInfo.peakV" />
+            <Label fx:id="peakVLabel" />
+         </children>
+      </HBox>
     </children>
 </FlowPane>
