@@ -441,7 +441,6 @@ data class DragLayoutNode(
      * @return true if any component was removed
      */
     fun removeComponentOfClass(clazz: Class<*>): Boolean {
-        println(clazz.name)
         val cutComp = cutComponent { t -> t.component!!::class.java.name == clazz.name }
         if (cutComp != null) {
             fireChange()
