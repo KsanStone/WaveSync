@@ -55,6 +55,10 @@ abstract class AutoCanvas(private val detachable: Boolean = true) : AnchorPane()
     private val fpsCounter = FPSCounter()
     private val detachedProperty = SimpleBooleanProperty(false)
     private var recordingModeService: RecordingModeService = WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class)
+    private lateinit var drawLoop: Timeline
+
+    internal val isPaused: Boolean
+        get() = drawLoop.status !== Animation.Status.RUNNING
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
@@ -79,7 +83,7 @@ abstract class AutoCanvas(private val detachable: Boolean = true) : AnchorPane()
     }
 
     private fun initializeDrawLoop() {
-        val drawLoop = Timeline(
+        drawLoop = Timeline(
             KeyFrame(Duration.seconds(1.0 / framerate.get()), { drawCall() })
         )
 
@@ -87,10 +91,11 @@ abstract class AutoCanvas(private val detachable: Boolean = true) : AnchorPane()
         drawLoop.play()
 
         parentProperty().addListener { _, _, newValue ->
-            if (newValue != null && drawLoop.status != Animation.Status.RUNNING)
+            if (newValue != null && drawLoop.status != Animation.Status.RUNNING) {
                 drawLoop.play()
-            else if (newValue == null && drawLoop.status == Animation.Status.RUNNING)
+            } else if (newValue == null && drawLoop.status == Animation.Status.RUNNING) {
                 drawLoop.pause()
+            }
         }
 
         framerate.addListener { _ ->

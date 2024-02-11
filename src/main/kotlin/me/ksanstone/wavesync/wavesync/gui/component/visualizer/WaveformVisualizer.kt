@@ -151,12 +151,12 @@ class WaveformVisualizer : AutoCanvas() {
         }
 
         when(renderMode.get()!!) {
-            RenderMode.LINE -> drawLine(gc, drop, take, min, rangeBreadth)
-            RenderMode.POINT_CLOUD -> drawPoints(gc, drop, take, min, rangeBreadth)
+            RenderMode.LINE -> drawLine(gc, drop, take, min, rangeBreadth, width, height)
+            RenderMode.POINT_CLOUD -> drawPoints(gc, drop, take, min, rangeBreadth, width, height)
         }
     }
 
-    private fun drawLine(gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float) {
+    private fun drawLine(gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float, width: Double, height: Double) {
         var stepAccumulator = 0.0
         val step = take.toDouble() / width.roundToInt()
 
@@ -174,7 +174,7 @@ class WaveformVisualizer : AutoCanvas() {
         gc.stroke()
     }
 
-    private fun drawPoints(gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float) {
+    private fun drawPoints(gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float, width: Double, height: Double) {
         val color = waveColor.value
         for (i in drop until drop + take) {
             val ai = i - drop
@@ -186,6 +186,7 @@ class WaveformVisualizer : AutoCanvas() {
     }
 
     fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
+        if (isPaused) return
         sampleRate.value = source.format.mix.rate
         buffer.insert(samples.toTypedArray())
     }

@@ -49,7 +49,7 @@ class DragLayout : Pane() {
     }
 
     fun addComponent(comp: Node, id: String) {
-        layoutRoot.spliceNodes(0, mutableListOf(DragLayoutLeaf(component = comp, id = id)))
+        layoutRoot.insertNodes(0, mutableListOf(DragLayoutLeaf(component = comp, id = id)))
     }
 
     private fun onDragOver(e: DragEvent) {

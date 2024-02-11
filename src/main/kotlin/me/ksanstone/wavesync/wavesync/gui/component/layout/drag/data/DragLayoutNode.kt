@@ -39,6 +39,7 @@ data class DragLayoutNode(
             if (change.wasAdded()) {
                 change.addedSubList.forEach { it.parent = this }
             }
+            fireChange()
         })
         children.forEach { it.parent = this }
     }
@@ -148,40 +149,69 @@ data class DragLayoutNode(
         }
     }
 
-    fun spliceNodes(pos: Int, nodes: List<DragLayoutLeaf>) {
+    fun insertNodes(pos: Int, nodes: List<DragLayoutLeaf>) {
         val insertedRangeSize = nodes.size.toDouble() / (children.size + nodes.size)
 
         var rangeStart = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } - insertedRangeSize / 2
         var rangeEnd = dividerLocations.getOrElse(pos - 1) { _ -> 0.0 } + insertedRangeSize / 2
         var offset = 0
+        var rangeMid = (rangeEnd + rangeStart) / 2
 
         if (pos == 0) {
             rangeStart = 0.0
             rangeEnd = insertedRangeSize
+            rangeMid = (rangeEnd + rangeStart) / 2
             if(children.size == 0) offset = -1
         } else if (pos == children.size) {
             rangeStart = 1.0 - insertedRangeSize
             rangeEnd = 1.0
+            rangeMid = 1.0
             offset = -1
-            dividerLocations.add(rangeStart)
+            dividerLocations.add(1.0)
         }
 
-        val rangeMid = (rangeEnd + rangeStart) / 2
-
-        val divBeforeScalar = rangeStart / rangeMid
-        val divAfterScalar = rangeMid / rangeEnd
-
-        for (i in 0 until pos) { // scale before dividers
-            dividerLocations[i] *= divBeforeScalar
-        }
-        for (i in pos until dividerLocations.size) { // scale after dividers
-            dividerLocations[i] = 1 - ( (1 - dividerLocations[i]) * divAfterScalar)
-        }
+        spaceOutScalars(rangeMid, rangeStart, rangeEnd, pos)
         for (i in nodes.indices.first .. nodes.indices.last + offset) {
             dividerLocations.add(pos + i, insertedRangeSize * ( i + 1 ) + rangeStart)
         }
 
         children.addAll(pos, nodes)
+    }
+
+    private fun removeChildAt(index: Int): DragLayoutLeaf {
+        val child = children.removeAt(index)
+        var j = index
+        if (index >= dividerLocations.size) j--
+        if (!dividerLocations.indices.contains(j)) return child
+
+        val rangeStart = dividerLocations.getOrNull(j - 1) ?: 0.0
+        val rangeEnd = dividerLocations.getOrNull(j) ?: 1.0
+        val rangeMid = (rangeStart + rangeEnd) / 2
+
+        dividerLocations.removeAt(j)
+        dividers.removeAt(j)
+
+        if (dividerLocations.size == 0) return child
+        spaceOutScalars(rangeMid, rangeStart, rangeEnd, index, true)
+
+        return child
+    }
+
+    private fun spaceOutScalars(rangeMid: Double, rangeStart: Double, rangeEnd: Double, index: Int, inverse: Boolean = false) {
+        var divBeforeScalar = rangeStart / rangeMid
+        var divAfterScalar = rangeMid / rangeEnd
+
+        if (inverse) {
+            divBeforeScalar = 1 / divBeforeScalar
+            divAfterScalar = 1 / divAfterScalar
+        }
+
+        for (i in 0 until index) { // scale before dividers
+            dividerLocations[i] *= divBeforeScalar
+        }
+        for (i in index until dividerLocations.size) { // scale after dividers
+            dividerLocations[i] = 1 - ((1 - dividerLocations[i]) * divAfterScalar)
+        }
     }
 
     /**
@@ -380,13 +410,7 @@ data class DragLayoutNode(
             val it = children[i]
             if (it.isComponent) {
                 if (predicate.test(it)) {
-                    children.removeAt(i)
-                    var j = i
-                    if (i >= dividerLocations.size) j--
-                    if (!dividerLocations.indices.contains(j)) return it
-                    dividerLocations.removeAt(j)
-                    dividers.removeAt(j)
-                    return it
+                    return removeChildAt(i)
                 }
             } else if (it.isNode) {
                 val childSearchResult = it.node!!.cutComponent(predicate)

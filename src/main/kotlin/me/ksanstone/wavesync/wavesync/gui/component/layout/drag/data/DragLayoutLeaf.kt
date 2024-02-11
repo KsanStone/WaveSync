@@ -55,7 +55,7 @@ data class DragLayoutLeaf(
             Side.RIGHT -> Orientation.HORIZONTAL to 1
         })
 
-        parent.first.spliceNodes(parent.second, listOf(node))
+        parent.first.insertNodes(parent.second, listOf(node))
     }
 
     /**
