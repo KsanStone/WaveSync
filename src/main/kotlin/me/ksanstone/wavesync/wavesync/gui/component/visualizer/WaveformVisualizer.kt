@@ -12,6 +12,7 @@ import javafx.scene.control.Label
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
+import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WAVEFORM_RENDER_MODE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_LINK
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_MAX
@@ -39,17 +40,19 @@ class WaveformVisualizer : AutoCanvas() {
     val targetAlignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_WAVEFORM_RENDER_MODE)
 
-    private val buffer: RollingBuffer<Float> = RollingBuffer(10000, 0.0f)
+    private lateinit var buffer: RollingBuffer<Float>
     private val waveColor: StyleableProperty<Color> =
         FACTORY.createStyleableColorProperty(this, "waveColor", "-fx-color") { vis -> vis.waveColor }
     private val align: BooleanProperty = SimpleBooleanProperty(false)
     private val alignLowPass: DoubleProperty = SimpleDoubleProperty(20.0)
     private var sampleRate: IntegerProperty = SimpleIntegerProperty(48000)
-    private val downSampledSize: IntegerProperty = SimpleIntegerProperty(buffer.size)
+    private val downSampledSize: IntegerProperty = SimpleIntegerProperty(100)
     private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     private val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
+    private val bufferDuration: ObjectProperty<Duration> = SimpleObjectProperty(Duration.millis(60.0))
 
     init {
+        resizeBuffer(bufferDuration.get(), sampleRate.get())
         detachedWindowNameProperty.set("Waveform")
         canvasContainer.xAxisShown.value = false
         canvasContainer.highlightedHorizontalLines.addAll(1.0, -1.0)
@@ -63,7 +66,11 @@ class WaveformVisualizer : AutoCanvas() {
 
         val ls = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         alignLowPass.set(calcAlignLowPass())
-        sampleRate.addListener { _ -> alignLowPass.value = calcAlignLowPass() }
+        sampleRate.addListener { _, _, v ->
+            alignLowPass.value = calcAlignLowPass()
+            resizeBuffer(bufferDuration.get(), v.toInt())
+        }
+        bufferDuration.addListener { _, _, v -> resizeBuffer(v, sampleRate.get()) }
         align.bind(
             acs.peakValue.greaterThan(0.05f).and(enableAlign).and(acs.peakFrequency.greaterThan(alignLowPass))
                 .and(acs.peakFrequency.lessThanOrEqualTo(20000))
@@ -121,6 +128,11 @@ class WaveformVisualizer : AutoCanvas() {
         val controller: WaveformSettingsController = loader.getController()
         controller.waveformChartSettingsController.initialize(this)
         controlPane.children.add(controls)
+    }
+
+    private fun resizeBuffer(time: Duration, rate: Int) {
+        val newSize = rate * time.toSeconds()
+        this.buffer = RollingBuffer(newSize.toInt(), 0.0f)
     }
 
     private fun info(label: Label) {
