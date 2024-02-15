@@ -14,6 +14,10 @@ data class SupportedCaptureSource(
     val name: String,
     val id: String
 ) {
+
+    val rate: Int
+        get() = format.mix.rate
+
     override fun toString(): String {
         return "SupportedCaptureSource { name: $name id: $id freq: ${format.mix.rate} channel: ${format.channels.inputs} format: ${format.mix.sample} }"
     }
@@ -41,7 +45,7 @@ data class SupportedCaptureSource(
     }
 
     fun bufferBeginningSkipFor(freq: Int, bufferSize: Int): Int {
-        return trimResultBufferTo(bufferSize, this.format.mix.rate, freq)
+        return trimResultBufferTo(bufferSize, this.rate, freq)
     }
 
     fun getUpdateInterval(samples: Int): Duration {

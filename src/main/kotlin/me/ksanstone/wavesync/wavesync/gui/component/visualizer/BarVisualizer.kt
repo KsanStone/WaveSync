@@ -155,8 +155,8 @@ class BarVisualizer : AutoCanvas() {
             val bar = floor(x / barWidth)
             val binStart = floor(bar * step).toInt()
             val binEnd = floor((bar + 1) * step).toInt()
-            val minFreq = FourierMath.frequencyOfBin(binStart, source!!.format.mix.rate, fftSize)
-            val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.format.mix.rate, fftSize)
+            val minFreq = FourierMath.frequencyOfBin(binStart, source!!.rate, fftSize)
+            val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.rate, fftSize)
             val maxValue = rawMaxTracker.data.slice(binStart..binEnd).max()
             val rawValue = fftDataArray.slice(binStart + frequencyBinSkip..binEnd + frequencyBinSkip).max()
             tooltip.text =
@@ -226,8 +226,8 @@ class BarVisualizer : AutoCanvas() {
         if (source == null) return
         val upper = source!!.trimResultTo(fftSize, cutoff.get())
         val lower = source!!.bufferBeginningSkipFor(lowPass.get(), fftSize)
-        frequencyAxis.lowerBound = FourierMath.frequencyOfBin(lower, source!!.format.mix.rate, fftSize).toDouble()
-        frequencyAxis.upperBound = FourierMath.frequencyOfBin(upper, source!!.format.mix.rate, fftSize).toDouble()
+        frequencyAxis.lowerBound = FourierMath.frequencyOfBin(lower, source!!.rate, fftSize).toDouble()
+        frequencyAxis.upperBound = FourierMath.frequencyOfBin(upper, source!!.rate, fftSize).toDouble()
     }
 
     fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {

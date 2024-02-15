@@ -187,7 +187,7 @@ class WaveformVisualizer : AutoCanvas() {
 
     fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
         if (isPaused) return
-        sampleRate.value = source.format.mix.rate
+        sampleRate.value = source.rate
         buffer.insert(samples.toTypedArray())
     }
 

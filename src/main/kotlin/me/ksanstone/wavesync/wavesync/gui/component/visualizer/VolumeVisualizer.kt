@@ -209,12 +209,12 @@ class VolumeVisualizer : AutoCanvas(false) {
         }
 
         if (drawShortcuts) {
-            barOffset = shortcuts.maxOf {
+            barOffset = (shortcuts.maxOfOrNull {
                 when (orientation!!) {
                     Orientation.VERTICAL -> it.first.height
                     Orientation.HORIZONTAL -> it.first.width
                 }
-            } + 2.0
+            } ?: return) + 2.0
             when (orientation!!) {
                 Orientation.VERTICAL -> h -= barOffset
                 Orientation.HORIZONTAL -> w -= barOffset
