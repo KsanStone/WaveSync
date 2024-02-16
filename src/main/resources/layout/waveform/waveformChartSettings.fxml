@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import atlantafx.base.controls.ToggleSwitch?>
-<?import atlantafx.base.layout.InputGroup?>
+<?import atlantafx.base.controls.*?>
+<?import atlantafx.base.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.*?>
+
 <GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformChartSettingsController">
     <rowConstraints>
         <RowConstraints minHeight="30.0" prefHeight="30.0" />
         <RowConstraints minHeight="30.0" />
         <RowConstraints minHeight="30.0" prefHeight="30.0" />
-        <RowConstraints minHeight="30.0" prefHeight="30.0" maxHeight="30.0"/>
+      <RowConstraints minHeight="30.0" prefHeight="30.0" />
+        <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" />
     </rowConstraints>
     <columnConstraints>
         <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0" />
@@ -39,7 +41,7 @@
                 <Spinner fx:id="waveformRangeMaxSpinner" editable="true" />
             </children>
         </HBox>
-        <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="3">
+        <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="4">
             <graphic>
                 <FontIcon iconLiteral="mdal-border_outer" />
             </graphic>
@@ -56,12 +58,19 @@
                 <Label text="Hz" />
             </children>
         </HBox>
-        <HBox spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="3" alignment="CENTER_LEFT">
-            <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
+        <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="4">
+            <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml" />
             <InputGroup>
-                <ToggleButton prefHeight="30.0" fx:id="pointCloud" text="%visualizer.waveform.settings.render.pointCloud" onAction="#renderCloud"/>
-                <ToggleButton prefHeight="30.0" fx:id="waveformLine" text="%visualizer.waveform.settings.render.lines" onAction="#renderLine"/>
+                <ToggleButton fx:id="pointCloud" onAction="#renderCloud" prefHeight="30.0" text="%visualizer.waveform.settings.render.pointCloud" />
+                <ToggleButton fx:id="waveformLine" onAction="#renderLine" prefHeight="30.0" text="%visualizer.waveform.settings.render.lines" />
             </InputGroup>
         </HBox>
+      <Label text="%visualizer.waveform.settings.bufferLength" GridPane.rowIndex="3" />
+      <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+         <children>
+            <Spinner fx:id="bufferLengthSpinner" editable="true"/>
+            <Label text="Milliseconds" />
+         </children>
+      </HBox>
     </children>
 </GridPane>

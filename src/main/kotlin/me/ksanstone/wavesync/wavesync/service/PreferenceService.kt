@@ -3,6 +3,7 @@ package me.ksanstone.wavesync.wavesync.service
 import jakarta.annotation.PostConstruct
 import javafx.beans.property.*
 import javafx.scene.paint.Color
+import javafx.util.Duration
 import org.springframework.stereotype.Service
 import java.util.prefs.Preferences
 
@@ -30,6 +31,16 @@ class PreferenceService {
                 setter(v)
         }
         properties.add(property)
+    }
+
+    fun <E : Any> registerProperty(
+        property: ObjectProperty<E>, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID,
+        serializer: (obj: E) -> String, deserializer: (str: String) -> E
+    ) {
+        val preferences = getPreferences(clazz, id)
+        doRegister(property as Property<Any?>,
+            { deserializer(preferences.get(name, serializer(property.get()))) },
+            { v -> preferences.put(name, serializer(v as E)) })
     }
 
     fun registerProperty(property: BooleanProperty, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
@@ -84,12 +95,11 @@ class PreferenceService {
             { v -> preferences.put(name, (v as Enum<*>).name) })
     }
 
-    fun registerProperty(
-        property: ObjectProperty<Color>,
-        name: String,
-        clazz: Class<*>? = null,
-        id: String = DEFAULT_ID
-    ) {
+    fun registerDurationProperty(property: ObjectProperty<Duration>, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
+        registerProperty(property, name, clazz, id, {e -> e.toMillis().toString()}, {str -> Duration.millis(str.toDouble())})
+    }
+
+    fun registerColorProperty(property: ObjectProperty<Color>, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
         val preferences = getPreferences(clazz, id)
         doRegister(property as Property<Any?>,
             { intToColor(preferences.getInt(name, colorToInt(property.get()))) },

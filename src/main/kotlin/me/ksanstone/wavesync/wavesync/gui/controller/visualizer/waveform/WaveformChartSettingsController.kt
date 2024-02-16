@@ -5,10 +5,14 @@ import javafx.fxml.FXML
 import javafx.scene.control.Spinner
 import javafx.scene.control.SpinnerValueFactory.DoubleSpinnerValueFactory
 import javafx.scene.control.ToggleButton
+import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
 
 class WaveformChartSettingsController {
+
+    @FXML
+    lateinit var bufferLengthSpinner: Spinner<Double>
 
     @FXML
     lateinit var pointCloud: ToggleButton
@@ -66,6 +70,13 @@ class WaveformChartSettingsController {
         autoAlignToggleSwitch.isSelected = visualizer.enableAlign.get()
         visualizer.autoAlign.bind(autoAlignToggleSwitch.selectedProperty())
 
+        bufferLengthSpinner.valueFactory = DoubleSpinnerValueFactory(
+            10.0,
+            1000.0,
+            visualizer.bufferDuration.get().toMillis(),
+            1.0
+        )
+
         waveformRangeMaxSpinner.valueFactory = DoubleSpinnerValueFactory(
             0.01,
             10.0,
@@ -100,6 +111,7 @@ class WaveformChartSettingsController {
         visualizer.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
         visualizer.rangeMax.bind(waveformRangeMaxSpinner.valueFactory.valueProperty().map { it.toFloat() })
         visualizer.rangeMin.bind(waveformRangeMinSpinner.valueFactory.valueProperty().map { it.toFloat() })
+        visualizer.bufferDuration.bind(bufferLengthSpinner.valueFactory.valueProperty().map { Duration.millis(it)})
         visualizer.targetAlignFrequency.bind(alignFrequency.valueProperty())
         visualizer.rangeLink.bind(linkToggleButton.selectedProperty())
 

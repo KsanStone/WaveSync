@@ -39,6 +39,7 @@ class WaveformVisualizer : AutoCanvas() {
     val rangeLink: BooleanProperty = SimpleBooleanProperty(WAVEFORM_RANGE_LINK)
     val targetAlignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_WAVEFORM_RENDER_MODE)
+    val bufferDuration: ObjectProperty<Duration> = SimpleObjectProperty(Duration.millis(60.0))
 
     private lateinit var buffer: RollingBuffer<Float>
     private val waveColor: StyleableProperty<Color> =
@@ -49,7 +50,6 @@ class WaveformVisualizer : AutoCanvas() {
     private val downSampledSize: IntegerProperty = SimpleIntegerProperty(100)
     private val alignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     private val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
-    private val bufferDuration: ObjectProperty<Duration> = SimpleObjectProperty(Duration.millis(60.0))
 
     init {
         resizeBuffer(bufferDuration.get(), sampleRate.get())
@@ -116,6 +116,7 @@ class WaveformVisualizer : AutoCanvas() {
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
     }
 
     fun initializeSettingMenu() {
