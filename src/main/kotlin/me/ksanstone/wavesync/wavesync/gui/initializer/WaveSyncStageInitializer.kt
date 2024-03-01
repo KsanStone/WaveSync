@@ -8,6 +8,7 @@ import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCombination
 import javafx.scene.input.KeyEvent
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
+import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.StageSizingService
 import me.ksanstone.wavesync.wavesync.service.ThemeService
@@ -19,7 +20,8 @@ import org.springframework.stereotype.Component
 class WaveSyncStageInitializer(
     private val themeService: ThemeService,
     private val localizationService: LocalizationService,
-    private val stageSizingService: StageSizingService
+    private val stageSizingService: StageSizingService,
+    private val audioCaptureService: AudioCaptureService
 ) : ApplicationListener<StageReadyEvent> {
 
     override fun onApplicationEvent(event: StageReadyEvent) {
@@ -29,6 +31,15 @@ class WaveSyncStageInitializer(
         stage.addEventHandler(KeyEvent.KEY_PRESSED) { keyEvent ->
             if (KeyCode.F11 == keyEvent.code) {
                 stage.isFullScreen = !stage.isFullScreen
+            } else if (KeyCode.K == keyEvent.code) {
+                audioCaptureService.paused.value = !audioCaptureService.paused.value
+            } else if (KeyCode.L == keyEvent.code) {
+                audioCaptureService.paused.value = true
+            }
+        }
+        stage.addEventHandler(KeyEvent.KEY_RELEASED) { keyEvent ->
+            if (KeyCode.L == keyEvent.code) {
+                audioCaptureService.paused.value = false
             }
         }
 

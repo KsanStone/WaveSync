@@ -61,6 +61,7 @@ class AudioCaptureService(
     val fftUpsample: IntegerProperty = SimpleIntegerProperty(DEFAULT_UPSAMPLING)
     val usedAudioSystem: ObjectProperty<XtSystem> = SimpleObjectProperty()
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
+    val paused: BooleanProperty = SimpleBooleanProperty(false)
     var audioSystems: List<XtSystem> = listOf()
 
     private val defaultChannelLabels = arrayOf(CommonChannel.MASTER.label)
@@ -117,6 +118,7 @@ class AudioCaptureService(
     }
     
     fun processSamples(audio: FloatArray, frames: Int) {
+        if (paused.get()) return
         val channels = source.get().format.channels.inputs
         val sampleFactor = 1.0f / channels.toFloat()
         val targetSamplesUntilRefresh = (fftSampleBuffer.size / fftUpsample.get()).toLong()
