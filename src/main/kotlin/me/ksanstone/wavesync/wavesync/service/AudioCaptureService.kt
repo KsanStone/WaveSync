@@ -48,12 +48,14 @@ class AudioCaptureService(
     private var fftObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
     private var sampleObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
     private var windowFunction: WindowFunction? = null
+    private val _captureRunning = SimpleBooleanProperty(false)
 
     val fftResult = FloatChanneledStore()
     val samples = FloatChanneledStore()
 
     val peakFrequency = SimpleDoubleProperty(0.0)
     val peakValue = SimpleFloatProperty(0.0f)
+    val captureRunning = ReadOnlyBooleanProperty.readOnlyBooleanProperty(_captureRunning)
     val channelVolumes = FloatChanneledStore()
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
@@ -187,6 +189,7 @@ class AudioCaptureService(
         sampleObservers.add(observer)
     }
 
+    @Synchronized
     fun startCapture(source: SupportedCaptureSource) {
         this.source.set(source)
         recordingFuture = CompletableFuture.runAsync {
@@ -220,15 +223,18 @@ class AudioCaptureService(
                             samples.resize(1 + channels, stream.frames).label(*defaultChannelLabels.plus(channelLabels))
                             channelVolumes.resize(1 + channels, 1).label(*defaultChannelLabels.plus(channelLabels))
                             logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
+                            _captureRunning.set(true)
                             stream.start()
                             lock.await()
                             stream.stop()
                             logger.info("Capture finished")
+                            _captureRunning.set(false)
                         }
                     }
                 }
             }
         }
+        recordingFuture!!.exceptionally { _ -> _captureRunning.set(false); return@exceptionally null }
     }
 
     fun stopCapture() {

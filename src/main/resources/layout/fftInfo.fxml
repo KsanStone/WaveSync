@@ -1,19 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-
-<FlowPane hgap="10.0" minHeight="50.0" minWidth="50.0" vgap="3.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.FFTInfoController">
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<FlowPane hgap="10.0" minHeight="50.0" minWidth="50.0" vgap="3.0" xmlns="http://javafx.com/javafx/17.0.2-ea"
+          xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.FFTInfoController">
     <children>
         <HBox spacing="5">
-            <Label text="%component.fftInfo.peak" />
-            <Label fx:id="peakLabel" />
+            <Label text="%component.fftInfo.peak"/>
+            <Label fx:id="peakLabel"/>
         </HBox>
-      <HBox layoutX="10.0" layoutY="10.0" spacing="5">
-         <children>
-            <Label text="%component.fftInfo.peakV" />
-            <Label fx:id="peakVLabel" />
-         </children>
-      </HBox>
+        <HBox layoutX="10.0" layoutY="10.0" spacing="5">
+            <children>
+                <Label text="%component.fftInfo.peakV"/>
+                <Label fx:id="peakVLabel"/>
+            </children>
+        </HBox>
+        <HBox layoutX="10.0" layoutY="10.0" spacing="5">
+            <children>
+                <Label text="%component.fftInfo.status"/>
+                <Label fx:id="statusLabel"/>
+            </children>
+        </HBox>
     </children>
 </FlowPane>
