@@ -37,6 +37,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
     val verticalLinesVisible = SimpleBooleanProperty(true)
     val highlightedVerticalLines: ObservableList<Double> = FXCollections.observableArrayList()
     val highlightedHorizontalLines: ObservableList<Double> = FXCollections.observableArrayList()
+    val forceDrawVerticalAccentLines = SimpleBooleanProperty(false)
 
     private var horizontalGridLines: Path = Path()
     private var verticalGridLines: Path = Path()
@@ -141,6 +142,8 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
         listOf(
             horizontalLinesVisible,
             verticalLinesVisible,
+            highlightedVerticalLines,
+            highlightedHorizontalLines,
             xAxisShown,
             yAxisShown
         ).forEach { it.addListener { _ -> layoutGrid() } }
@@ -164,7 +167,7 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             yAxis.resizeRelocate(0.0, 0.0, leftPad, height - bottomPad)
             yAxis.minHeight = height - bottomPad - 1
         }
-        if (xAxisShown.get()) {
+        if (xAxisShown.get().or(forceDrawVerticalAccentLines.get())) {
             xAxis.resizeRelocate(leftPad, height - bottomPad, width - leftPad, bottomPad)
             xAxis.minWidth = width - leftPad - 1
         }
@@ -190,12 +193,12 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
 
         var s1 = canvas.localToParent(Point2D(0.0, p.y))
         var s2 = canvas.localToParent(Point2D(canvas.width, p.y))
-        tooltipCross.elements.add(MoveTo(s1.x - (if(xAxisShown.get()) axisTickOverlap else 0.0), s1.y + 0.5))
+        tooltipCross.elements.add(MoveTo(s1.x - (if (xAxisShown.get()) axisTickOverlap else 0.0), s1.y + 0.5))
         tooltipCross.elements.add(LineTo(s2.x, s2.y + 0.5))
 
         s1 = canvas.localToParent(Point2D(p.x, 0.0))
         s2 = canvas.localToParent(Point2D(p.x, canvas.height))
-        tooltipCross.elements.add(MoveTo(s2.x + 0.5, s2.y + (if(xAxisShown.get()) axisTickOverlap else 0.0)))
+        tooltipCross.elements.add(MoveTo(s2.x + 0.5, s2.y + (if (xAxisShown.get()) axisTickOverlap else 0.0)))
         tooltipCross.elements.add(LineTo(s1.x + 0.5, s1.y))
     }
 
@@ -227,18 +230,19 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
 
         verticalGridLines.elements.clear()
         highlightedVerticalGridLines.elements.clear()
-        if (verticalLinesVisible.get().and(xAxisShown.get())) {
-            for (i in xTics.indices) {
-                val tick = xTics[i]
-                val x: Double = xAxis.getDisplayPosition(tick.value)
-                if ((x != xAxisZero || !verticalZeroLineVisible) && x > 0 && x <= xAxisWidth && !highlightedVerticalLines.contains(
-                        tick.value
-                    )
-                ) {
-                    verticalGridLines.elements.add(MoveTo(left + x + 0.5, top))
-                    verticalGridLines.elements.add(LineTo(left + x + 0.5, top + yAxisHeight))
+        if (verticalLinesVisible.get().and(xAxisShown.get().or(forceDrawVerticalAccentLines.get()))) {
+            if (xAxisShown.get())
+                for (i in xTics.indices) {
+                    val tick = xTics[i]
+                    val x: Double = xAxis.getDisplayPosition(tick.value)
+                    if ((x != xAxisZero || !verticalZeroLineVisible) && x > 0 && x <= xAxisWidth && !highlightedVerticalLines.contains(
+                            tick.value
+                        )
+                    ) {
+                        verticalGridLines.elements.add(MoveTo(left + x + 0.5, top))
+                        verticalGridLines.elements.add(LineTo(left + x + 0.5, top + yAxisHeight))
+                    }
                 }
-            }
             for (line in highlightedVerticalLines) {
                 val x: Double = xAxis.getDisplayPosition(line)
                 if (x > 0 && x <= xAxisWidth) {

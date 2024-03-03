@@ -55,11 +55,17 @@ class WaveformVisualizer : AutoCanvas() {
         resizeBuffer(bufferDuration.get(), sampleRate.get())
         detachedWindowNameProperty.set("Waveform")
         canvasContainer.xAxisShown.value = false
+        canvasContainer.forceDrawVerticalAccentLines.value = true
+        canvasContainer.verticalLinesVisible.value = true
         canvasContainer.highlightedHorizontalLines.addAll(1.0, -1.0)
         yAxis.tickUnit = 0.2
+        xAxis.tickUnit = 100000000.0
+        xAxis.minorTickCount = 0
         // .toString().toDouble() hack to get an exact conversion
         yAxis.lowerBoundProperty().bind(rangeMin.map { it.toString().toDouble() })
         yAxis.upperBoundProperty().bind(rangeMax.map { it.toString().toDouble() })
+
+        acs.fftSize.addListener { _, _, v -> canvasContainer.highlightedVerticalLines.setAll(xAxis.upperBound - v.toDouble()) }
 
         autoAlign.addListener { _ -> bindAlign() }
         bindAlign()
@@ -134,6 +140,8 @@ class WaveformVisualizer : AutoCanvas() {
     private fun resizeBuffer(time: Duration, rate: Int) {
         val newSize = rate * time.toSeconds()
         this.buffer = RollingBuffer(newSize.toInt(), 0.0f)
+        xAxis.upperBound = newSize
+        canvasContainer.highlightedVerticalLines.setAll(xAxis.upperBound - acs.fftSize.value.toDouble())
     }
 
     private fun info(label: Label) {
