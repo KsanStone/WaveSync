@@ -20,4 +20,5 @@ open module wavesync {
     requires org.bytedeco.javacpp;
     requires org.bytedeco.fftw;
     requires com.google.gson;
+    requires jdk.management;
 }

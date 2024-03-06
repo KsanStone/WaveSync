@@ -192,7 +192,7 @@ data class DragLayoutNode(
         dividers.removeAt(j)
 
         if (dividerLocations.size == 0) return child
-        spaceOutScalars(rangeMid, rangeStart, rangeEnd, index, true)
+        spaceOutScalars(rangeMid, rangeStart, rangeEnd, j, true)
 
         return child
     }

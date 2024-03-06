@@ -30,6 +30,7 @@
                         <CheckMenuItem fx:id="waveformOnOff" mnemonicParsing="false" text="%nav.window.toggle.waveform" />
                         <CheckMenuItem fx:id="barOnOff" mnemonicParsing="false" text="%nav.window.toggle.fft" />
                         <CheckMenuItem fx:id="fftInfoOnOff" mnemonicParsing="false" text="%nav.window.toggle.info" />
+                        <CheckMenuItem fx:id="runtimeInfoOnOff" mnemonicParsing="false" text="%nav.window.toggle.statistic" />
                     </items>
                   </MenuButton>
                     </children>
