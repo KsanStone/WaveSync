@@ -164,27 +164,35 @@ class WaveformVisualizer : AutoCanvas() {
         val min = rangeMin.get()
         val max = rangeMax.get()
         val rangeBreadth = max - min
+        var takeAdjust = 0
 
         if (align.get()) {
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate.get())
             drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - 50)
             take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15).roundToInt().coerceAtMost(buffer.size - drop)
+        } else if (bufferDuration.get().greaterThan(Duration.millis(100.0)).and(renderMode.get() == RenderMode.LINE)) {
+            // make the line graph less jumpy
+            val waveSize = take.toDouble() / width.roundToInt()
+            drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - 50)
+            takeAdjust = -drop
         }
 
         when(renderMode.get()!!) {
-            RenderMode.LINE -> drawLine(gc, drop, take, min, rangeBreadth, width, height)
+            RenderMode.LINE -> drawLine(gc, drop, take, min, rangeBreadth, width, height, takeAdjust)
             RenderMode.POINT_CLOUD -> drawPoints(gc, drop, take, min, rangeBreadth, width, height)
         }
     }
 
-    private fun drawLine(gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float, width: Double, height: Double) {
+    private fun drawLine(
+        gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float, width: Double, height: Double, takeAdjust: Int
+    ) {
         var stepAccumulator = 0.0
         val step = take.toDouble() / width.roundToInt()
 
         gc.stroke = waveColor.value
         gc.beginPath()
         var acc = 0
-        for (i in drop until drop + take) {
+        for (i in drop until drop + take + takeAdjust) {
             val ai = i - drop
             if (++stepAccumulator < step) continue
             stepAccumulator -= step
@@ -196,9 +204,14 @@ class WaveformVisualizer : AutoCanvas() {
     }
 
     private fun drawPoints(gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float, width: Double, height: Double) {
+        var stepAccumulator = 0.0
+        val step = take.toDouble() / (width.roundToInt() * 30)
+
         val color = waveColor.value
         for (i in drop until drop + take) {
             val ai = i - drop
+            if (++stepAccumulator < step) continue
+            stepAccumulator -= step
             gc.pixelWriter.setColor((ai.toDouble() / take * width).roundToInt(),
                 ((buffer[i] - min).toDouble() / rangeBreadth * height).roundToInt(),
                 color
