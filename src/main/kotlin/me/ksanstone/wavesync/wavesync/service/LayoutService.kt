@@ -68,6 +68,7 @@ class LayoutService(
         layout.addLayoutChangeListener {
             mainLayout.set(layoutSerializerService.serialize(it))
         }
+        layout.layoutRoot.simplify()
         return layout
     }
 

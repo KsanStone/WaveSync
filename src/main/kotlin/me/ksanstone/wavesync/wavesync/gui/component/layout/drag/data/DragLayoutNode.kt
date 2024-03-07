@@ -474,7 +474,7 @@ data class DragLayoutNode(
     }
 
     private fun validateArrayLengths() {
-        if (dividerLocations.size != children.size - 1)
+        if (dividerLocations.size != children.size - 1 && (dividerLocations.size + children.size) != 0)
             throw IllegalArgumentException("Divider [${dividerLocations.size}] and children [${children.size}] lists are mismatched")
     }
 }

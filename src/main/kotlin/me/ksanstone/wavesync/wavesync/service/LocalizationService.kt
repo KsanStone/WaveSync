@@ -46,10 +46,12 @@ class LocalizationService {
     }
 
     fun format(key: String, vararg args: Any): String {
+        if (key.isDirectKey()) return key.extractDirectMessage()
         return MessageFormat(getDefault().getString(key)).format(args)
     }
 
     fun get(key: String): String {
+        if (key.isDirectKey()) return key.extractDirectMessage()
         return getDefault().getString(key)
     }
 
