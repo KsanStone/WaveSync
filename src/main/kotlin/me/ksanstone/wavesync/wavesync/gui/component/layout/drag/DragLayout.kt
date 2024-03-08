@@ -166,11 +166,15 @@ class DragLayout : Pane() {
         node.boundCache = place
 
         for (i in childBounds.indices) {
-            node.children[i].boundCache = childBounds[i]
-            if (node.children[i].isComponent) {
-                node.children[i].component!!.resizeRelocate(childBounds[i])
-            } else if (node.children[i].isNode) {
-                layoutNode(node.children[i].node!!, childBounds[i])
+            childBounds[i]?.let {
+                node.children[i].boundCache = it
+                if (node.children[i].isComponent) {
+                    node.children[i].component!!.resizeRelocate(it)
+                } else if (node.children[i].isNode) {
+                    layoutNode(node.children[i].node!!, it)
+                }
+            } ?: run {
+                node.children[i].boundCache = null
             }
         }
 

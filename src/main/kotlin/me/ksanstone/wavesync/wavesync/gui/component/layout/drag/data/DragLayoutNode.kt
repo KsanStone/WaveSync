@@ -102,11 +102,12 @@ data class DragLayoutNode(
     /**
      * Simplifies the tree structure, conjoining any aligned and orphaned nodes
      */
-    fun simplify() {
-        for (child in children) {
-            if (child.isNode)
-                child.node!!.simplify()
-        }
+    fun simplify(noRecurse: Boolean = false) {
+        if (!noRecurse)
+            for (child in children) {
+                if (child.isNode)
+                    child.node!!.simplify()
+            }
 
         val toRemove = mutableListOf<Int>()
         for (i in children.indices) {
@@ -136,6 +137,27 @@ data class DragLayoutNode(
             this.orientation = node.orientation
             this.id = node.id
         }
+
+        validateDividers()
+    }
+
+    /**
+     * Fixes divider locations
+     * If the dividers mismatch the nodes, a new set is created
+     */
+    private fun validateDividers() {
+        if (children.size == 0) return this.dividerLocations.clear()
+        if (this.dividerLocations.size + 1 != children.size || !rangeValid(this.dividerLocations))
+          this.dividerLocations = MutableList(children.size - 1) { (it + 1) / children.size.toDouble() }
+    }
+
+    private fun rangeValid(numbers: List<Double>): Boolean {
+        for (i in 0 until numbers.size - 1) {
+            if (numbers[i] >= numbers[i + 1] || numbers[i] <= 0 || numbers[i] >= 1) {
+                return false
+            }
+        }
+        return numbers.first() > 0 && numbers.first() < 1 && numbers.last() > 0 && numbers.last() < 1
     }
 
     private fun unwrapNode(pos: Int, children: MutableList<DragLayoutLeaf>, dividers: List<Double>) {
@@ -219,17 +241,17 @@ data class DragLayoutNode(
      *
      * @return a list containing the bounds of each node in order
      */
-    fun getChildrenBounds(box: Rectangle2D): List<Rectangle2D> {
+    fun getChildrenBounds(box: Rectangle2D): List<Rectangle2D?> {
         validateArrayLengths()
 
-        val rects = ArrayList<Rectangle2D>(children.size)
+        val rects = ArrayList<Rectangle2D?>(children.size)
         var s = 0.0
 
         for (i in dividerLocations.indices) {
             rects.add(
                 when (orientation) {
-                    Orientation.HORIZONTAL -> Rectangle2D(s * box.width + box.minX, box.minY, (dividerLocations[i] - s) * box.width, box.height)
-                    Orientation.VERTICAL -> Rectangle2D(box.minX, s * box.height + box.minY, box.width, (dividerLocations[i] - s) * box.height)
+                    Orientation.HORIZONTAL -> safeRect(s * box.width + box.minX, box.minY, (dividerLocations[i] - s) * box.width, box.height)
+                    Orientation.VERTICAL -> safeRect(box.minX, s * box.height + box.minY, box.width, (dividerLocations[i] - s) * box.height)
                 }
             )
             s = dividerLocations[i]
@@ -237,20 +259,20 @@ data class DragLayoutNode(
 
         rects.add(
             when (orientation) {
-                Orientation.HORIZONTAL -> Rectangle2D(s * box.width + box.minX, box.minY, (1.0 - s) * box.width, box.height)
-                Orientation.VERTICAL -> Rectangle2D(box.minX, s * box.height + box.minY, box.width, (1.0 - s) * box.height)
+                Orientation.HORIZONTAL -> safeRect(s * box.width + box.minX, box.minY, (1.0 - s) * box.width, box.height)
+                Orientation.VERTICAL -> safeRect(box.minX, s * box.height + box.minY, box.width, (1.0 - s) * box.height)
             }
         )
 
         for (i in dividerLocations.indices) {
             when (orientation) {
                 Orientation.HORIZONTAL -> {
-                    rects[i] = Rectangle2D(rects[i].minX, rects[i].minY, rects[i].width - DIVIDER_SIZE / 2, rects[i].height)
-                    rects[i + 1] = Rectangle2D(rects[i + 1].minX + DIVIDER_SIZE / 2, rects[i + 1].minY, rects[i + 1].width, rects[i + 1].height)
+                    rects[i] = rects[i]?.let { safeRect(it.minX, it.minY, it.width - DIVIDER_SIZE / 2, it.height) }
+                    rects[i + 1] = rects[i + 1]?.let { safeRect(it.minX + DIVIDER_SIZE / 2, it.minY, it.width, it.height) }
                 }
                 Orientation.VERTICAL -> {
-                    rects[i] = Rectangle2D(rects[i].minX, rects[i].minY, rects[i].width, rects[i].height - DIVIDER_SIZE / 2)
-                    rects[i + 1] = Rectangle2D(rects[i + 1].minX, rects[i + 1].minY + DIVIDER_SIZE / 2, rects[i + 1].width, rects[i + 1].height)
+                    rects[i] = rects[i]?.let { safeRect(it.minX, it.minY, it.width, it.height - DIVIDER_SIZE / 2) }
+                    rects[i + 1] = rects[i + 1]?.let { safeRect(it.minX, it.minY + DIVIDER_SIZE / 2, it.width, it.height) }
                 }
             }
         }
@@ -278,6 +300,11 @@ data class DragLayoutNode(
         }
 
         return rects
+    }
+
+    private fun safeRect(x: Double, y: Double, w: Double, h: Double): Rectangle2D? {
+        if (w <= 0 || h <= 0) return null
+        return Rectangle2D(x, y, w, h)
     }
 
     /**
