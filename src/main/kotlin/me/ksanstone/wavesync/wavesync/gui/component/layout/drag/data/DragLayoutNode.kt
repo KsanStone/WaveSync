@@ -151,7 +151,8 @@ data class DragLayoutNode(
           this.dividerLocations = MutableList(children.size - 1) { (it + 1) / children.size.toDouble() }
     }
 
-    private fun rangeValid(numbers: List<Double>): Boolean {
+    private fun rangeValid(numbers: List<Double>, expectedLength: Int = 0): Boolean {
+        if (expectedLength == 0 && numbers.isEmpty()) return true
         for (i in 0 until numbers.size - 1) {
             if (numbers[i] >= numbers[i + 1] || numbers[i] <= 0 || numbers[i] >= 1) {
                 return false
