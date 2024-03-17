@@ -6,19 +6,27 @@ import javafx.event.EventType
 import javafx.geometry.Bounds
 import javafx.geometry.Point2D
 import javafx.scene.Node
+import javafx.scene.Scene
 import javafx.scene.control.SplitPane
 import javafx.scene.input.DragEvent
 import javafx.scene.layout.Pane
+import javafx.stage.Stage
 import javafx.stage.Window
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
+import me.ksanstone.wavesync.wavesync.gui.initializer.WaveSyncStageInitializer
 import org.springframework.stereotype.Service
+import java.util.UUID
 
 @Service
-class GlobalLayoutService {
+class GlobalLayoutService(
+    private val waveSyncStageInitializer: WaveSyncStageInitializer
+) {
 
     private lateinit var windowList: ObservableList<Window>
     var currentTransaction: NodeTransaction? = null
+    var noAutoRemove = mutableSetOf<DragLayout>()
+    private val stageMap = mutableMapOf<DragLayout, Stage>()
 
     @PostConstruct
     fun initialize() {
@@ -98,13 +106,31 @@ class GlobalLayoutService {
         val targetNode = getNode(DragLayout::class.java, p)?.second
 
         if (targetNode == null) {
-            // ...
+            val cutNode = currentTransaction!!.origin.layoutRoot.cutComponentLeaf(currentTransaction!!.nodeId) ?: return
+            val newLayout = DragLayout()
+            newLayout.layoutRoot.children.add(cutNode)
+            newLayout.fullUpdate()
+
+            val stage = waveSyncStageInitializer.createGeneralPurposeAppFrame(UUID.randomUUID().toString(), true)
+            stageMap[newLayout] = stage
+            val scene = Scene(newLayout)
+            stage.scene = scene
+            stage.width = cutNode.component!!.boundsInLocal.width
+            stage.height = cutNode.component!!.boundsInLocal.height
+            stage.x = p.x - stage.width / 2
+            stage.y = p.y - stage.height / 2
+            stage.show()
         } else {
             fakeDragEvent(
                 DragEvent.DRAG_DROPPED, p, targetNode, currentTransaction!!.origin
                     .layoutRoot
             )
             fakeDragEvent(DragEvent.DRAG_EXITED, p, targetNode)
+            targetNode.fullUpdate()
+        }
+        currentTransaction!!.origin.fullUpdate()
+        if (currentTransaction!!.origin.layoutRoot.isEmpty() && !noAutoRemove.contains(currentTransaction!!.origin)) {
+            stageMap.remove(currentTransaction!!.origin)?.close()
         }
     }
 

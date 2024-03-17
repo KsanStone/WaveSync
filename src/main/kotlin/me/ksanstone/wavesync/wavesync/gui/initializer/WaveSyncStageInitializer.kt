@@ -7,6 +7,7 @@ import javafx.scene.image.Image
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCombination
 import javafx.scene.input.KeyEvent
+import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -26,7 +27,54 @@ class WaveSyncStageInitializer(
 
     override fun onApplicationEvent(event: StageReadyEvent) {
         val stage = event.stage
+        registerAccelerators(stage)
 
+        val root: Parent =
+            FXMLLoader.load(
+                javaClass.classLoader.getResource("layout/index.fxml"),
+                localizationService.getDefault()
+            )
+        val scene = Scene(root)
+
+        themeService.applyCurrent()
+        stageSizingService.registerStageSize(stage, "main")
+
+        stage.title = "WaveSync"
+        stage.minWidth = 500.0
+        stage.minHeight = 350.0
+        stage.icons.add(Image("icon.png"))
+        stage.scene = scene
+        stage.show()
+    }
+
+    /**
+     * Prepare a stage for general usage
+     *
+     * @param id used to remember the stage's size
+     * @param autoDispose if true, the stage will be automatically deregistered
+     * from the stage sizing service upon closing
+     *
+     * @return The stage
+     */
+    fun createGeneralPurposeAppFrame(id: String, autoDispose: Boolean): Stage {
+        val stage = Stage()
+        registerAccelerators(stage)
+        stageSizingService.registerStageSize(stage, id)
+
+        stage.icons.add(Image("icon.png"))
+        stage.minWidth = 500.0
+        stage.minHeight = 350.0
+
+        if (autoDispose) {
+            stage.showingProperty().addListener { _, _, v ->
+                if (!v) stageSizingService.unregisterStage(id)
+            }
+        }
+
+        return stage
+    }
+
+    fun registerAccelerators(stage: Stage) {
         stage.fullScreenExitKeyCombination = KeyCombination.NO_MATCH
         stage.addEventHandler(KeyEvent.KEY_PRESSED) { keyEvent ->
             if (KeyCode.F11 == keyEvent.code) {
@@ -42,23 +90,5 @@ class WaveSyncStageInitializer(
                 audioCaptureService.paused.value = false
             }
         }
-
-        val root: Parent =
-            FXMLLoader.load(
-                javaClass.classLoader.getResource("layout/index.fxml"),
-                localizationService.getDefault()
-            )
-        val scene = Scene(root)
-
-        themeService.applyCurrent()
-
-        stageSizingService.registerStageSize(stage, "main")
-
-        stage.title = "WaveSync"
-        stage.minWidth = 500.0
-        stage.minHeight = 350.0
-        stage.icons.add(Image("icon.png"))
-        stage.scene = scene
-        stage.show()
     }
 }

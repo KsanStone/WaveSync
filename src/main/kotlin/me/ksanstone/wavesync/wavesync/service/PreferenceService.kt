@@ -120,6 +120,10 @@ class PreferenceService {
         return Color.rgb(r, g, b)
     }
 
+    fun unregisterObjectTree(clazz: Class<*>? = null, id: String = DEFAULT_ID) {
+        getPreferences(clazz, id).removeNode()
+    }
+
     companion object {
         const val DEFAULT_ID = "main"
     }

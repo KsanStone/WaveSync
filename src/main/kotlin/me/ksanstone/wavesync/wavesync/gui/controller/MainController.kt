@@ -4,7 +4,6 @@ import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
-import javafx.scene.control.Button
 import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
@@ -22,7 +21,6 @@ import me.ksanstone.wavesync.wavesync.service.*
 import java.net.URL
 import java.util.*
 import java.util.concurrent.CompletableFuture
-import kotlin.time.measureTimedValue
 
 class MainController : Initializable {
 
@@ -61,6 +59,7 @@ class MainController : Initializable {
     private var waveformVisualizer: WaveformVisualizer
     private var fftInfo: FFTInfo
     private var layoutService: LayoutStorageService
+    private var globalLayoutService: GlobalLayoutService
     private var runtimeInfo: RuntimeInfo
     private lateinit var resources: ResourceBundle
     val infoShown = SimpleBooleanProperty(false)
@@ -73,6 +72,7 @@ class MainController : Initializable {
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
+        globalLayoutService = WaveSyncBootApplication.applicationContext.getBean(GlobalLayoutService::class.java)
         waveformVisualizer = WaveformVisualizer()
         barVisualizer = BarVisualizer()
         fftInfo = FFTInfo()
@@ -209,6 +209,7 @@ class MainController : Initializable {
         val layout = layoutService.getMainLayout(waveformVisualizer, barVisualizer, fftInfo, runtimeInfo)
         initializeWindowControls(layout)
         visualizerPane.items.add(layout)
+        globalLayoutService.noAutoRemove.add(layout)
 
         val masterVolumeVisualizer = VolumeVisualizer()
         audioCaptureService.channelVolumes.listeners.add { store ->
@@ -218,12 +219,7 @@ class MainController : Initializable {
         bottomBar.children.add(masterVolumeVisualizer)
         bottomBar.visibleProperty().bind(recordingModeService.recordingMode.not())
         bottomBar.managedProperty().bind(bottomBar.visibleProperty())
-        bottomBar.children.addAll(Button("kys nigger").apply { this.setOnAction {
-                println(measureTimedValue {gls.getBoundedNodes(DragLayout::class.java)})
-        } })
     }
-
-    private val gls = WaveSyncBootApplication.applicationContext.getBean(GlobalLayoutService::class.java)
 
     companion object {
         lateinit var instance: MainController
