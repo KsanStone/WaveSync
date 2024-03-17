@@ -16,7 +16,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualize
 import org.springframework.stereotype.Service
 
 @Service
-class LayoutService(
+class LayoutStorageService(
     private val layoutSerializerService: DragLayoutSerializerService,
     private val preferenceService: PreferenceService
 ) {
@@ -78,5 +78,6 @@ class LayoutService(
         const val MAIN_FFT_INFO_ID = "fftInfo"
         const val MAIN_RUNTIME_INFO_ID = "runtimeInfo"
     }
+
 
 }

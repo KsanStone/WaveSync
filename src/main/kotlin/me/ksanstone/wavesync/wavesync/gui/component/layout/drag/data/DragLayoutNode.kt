@@ -141,6 +141,11 @@ data class DragLayoutNode(
         validateDividers()
     }
 
+    fun afterTransition() {
+        simplify()
+        createDividers()
+    }
+
     /**
      * Fixes divider locations
      * If the dividers mismatch the nodes, a new set is created

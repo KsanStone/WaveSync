@@ -12,9 +12,11 @@ import javafx.scene.input.DragEvent
 import javafx.scene.input.TransferMode
 import javafx.scene.layout.Pane
 import javafx.scene.transform.Transform
+import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DIVIDER_SIZE
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
+import me.ksanstone.wavesync.wavesync.service.GlobalLayoutService
 
 class DragLayout : Pane() {
 
@@ -24,12 +26,15 @@ class DragLayout : Pane() {
     private val drawCueRect: Pane = Pane()
     private val layoutLock = Object()
     private val layoutChangeListeners = mutableListOf<LayoutChangeListener>()
+    private val gls = WaveSyncBootApplication.applicationContext.getBean(GlobalLayoutService::class.java)
+    private val multiScreen = SimpleBooleanProperty(true)
 
     init {
         setOnDragOver(this::onDragOver)
         setOnDragEntered { }
-        setOnDragExited { dragCueShowing.value = false }
+        setOnDragExited { dragExited() }
         setOnDragDropped(this::dropHandler)
+
         drawCueRect.visibleProperty().bind(dragCueShowing)
         drawCueRect.styleClass.add("drag-cue")
         styleClass.setAll("drag-layout")
@@ -53,34 +58,51 @@ class DragLayout : Pane() {
     }
 
     private fun onDragOver(e: DragEvent) {
-        dragCueShowing.value = false
-        val noteId = decodeNoteId(e.dragboard.string) ?: return
-        val intersectedNode = layoutRoot.intersect(xyToAbsolute(Point2D(e.x, e.y)), getDividerMargin()) ?: return
-        if (intersectedNode.boundCache == null) return
-        if (noteId == intersectedNode.id) return
+        if (dragOver(Point2D(e.x, e.y), e.dragboard.string))
+            e.acceptTransferModes(TransferMode.MOVE)
+    }
 
-        e.acceptTransferModes(TransferMode.MOVE)
+    fun dragExited() {
+        dragCueShowing.value = false
+    }
+
+    fun dragOver(p: Point2D, nodeId: String): Boolean {
+        dragCueShowing.value = false
+        val noteId = decodeNoteId(nodeId) ?: return false
+        val intersectedNode =
+            layoutRoot.intersect(xyToAbsolute(p), getDividerMargin()) ?: return false
+        if (intersectedNode.boundCache == null) return false
+        if (noteId == intersectedNode.id) return false
+
+
         var queBounds = intersectedNode.boundCache!!
-        val side = intersectedNode.getSideSections().intersect(Point2D(e.x, e.y))
+        val side = intersectedNode.getSideSections().intersect(p)
         if (side != null)
             queBounds = side.first
 
         drawCueRect.resizeRelocate(queBounds)
         dragCueShowing.value = true
+        return true
     }
 
     private fun dropHandler(e: DragEvent) {
-        try {
-            val noteId = decodeNoteId(e.dragboard.string) ?: return
-            val intersectedNode = layoutRoot.intersect(xyToAbsolute(Point2D(e.x, e.y)), getDividerMargin()) ?: return
-            if (intersectedNode.boundCache == null) return
-            if (noteId == intersectedNode.id) return
+        val nodeId = decodeNoteId(e.dragboard.string) ?: return
+        dragDropped(layoutRoot, nodeId, Point2D(e.x, e.y))
+    }
 
-            val side = intersectedNode.getSideSections().intersect(Point2D(e.x, e.y))
+    fun dragDropped(sourceLayout: DragLayoutNode, nodeId: String, p: Point2D) {
+        val x = p.x
+        val y = p.y
+        try {
+            val intersectedNode = layoutRoot.intersect(xyToAbsolute(Point2D(x, y)), getDividerMargin()) ?: return
+            if (intersectedNode.boundCache == null) return
+            if (nodeId == intersectedNode.id) return
+
+            val side = intersectedNode.getSideSections().intersect(Point2D(x, y))
             if (side != null) {
-                splitSide(side.second, noteId, intersectedNode.id)
+                splitSide(sourceLayout, side.second, nodeId, intersectedNode.id)
             } else {
-                swapNodes(noteId, intersectedNode.id)
+                swapNodes(sourceLayout, nodeId, intersectedNode.id)
             }
             layoutChangeListeners.fire(layoutRoot)
         } catch (e: Exception) {
@@ -88,20 +110,21 @@ class DragLayout : Pane() {
         }
     }
 
-    private fun swapNodes(target: String, dest: String) {
+    private fun swapNodes(sourceLayout: DragLayoutNode, target: String, dest: String) {
         val targetNode = layoutRoot.findComponentLeaf(target) ?: return
-        val destNode = layoutRoot.findComponentLeaf(dest) ?: return
+        val destNode = sourceLayout.findComponentLeaf(dest) ?: return
         targetNode.swapOnto(destNode)
         layoutChildren()
     }
 
-    private fun splitSide(side: Side, source: String, target: String) {
+    private fun splitSide(sourceLayout: DragLayoutNode, side: Side, source: String, target: String) {
         synchronized(layoutLock) {
-            val sourceNode = layoutRoot.cutComponentLeaf(source) ?: return
+            val sourceNode = sourceLayout.cutComponentLeaf(source) ?: return
             val targetNode = layoutRoot.findComponentLeaf(target) ?: return
             targetNode.insertAtSide(side, sourceNode)
-            layoutRoot.simplify()
-            layoutRoot.createDividers()
+            layoutRoot.afterTransition()
+            if (sourceLayout != layoutRoot)
+                sourceLayout.afterTransition()
             updateChildren()
             layoutChildren()
         }
@@ -121,10 +144,20 @@ class DragLayout : Pane() {
         layoutRoot.createDividers()
         layoutRoot.iterateComponents {
             it.node.setOnDragDetected { _ ->
-                val db = it.node.startDragAndDrop(TransferMode.MOVE)
-                val content = ClipboardContent()
-                content.putString(encodeNodeId(it.nodeId))
-                db.setContent(content)
+                if (multiScreen.get()) {
+                    gls.startTransaction(it.nodeId, this)
+                } else {
+                    val db = it.node.startDragAndDrop(TransferMode.MOVE)
+                    val content = ClipboardContent()
+                    content.putString(encodeNodeId(it.nodeId))
+                    db.setContent(content)
+                }
+            }
+            it.node.setOnMouseDragged { e ->
+                if (multiScreen.get()) gls.updateTransaction(Point2D(e.screenX, e.screenY))
+            }
+            it.node.setOnMouseReleased { e ->
+                if (multiScreen.get()) gls.finishTransaction(Point2D(e.screenX, e.screenY))
             }
             this.children.add(it.node)
         }
@@ -195,10 +228,6 @@ class DragLayout : Pane() {
         return Point2D(DIVIDER_SIZE / width, DIVIDER_SIZE / height)
     }
 
-    private fun encodeNodeId(id: String): String {
-        return "<node-transfer-$id>"
-    }
-
     private fun decodeNoteId(encoded: String): String? {
         if (encoded.startsWith("<node-transfer-") && encoded.endsWith(">"))
             return encoded.substring(15, encoded.length - 1)
@@ -208,6 +237,12 @@ class DragLayout : Pane() {
     @FunctionalInterface
     fun interface LayoutChangeListener {
         fun change(node: DragLayoutNode)
+    }
+
+    companion object {
+        fun encodeNodeId(id: String): String {
+            return "<node-transfer-$id>"
+        }
     }
 }
 

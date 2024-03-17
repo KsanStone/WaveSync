@@ -4,6 +4,7 @@ import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
+import javafx.scene.control.Button
 import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
@@ -21,6 +22,7 @@ import me.ksanstone.wavesync.wavesync.service.*
 import java.net.URL
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import kotlin.time.measureTimedValue
 
 class MainController : Initializable {
 
@@ -58,14 +60,14 @@ class MainController : Initializable {
     private var barVisualizer: BarVisualizer
     private var waveformVisualizer: WaveformVisualizer
     private var fftInfo: FFTInfo
-    private var layoutService: LayoutService
+    private var layoutService: LayoutStorageService
     private var runtimeInfo: RuntimeInfo
     private lateinit var resources: ResourceBundle
     val infoShown = SimpleBooleanProperty(false)
 
     init {
         instance = this
-        layoutService = WaveSyncBootApplication.applicationContext.getBean(LayoutService::class.java)
+        layoutService = WaveSyncBootApplication.applicationContext.getBean(LayoutStorageService::class.java)
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         recordingModeService = WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class.java)
         menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
@@ -150,25 +152,25 @@ class MainController : Initializable {
         runtimeInfoOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(RuntimeInfo::class.java))
 
         barOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(barVisualizer, LayoutService.MAIN_BAR_VISUALIZER_ID)
+            if (v) layout.addComponent(barVisualizer, LayoutStorageService.MAIN_BAR_VISUALIZER_ID)
             else layout.layoutRoot.removeComponentOfClass(BarVisualizer::class.java)
             layout.fullUpdate()
         }
 
         waveformOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(waveformVisualizer, LayoutService.MAIN_WAVEFORM_VISUALIZER_ID)
+            if (v) layout.addComponent(waveformVisualizer, LayoutStorageService.MAIN_WAVEFORM_VISUALIZER_ID)
             else layout.layoutRoot.removeComponentOfClass(WaveformVisualizer::class.java)
             layout.fullUpdate()
         }
 
         fftInfoOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(fftInfo, LayoutService.MAIN_FFT_INFO_ID)
+            if (v) layout.addComponent(fftInfo, LayoutStorageService.MAIN_FFT_INFO_ID)
             else layout.layoutRoot.removeComponentOfClass(FFTInfo::class.java)
             layout.fullUpdate()
         }
 
         runtimeInfoOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(runtimeInfo, LayoutService.MAIN_RUNTIME_INFO_ID)
+            if (v) layout.addComponent(runtimeInfo, LayoutStorageService.MAIN_RUNTIME_INFO_ID)
             else layout.layoutRoot.removeComponentOfClass(RuntimeInfo::class.java)
             layout.fullUpdate()
         }
@@ -216,7 +218,12 @@ class MainController : Initializable {
         bottomBar.children.add(masterVolumeVisualizer)
         bottomBar.visibleProperty().bind(recordingModeService.recordingMode.not())
         bottomBar.managedProperty().bind(bottomBar.visibleProperty())
+        bottomBar.children.addAll(Button("kys nigger").apply { this.setOnAction {
+                println(measureTimedValue {gls.getBoundedNodes(DragLayout::class.java)})
+        } })
     }
+
+    private val gls = WaveSyncBootApplication.applicationContext.getBean(GlobalLayoutService::class.java)
 
     companion object {
         lateinit var instance: MainController
