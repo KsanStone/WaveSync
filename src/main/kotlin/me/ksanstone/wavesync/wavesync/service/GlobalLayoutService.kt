@@ -94,6 +94,7 @@ class GlobalLayoutService(
             if (currentTransaction!!.lastSeenLayout == node.second) {
                 fakeDragEvent(DragEvent.DRAG_OVER, p, node.second)
             } else {
+                currentTransaction!!.lastSeenLayout?.let { fakeDragEvent(DragEvent.DRAG_EXITED, p, it) }
                 fakeDragEvent(DragEvent.DRAG_ENTERED, p, node.second)
                 currentTransaction!!.lastSeenLayout = node.second
             }
