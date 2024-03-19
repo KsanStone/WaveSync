@@ -62,6 +62,7 @@ class WaveSyncStageInitializer(
         stageSizingService.registerStageSize(stage, id)
 
         stage.icons.add(Image("icon.png"))
+        stage.title = "WaveSync"
         stage.minWidth = 500.0
         stage.minHeight = 350.0
 

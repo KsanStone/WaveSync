@@ -20,7 +20,8 @@ import java.util.UUID
 
 @Service
 class GlobalLayoutService(
-    private val waveSyncStageInitializer: WaveSyncStageInitializer
+    private val waveSyncStageInitializer: WaveSyncStageInitializer,
+    private val layoutStorageService: LayoutStorageService
 ) {
 
     private lateinit var windowList: ObservableList<Window>
@@ -108,9 +109,7 @@ class GlobalLayoutService(
 
         if (targetNode == null) {
             val cutNode = currentTransaction!!.origin.layoutRoot.cutComponentLeaf(currentTransaction!!.nodeId) ?: return
-            val newLayout = DragLayout()
-            newLayout.layoutRoot.children.add(cutNode)
-            newLayout.fullUpdate()
+            val newLayout = layoutStorageService.constructSideLayout(cutNode)
 
             val stage = waveSyncStageInitializer.createGeneralPurposeAppFrame(UUID.randomUUID().toString(), true)
             stageMap[newLayout] = stage

@@ -21,11 +21,30 @@ class LayoutStorageService(
     private val preferenceService: PreferenceService
 ) {
 
-    private val mainLayout: StringProperty = SimpleStringProperty("")
+    private val layoutStorageProperty: StringProperty = SimpleStringProperty("")
+    private val layouts: MutableList<AppLayout> = mutableListOf()
+    private lateinit var nodeFactory: DragLayoutSerializerService.NodeFactory
 
     @PostConstruct
     fun init() {
-        preferenceService.registerProperty(mainLayout, "layout", this::class.java, "main")
+        preferenceService.registerProperty(layoutStorageProperty, "layout", this::class.java, "main")
+    }
+
+    fun createDefaultNodeFactory(
+        wVis: WaveformVisualizer,
+        bVis: BarVisualizer,
+        fftInfo: FFTInfo,
+        runtimeInfo: RuntimeInfo
+    ) {
+        this.nodeFactory =
+            DragLayoutSerializerService.NodeFactory {
+                mapOf<String, Node>(
+                    MAIN_WAVEFORM_VISUALIZER_ID to wVis,
+                    MAIN_BAR_VISUALIZER_ID to bVis,
+                    MAIN_FFT_INFO_ID to fftInfo,
+                    MAIN_RUNTIME_INFO_ID to runtimeInfo
+                )[it]
+            }
     }
 
     fun constructDefaultLayout(wVis: WaveformVisualizer, bVis: BarVisualizer): DragLayoutNode {
@@ -44,32 +63,30 @@ class LayoutStorageService(
         )
     }
 
-    fun getMainLayout(
-        wVis: WaveformVisualizer,
-        bVis: BarVisualizer,
-        fftInfo: FFTInfo,
-        runtimeInfo: RuntimeInfo
-    ): DragLayout {
+    fun getMainLayout(): DragLayout {
         val node = try {
-            layoutSerializerService.deserialize(mainLayout.get()) {
-                mapOf<String, Node>(
-                    MAIN_WAVEFORM_VISUALIZER_ID to wVis,
-                    MAIN_BAR_VISUALIZER_ID to bVis,
-                    MAIN_FFT_INFO_ID to fftInfo,
-                    MAIN_RUNTIME_INFO_ID to runtimeInfo
-                )[it]
-            }
+            layoutSerializerService.deserialize(layoutStorageProperty.get(), nodeFactory)
         } catch (e: Exception) {
             println(e)
-            constructDefaultLayout(wVis, bVis)
+            constructDefaultLayout(
+                nodeFactory.createNode(MAIN_WAVEFORM_VISUALIZER_ID) as WaveformVisualizer, nodeFactory.createNode(
+                    MAIN_BAR_VISUALIZER_ID) as BarVisualizer
+            )
         }
         val layout = DragLayout()
         layout.load(node)
         layout.addLayoutChangeListener {
-            mainLayout.set(layoutSerializerService.serialize(it))
+            layoutStorageProperty.set(layoutSerializerService.serialize(it))
         }
         layout.layoutRoot.simplify()
         return layout
+    }
+
+    fun constructSideLayout(cutNode: DragLayoutLeaf): DragLayout {
+        val newLayout = DragLayout()
+        newLayout.layoutRoot.children.add(cutNode)
+        newLayout.fullUpdate()
+        return newLayout
     }
 
     companion object {
@@ -78,6 +95,10 @@ class LayoutStorageService(
         const val MAIN_FFT_INFO_ID = "fftInfo"
         const val MAIN_RUNTIME_INFO_ID = "runtimeInfo"
     }
-
-
 }
+
+data class AppLayout(
+    val id: String,
+    val windowId: String,
+    val layout: DragLayout
+)

@@ -206,7 +206,8 @@ class MainController : Initializable {
         waveformVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-        val layout = layoutService.getMainLayout(waveformVisualizer, barVisualizer, fftInfo, runtimeInfo)
+        layoutService.createDefaultNodeFactory(waveformVisualizer, barVisualizer, fftInfo, runtimeInfo)
+        val layout = layoutService.getMainLayout()
         initializeWindowControls(layout)
         visualizerPane.items.add(layout)
         globalLayoutService.noAutoRemove.add(layout)
