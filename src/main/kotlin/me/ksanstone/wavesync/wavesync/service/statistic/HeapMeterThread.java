@@ -1,6 +1,9 @@
 package me.ksanstone.wavesync.wavesync.service.statistic;
 
 import com.sun.management.ThreadMXBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigInteger;
 import java.util.List;
 import java.util.function.LongConsumer;
@@ -12,6 +15,8 @@ import java.lang.management.ManagementFactory;
  * <a href="https://github.com/clojure-goes-fast/jvm-alloc-rate-meter/blob/master/src/jvm_alloc_rate_meter/MeterThread.java">Borrowed from</a>
  */
 public class HeapMeterThread extends Thread {
+
+    private final Logger logger = LoggerFactory.getLogger(HeapMeterThread.class);
 
     private final MemoryMXBean memoryBean;
     private final ThreadMXBean threadBean;
@@ -86,7 +91,7 @@ public class HeapMeterThread extends Thread {
                 lastThreadAllocated = threadAllocated;
             }
         } catch (InterruptedException e) {
-            System.err.println("MeterThread terminating...");
+            logger.warn("MeterThread interrupted, terminating...");
         }
     }
 

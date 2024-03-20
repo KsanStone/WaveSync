@@ -13,8 +13,10 @@ import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.StageSizingService
 import me.ksanstone.wavesync.wavesync.service.ThemeService
+import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
+import java.util.function.Consumer
 
 
 @Component
@@ -24,6 +26,8 @@ class WaveSyncStageInitializer(
     private val stageSizingService: StageSizingService,
     private val audioCaptureService: AudioCaptureService
 ) : ApplicationListener<StageReadyEvent> {
+
+    private val logger = LoggerFactory.getLogger(this.javaClass)
 
     override fun onApplicationEvent(event: StageReadyEvent) {
         val stage = event.stage
@@ -45,6 +49,7 @@ class WaveSyncStageInitializer(
         stage.icons.add(Image("icon.png"))
         stage.scene = scene
         stage.show()
+        logger.info("Showing stage")
     }
 
     /**
@@ -56,7 +61,11 @@ class WaveSyncStageInitializer(
      *
      * @return The stage
      */
-    fun createGeneralPurposeAppFrame(id: String, autoDispose: Boolean): Stage {
+    fun createGeneralPurposeAppFrame(
+        id: String,
+        autoDispose: AutoDisposalMode = AutoDisposalMode.NONE,
+        autoDisposalListener: Consumer<Unit> = Consumer {}
+    ): Stage {
         val stage = Stage()
         registerAccelerators(stage)
         stageSizingService.registerStageSize(stage, id)
@@ -66,9 +75,17 @@ class WaveSyncStageInitializer(
         stage.minWidth = 500.0
         stage.minHeight = 350.0
 
-        if (autoDispose) {
+        if (autoDispose == AutoDisposalMode.USER) {
+            stage.setOnCloseRequest {
+                stageSizingService.unregisterStage(id)
+                autoDisposalListener.accept(Unit)
+            }
+        } else if (autoDispose == AutoDisposalMode.ALL) {
             stage.showingProperty().addListener { _, _, v ->
-                if (!v) stageSizingService.unregisterStage(id)
+                if (!v) {
+                    stageSizingService.unregisterStage(id)
+                    autoDisposalListener.accept(Unit)
+                }
             }
         }
 
@@ -92,4 +109,18 @@ class WaveSyncStageInitializer(
             }
         }
     }
+}
+
+enum class AutoDisposalMode {
+    NONE,
+
+    /**
+     * Will not dispose upon app close
+     */
+    USER,
+
+    /**
+     * Will dispose upon app close
+     */
+    ALL
 }

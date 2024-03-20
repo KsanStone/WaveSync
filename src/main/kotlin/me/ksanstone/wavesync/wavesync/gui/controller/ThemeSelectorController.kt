@@ -44,10 +44,7 @@ class ThemeSelectorController : Initializable {
                 findPair(v)
                 changeTheme()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            System.err.println("Apparently we are running in scene builder")
-        }
+        } catch (ignored: Exception) {}
     }
 
     private fun findPair(name: String) {

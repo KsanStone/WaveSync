@@ -510,6 +510,10 @@ data class DragLayoutNode(
         if (dividerLocations.size != children.size - 1 && (dividerLocations.size + children.size) != 0)
             throw IllegalArgumentException("Divider [${dividerLocations.size}] and children [${children.size}] lists are mismatched")
     }
+
+    fun toLeaf(): DragLayoutLeaf {
+        return DragLayoutLeaf(node = this)
+    }
 }
 
 data class ComponentCallbackResult(

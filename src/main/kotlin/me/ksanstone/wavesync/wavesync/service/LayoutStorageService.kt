@@ -13,6 +13,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutL
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -21,9 +22,11 @@ class LayoutStorageService(
     private val preferenceService: PreferenceService
 ) {
 
+    private val logger = LoggerFactory.getLogger(this.javaClass)
     private val layoutStorageProperty: StringProperty = SimpleStringProperty("")
-    private val layouts: MutableList<AppLayout> = mutableListOf()
     private lateinit var nodeFactory: DragLayoutSerializerService.NodeFactory
+
+    val layouts: MutableList<AppLayout> = mutableListOf()
 
     @PostConstruct
     fun init() {
@@ -47,6 +50,21 @@ class LayoutStorageService(
             }
     }
 
+    fun loadLayouts() {
+        try {
+            val layoutData = layoutSerializerService.deserializeFull(layoutStorageProperty.get(), nodeFactory)
+            layoutData.forEach {
+                layouts.add(
+                    AppLayout(it.first, it.second, createLayout(it.third.toLeaf())).apply {
+                        this.layout.addLayoutChangeListener { save() }
+                    }
+                )
+            }
+        } catch (e: Exception) {
+            logger.warn("Layout load fail", e)
+        }
+    }
+
     fun constructDefaultLayout(wVis: WaveformVisualizer, bVis: BarVisualizer): DragLayoutNode {
         return DragLayoutNode(
             orientation = Orientation.VERTICAL,
@@ -64,29 +82,50 @@ class LayoutStorageService(
     }
 
     fun getMainLayout(): DragLayout {
-        val node = try {
-            layoutSerializerService.deserialize(layoutStorageProperty.get(), nodeFactory)
-        } catch (e: Exception) {
-            println(e)
-            constructDefaultLayout(
+        return layouts.stream().filter { it.id == "main" }.findFirst().orElseGet {
+            val node = constructDefaultLayout(
                 nodeFactory.createNode(MAIN_WAVEFORM_VISUALIZER_ID) as WaveformVisualizer, nodeFactory.createNode(
-                    MAIN_BAR_VISUALIZER_ID) as BarVisualizer
+                    MAIN_BAR_VISUALIZER_ID
+                ) as BarVisualizer
             )
+            val layout = DragLayout()
+            layout.load(node)
+            layout.layoutRoot.simplify()
+            AppLayout("main", null, layout).also { al ->
+                layout.addLayoutChangeListener { layoutChanged(al) }
+                layouts.add(al)
+            }
+        }.layout
+    }
+
+    fun constructSideLayout(cutNode: DragLayoutLeaf, windowId: String): DragLayout {
+        val newLayout = createLayout(cutNode)
+        AppLayout(windowId, windowId, newLayout).also { al ->
+            newLayout.addLayoutChangeListener { layoutChanged(al) }
+            layouts.add(al)
         }
+        save()
+        return newLayout
+    }
+
+    fun destructLayout(layout: DragLayout) {
+        layouts.removeIf { it.layout == layout }
+        save()
+    }
+
+    protected fun createLayout(node: DragLayoutLeaf): DragLayout {
         val layout = DragLayout()
-        layout.load(node)
-        layout.addLayoutChangeListener {
-            layoutStorageProperty.set(layoutSerializerService.serialize(it))
-        }
-        layout.layoutRoot.simplify()
+        layout.layoutRoot.children.add(node)
+        layout.fullUpdate()
         return layout
     }
 
-    fun constructSideLayout(cutNode: DragLayoutLeaf): DragLayout {
-        val newLayout = DragLayout()
-        newLayout.layoutRoot.children.add(cutNode)
-        newLayout.fullUpdate()
-        return newLayout
+    protected fun layoutChanged(appLayout: AppLayout) {
+        save()
+    }
+
+    protected fun save() {
+        layoutStorageProperty.set(layoutSerializerService.serializeFull(layouts))
     }
 
     companion object {
@@ -99,6 +138,6 @@ class LayoutStorageService(
 
 data class AppLayout(
     val id: String,
-    val windowId: String,
+    val windowId: String?,
     val layout: DragLayout
 )

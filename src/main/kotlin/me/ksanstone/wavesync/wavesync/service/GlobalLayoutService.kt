@@ -1,6 +1,7 @@
 package me.ksanstone.wavesync.wavesync.service
 
 import jakarta.annotation.PostConstruct
+import javafx.application.Platform
 import javafx.collections.ObservableList
 import javafx.event.EventType
 import javafx.geometry.Bounds
@@ -14,9 +15,10 @@ import javafx.stage.Stage
 import javafx.stage.Window
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
+import me.ksanstone.wavesync.wavesync.gui.initializer.AutoDisposalMode
 import me.ksanstone.wavesync.wavesync.gui.initializer.WaveSyncStageInitializer
 import org.springframework.stereotype.Service
-import java.util.UUID
+import java.util.*
 
 @Service
 class GlobalLayoutService(
@@ -76,7 +78,11 @@ class GlobalLayoutService(
     private fun fakeDragEvent(type: EventType<DragEvent>, p: Point2D, it: DragLayout, root: DragLayoutNode? = null) {
         when (type) {
             DragEvent.DRAG_EXITED -> it.dragExited()
-            DragEvent.DRAG_OVER -> it.dragOver(it.screenToLocal(p), DragLayout.encodeNodeId(currentTransaction!!.nodeId))
+            DragEvent.DRAG_OVER -> it.dragOver(
+                it.screenToLocal(p),
+                DragLayout.encodeNodeId(currentTransaction!!.nodeId)
+            )
+
             DragEvent.DRAG_ENTERED -> {}
             DragEvent.DRAG_DROPPED -> it.dragDropped(root!!, currentTransaction!!.nodeId, it.screenToLocal(p))
         }
@@ -109,9 +115,11 @@ class GlobalLayoutService(
 
         if (targetNode == null) {
             val cutNode = currentTransaction!!.origin.layoutRoot.cutComponentLeaf(currentTransaction!!.nodeId) ?: return
-            val newLayout = layoutStorageService.constructSideLayout(cutNode)
+            val id = UUID.randomUUID().toString()
+            val newLayout = layoutStorageService.constructSideLayout(cutNode, id)
 
-            val stage = waveSyncStageInitializer.createGeneralPurposeAppFrame(UUID.randomUUID().toString(), true)
+            val stage = waveSyncStageInitializer.createGeneralPurposeAppFrame(id, AutoDisposalMode.USER)
+            { layoutStorageService.destructLayout(newLayout) }
             stageMap[newLayout] = stage
             val scene = Scene(newLayout)
             stage.scene = scene
@@ -132,6 +140,21 @@ class GlobalLayoutService(
         if (currentTransaction!!.origin.layoutRoot.isEmpty() && !noAutoRemove.contains(currentTransaction!!.origin)) {
             stageMap.remove(currentTransaction!!.origin)?.close()
         }
+    }
+
+    fun loadLayouts() {
+        Platform.runLater {
+            layoutStorageService.layouts.stream().filter { it.windowId != null }.forEach(this::reOpenSideLayout)
+        }
+    }
+
+    protected fun reOpenSideLayout(appLayout: AppLayout) {
+        val stage = waveSyncStageInitializer.createGeneralPurposeAppFrame(
+            appLayout.windowId!!,
+            AutoDisposalMode.USER
+        ) { layoutStorageService.destructLayout(appLayout.layout) }
+        stage.scene = Scene(appLayout.layout)
+        stage.show()
     }
 
     data class NodeTransaction(

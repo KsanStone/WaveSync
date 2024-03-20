@@ -207,10 +207,12 @@ class MainController : Initializable {
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
         layoutService.createDefaultNodeFactory(waveformVisualizer, barVisualizer, fftInfo, runtimeInfo)
+        layoutService.loadLayouts()
         val layout = layoutService.getMainLayout()
         initializeWindowControls(layout)
         visualizerPane.items.add(layout)
         globalLayoutService.noAutoRemove.add(layout)
+        globalLayoutService.loadLayouts()
 
         val masterVolumeVisualizer = VolumeVisualizer()
         audioCaptureService.channelVolumes.listeners.add { store ->

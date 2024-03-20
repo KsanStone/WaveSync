@@ -16,6 +16,30 @@ class DragLayoutSerializerService {
 
     val gson = Gson()
 
+    fun serializeFull(full: List<AppLayout>): String {
+        val elems = JsonArray()
+        full.forEach {
+            elems.add(JsonObject().apply {
+                this.addProperty("id", it.id)
+                this.addProperty("windowId", it.windowId)
+                this.add("layout", serializeNode(it.layout.layoutRoot))
+            })
+        }
+        return gson.toJson(elems)
+    }
+
+    fun deserializeFull(input: String, nodeFactory: NodeFactory): MutableList<Triple<String, String?, DragLayoutNode>> {
+        if (input == "") throw IllegalArgumentException("Input cannot be empty")
+        val elems = gson.fromJson(input, JsonArray::class.java)
+        return elems.map {
+            Triple(
+                it.asJsonObject.get("id").asString,
+                it.asJsonObject.get("windowId")?.asString,
+                deserializeNode(it.asJsonObject.get("layout").asJsonObject, nodeFactory)
+            )
+        }.toMutableList()
+    }
+
     fun serialize(layout: DragLayoutNode): String {
         return gson.toJson(serializeNode(layout))
     }
@@ -63,8 +87,10 @@ class DragLayoutSerializerService {
         val dividers = obj.getAsJsonArray("dividers").map { it.asDouble }
         val orientation = gson.fromJson(obj.get("orientation"), Orientation::class.java)
 
-        return DragLayoutNode("", children = FXCollections.observableList(children.toMutableList()),
-            dividerLocations = dividers.toMutableList(), orientation = orientation)
+        return DragLayoutNode(
+            "", children = FXCollections.observableList(children.toMutableList()),
+            dividerLocations = dividers.toMutableList(), orientation = orientation
+        )
     }
 
     private fun deserializeLeaf(obj: JsonObject, nodeFactory: NodeFactory): DragLayoutLeaf {
