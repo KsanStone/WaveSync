@@ -8,6 +8,7 @@ import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCombination
 import javafx.scene.input.KeyEvent
 import javafx.stage.Stage
+import me.ksanstone.wavesync.wavesync.WaveSyncApplication
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
 import java.util.function.Consumer
+import kotlin.time.measureTime
 
 
 @Component
@@ -30,26 +32,29 @@ class WaveSyncStageInitializer(
     private val logger = LoggerFactory.getLogger(this.javaClass)
 
     override fun onApplicationEvent(event: StageReadyEvent) {
-        val stage = event.stage
-        registerAccelerators(stage)
+        val stageInitTime = measureTime {
+            val stage = event.stage
+            registerAccelerators(stage)
 
-        val root: Parent =
-            FXMLLoader.load(
-                javaClass.classLoader.getResource("layout/index.fxml"),
-                localizationService.getDefault()
-            )
-        val scene = Scene(root)
+            val root: Parent =
+                FXMLLoader.load(
+                    javaClass.classLoader.getResource("layout/index.fxml"),
+                    localizationService.getDefault()
+                )
+            val scene = Scene(root)
 
-        themeService.applyCurrent()
-        stageSizingService.registerStageSize(stage, "main")
+            themeService.applyCurrent()
+            stageSizingService.registerStageSize(stage, "main")
 
-        stage.title = "WaveSync"
-        stage.minWidth = 500.0
-        stage.minHeight = 350.0
-        stage.icons.add(Image("icon.png"))
-        stage.scene = scene
-        stage.show()
-        logger.info("Showing stage")
+            stage.title = "WaveSync"
+            stage.minWidth = 500.0
+            stage.minHeight = 350.0
+            stage.icons.add(Image("icon.png"))
+            stage.scene = scene
+            stage.show()
+            WaveSyncApplication.logTimePoint("Showing stage")
+        }
+        logger.info("Stage init took $stageInitTime")
     }
 
     /**

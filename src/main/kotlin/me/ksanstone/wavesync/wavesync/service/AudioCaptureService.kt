@@ -65,12 +65,9 @@ class AudioCaptureService(
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
     val paused: BooleanProperty = SimpleBooleanProperty(false)
     var audioSystems: List<XtSystem> = listOf()
+    val initLatch = CountDownLatch(1)
 
     private val defaultChannelLabels = arrayOf(CommonChannel.MASTER.label)
-
-    init {
-        setScanWindowSize(512)
-    }
 
     @PostConstruct
     fun registerProperties() {
@@ -84,6 +81,11 @@ class AudioCaptureService(
         )
         preferenceService.registerProperty(fftUpsample, "fftUpsample", this.javaClass)
 
+        CompletableFuture.runAsync(this::asyncInit)
+    }
+
+    protected fun asyncInit() {
+        setScanWindowSize(512)
         detectSupportedAudioSystems()
         if (usedAudioSystem.get() == null) {
             if (Platform.isWindows() && audioSystems.contains(XtSystem.WASAPI)) {
@@ -97,6 +99,7 @@ class AudioCaptureService(
 
         usedAudioSystem.addListener { _ -> stopCapture() }
         usedAudioSystem.addListener { _ -> changeWindowingFunction() }
+        initLatch.countDown()
     }
 
     fun detectSupportedAudioSystems() {

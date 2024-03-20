@@ -9,6 +9,7 @@ import org.springframework.context.ConfigurableApplicationContext
 import java.awt.DisplayMode
 import java.awt.GraphicsEnvironment
 import java.awt.HeadlessException
+import java.util.concurrent.CompletableFuture
 
 
 @SpringBootApplication
@@ -25,8 +26,10 @@ class WaveSyncBootApplication(
 
     @PostConstruct
     fun initialize() {
-        targetRefreshRate = findHighestRefreshRate()
-        logger.info("Detected framerate: $targetRefreshRate")
+        CompletableFuture.runAsync {
+            targetRefreshRate = findHighestRefreshRate()
+            logger.info("Detected framerate: $targetRefreshRate")
+        }
     }
 
     fun findHighestRefreshRate(): Int {

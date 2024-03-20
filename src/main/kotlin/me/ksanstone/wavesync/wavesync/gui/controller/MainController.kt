@@ -21,6 +21,7 @@ import me.ksanstone.wavesync.wavesync.service.*
 import java.net.URL
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicBoolean
 
 class MainController : Initializable {
 
@@ -61,6 +62,7 @@ class MainController : Initializable {
     private var layoutService: LayoutStorageService
     private var globalLayoutService: GlobalLayoutService
     private var runtimeInfo: RuntimeInfo
+    private val isRefreshing = AtomicBoolean(false)
     private lateinit var resources: ResourceBundle
     val infoShown = SimpleBooleanProperty(false)
 
@@ -116,20 +118,30 @@ class MainController : Initializable {
     }
 
     @FXML
-    fun refreshDeviceList() {
-        audioCaptureService.stopCapture()
-        deviceList.clear()
-        deviceList.addAll(audioCaptureService.findSupportedSources())
-        audioDeviceListComboBox.items.clear()
-        audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
-        refreshInfoLabel()
+    fun refreshDeviceList(): CompletableFuture<Void> =
+        CompletableFuture.runAsync {
+            if (!isRefreshing.compareAndSet(false, true)) return@runAsync
+            audioCaptureService.stopCapture()
+            val supported = audioCaptureService.findSupportedSources()
+            deviceList.clear()
+            deviceList.addAll(supported)
+            Platform.runLater {
+                audioDeviceListComboBox.items.clear()
+                audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
+            }
+            refreshInfoLabel()
 
-        if (lastDeviceId != null) {
-            val similarDevice = audioCaptureService.findSimilarAudioSource(lastDeviceId!!, deviceList) ?: return
+            if (lastDeviceId != null) {
+                val similarDevice =
+                    audioCaptureService.findSimilarAudioSource(lastDeviceId!!, deviceList) ?: run {
+                        isRefreshing.set(false)
+                        return@runAsync
+                    }
 
-            setByName(similarDevice.name)
+                setByName(similarDevice.name)
+            }
+            isRefreshing.set(false)
         }
-    }
 
     @FXML
     fun showOptionMenu() {
@@ -146,7 +158,8 @@ class MainController : Initializable {
     }
 
     private fun initializeWindowControls(layout: DragLayout) {
-        waveformOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(WaveformVisualizer::class.java))
+        waveformOnOff.selectedProperty()
+            .set(layout.layoutRoot.queryComponentOfClassExists(WaveformVisualizer::class.java))
         barOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(BarVisualizer::class.java))
         fftInfoOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(FFTInfo::class.java))
         runtimeInfoOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(RuntimeInfo::class.java))
@@ -180,8 +193,9 @@ class MainController : Initializable {
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         this.resources = resources!!
 
-        refreshDeviceList()
-        selectDefaultDevice()
+        CompletableFuture.runAsync {
+            audioCaptureService.initLatch.await()
+        }.thenRun { refreshDeviceList().thenRun { selectDefaultDevice() } }
 
         audioCaptureService.registerFFTObserver(barVisualizer::handleFFT)
         audioCaptureService.registerSampleObserver(waveformVisualizer::handleSamples)
