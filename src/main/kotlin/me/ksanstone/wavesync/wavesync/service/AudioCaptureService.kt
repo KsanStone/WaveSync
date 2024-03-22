@@ -55,7 +55,7 @@ class AudioCaptureService(
 
     val peakFrequency = SimpleDoubleProperty(0.0)
     val peakValue = SimpleFloatProperty(0.0f)
-    val captureRunning = ReadOnlyBooleanProperty.readOnlyBooleanProperty(_captureRunning)
+    val captureRunning: ReadOnlyBooleanProperty = ReadOnlyBooleanProperty.readOnlyBooleanProperty(_captureRunning)
     val channelVolumes = FloatChanneledStore()
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
@@ -81,7 +81,10 @@ class AudioCaptureService(
         )
         preferenceService.registerProperty(fftUpsample, "fftUpsample", this.javaClass)
 
-        CompletableFuture.runAsync(this::asyncInit)
+        // XtAudio cries like a baby when in a daemon thread
+        Thread(this::asyncInit).apply {
+            isDaemon = false
+        }.start()
     }
 
     protected fun asyncInit() {

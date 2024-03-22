@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ConfigurableApplicationContext
 import java.lang.management.ManagementFactory
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
 import kotlin.properties.Delegates
 import kotlin.system.exitProcess
 
@@ -19,8 +17,9 @@ import kotlin.system.exitProcess
 class WaveSyncApplication : Application() {
 
     override fun init() {
-        applicationContextLatch.await()
+        startTime = System.currentTimeMillis()
         logTimePoint("JFX init")
+        applicationContext = SpringApplicationBuilder(WaveSyncBootApplication::class.java).run()
     }
 
     override fun start(stage: Stage) {
@@ -42,7 +41,6 @@ class WaveSyncApplication : Application() {
     }
 
     companion object {
-        val applicationContextLatch: CountDownLatch = CountDownLatch(1)
         lateinit var applicationContext: ConfigurableApplicationContext
         private val logger: Logger = LoggerFactory.getLogger("WaveSync")
         lateinit var primaryStage: Stage
@@ -58,10 +56,5 @@ class WaveSyncApplication : Application() {
 
 fun main(args: Array<String>) {
     System.setProperty("java.awt.headless", "false")
-    WaveSyncApplication.startTime = System.currentTimeMillis()
-    CompletableFuture.runAsync {
-        WaveSyncApplication.applicationContext = SpringApplicationBuilder(WaveSyncBootApplication::class.java).run()
-        WaveSyncApplication.applicationContextLatch.countDown()
-    }
     Application.launch(WaveSyncApplication::class.java, *args)
 }
