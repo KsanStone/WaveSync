@@ -69,16 +69,19 @@ class WaveSyncStageInitializer(
     fun createGeneralPurposeAppFrame(
         id: String,
         autoDispose: AutoDisposalMode = AutoDisposalMode.NONE,
-        autoDisposalListener: Consumer<Unit> = Consumer {}
+        skipRegister: Boolean = false,
+        autoDisposalListener: Consumer<Unit> = Consumer {},
     ): Stage {
         val stage = Stage()
         registerAccelerators(stage)
-        stageSizingService.registerStageSize(stage, id)
 
         stage.icons.add(Image("icon.png"))
         stage.title = "WaveSync"
         stage.minWidth = 500.0
         stage.minHeight = 350.0
+
+        if (!skipRegister)
+            stageSizingService.registerStageSize(stage, id)
 
         if (autoDispose == AutoDisposalMode.USER) {
             stage.setOnCloseRequest {

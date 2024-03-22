@@ -125,6 +125,7 @@ data class DragLayoutNode(
             children.removeAt(i)
             var j = i
             if (i >= dividerLocations.size) j--
+            if(!dividerLocations.indices.contains(j)) continue
             dividerLocations.removeAt(j)
             dividers.removeAt(j)
         }

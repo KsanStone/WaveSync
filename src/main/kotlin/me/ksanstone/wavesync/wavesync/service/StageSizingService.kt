@@ -33,10 +33,13 @@ class StageSizingService(
     private fun doRegisterWhenShown(stage: Stage, id: String) {
         lateinit var listener: ChangeListener<Boolean>
         listener = ChangeListener<Boolean> { _, _, v ->
-            if (!v) return@ChangeListener; doRegister(
-            stage,
-            id
-        ); stage.showingProperty().removeListener(listener)
+            if (!v) return@ChangeListener
+            Platform.runLater {
+                doRegister(
+                    stage,
+                    id
+                ); stage.showingProperty().removeListener(listener)
+            }
         }
         stage.showingProperty().addListener(listener)
     }
@@ -113,6 +116,10 @@ class StageSizingService(
             it.yProperty.unbind()
             preferenceService.unregisterObjectTree(this.javaClass, id)
         }
+    }
+
+    fun findId(stage: Stage): String? {
+        return registeredStages.entries.find { it.value.stage == stage }?.key
     }
 
 }

@@ -23,7 +23,8 @@ import java.util.*
 @Service
 class GlobalLayoutService(
     private val waveSyncStageInitializer: WaveSyncStageInitializer,
-    private val layoutStorageService: LayoutStorageService
+    private val layoutStorageService: LayoutStorageService,
+    private val stageSizingService: StageSizingService
 ) {
 
     private lateinit var windowList: ObservableList<Window>
@@ -118,8 +119,9 @@ class GlobalLayoutService(
             val id = UUID.randomUUID().toString()
             val newLayout = layoutStorageService.constructSideLayout(cutNode, id)
 
-            val stage = waveSyncStageInitializer.createGeneralPurposeAppFrame(id, AutoDisposalMode.USER)
-            { layoutStorageService.destructLayout(newLayout) }
+            val stage =
+                waveSyncStageInitializer.createGeneralPurposeAppFrame(id, AutoDisposalMode.USER)
+                { layoutStorageService.destructLayout(newLayout) }
             stageMap[newLayout] = stage
             val scene = Scene(newLayout)
             stage.scene = scene
@@ -138,7 +140,11 @@ class GlobalLayoutService(
         }
         currentTransaction!!.origin.fullUpdate()
         if (currentTransaction!!.origin.layoutRoot.isEmpty() && !noAutoRemove.contains(currentTransaction!!.origin)) {
-            stageMap.remove(currentTransaction!!.origin)?.close()
+            stageMap.remove(currentTransaction!!.origin)?.let {
+                it.close()
+                stageSizingService.findId(it)?.let { it1 -> stageSizingService.unregisterStage(it1) }
+                layoutStorageService.destructLayout(it)
+            }
         }
     }
 

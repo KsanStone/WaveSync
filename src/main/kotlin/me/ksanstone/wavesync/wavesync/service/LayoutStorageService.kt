@@ -6,6 +6,7 @@ import javafx.beans.property.StringProperty
 import javafx.collections.FXCollections
 import javafx.geometry.Orientation
 import javafx.scene.Node
+import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
@@ -19,7 +20,8 @@ import org.springframework.stereotype.Service
 @Service
 class LayoutStorageService(
     private val layoutSerializerService: DragLayoutSerializerService,
-    private val preferenceService: PreferenceService
+    private val preferenceService: PreferenceService,
+    private val stageSizingService: StageSizingService
 ) {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
@@ -110,6 +112,18 @@ class LayoutStorageService(
 
     fun destructLayout(layout: DragLayout) {
         layouts.removeIf { it.layout == layout }
+        save()
+    }
+
+    fun destructLayout(stage: Stage) {
+        val id = stageSizingService.findId(stage)
+        if (id != null) {
+            destructLayout(id)
+        }
+    }
+
+    fun destructLayout(windowId: String) {
+        layouts.removeIf { it.windowId == windowId }
         save()
     }
 
