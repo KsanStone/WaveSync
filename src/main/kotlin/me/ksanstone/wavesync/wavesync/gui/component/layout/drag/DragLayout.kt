@@ -39,6 +39,10 @@ class DragLayout : Pane() {
         drawCueRect.styleClass.add("drag-cue")
         styleClass.setAll("drag-layout")
         stylesheets.add("/styles/drag-layout.css")
+
+        layoutRoot.addLayoutChangeListener {
+            layoutChangeListeners.fire(layoutRoot)
+        }
     }
 
     fun addLayoutChangeListener(listener: LayoutChangeListener) {

@@ -1,4 +1,4 @@
 .bar-visualizer {
     -fx-peak-line-color: -color-accent-7;
-    -fx-peak-line-under-color: rgba(227, 52, 204, 15%);
+    -fx-peak-line-under-color: rgba(227, 52, 204, 0.33);
 }
