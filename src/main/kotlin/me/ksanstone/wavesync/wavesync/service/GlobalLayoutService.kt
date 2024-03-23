@@ -142,10 +142,12 @@ class GlobalLayoutService(
         if (currentTransaction!!.origin.layoutRoot.isEmpty() && !noAutoRemove.contains(currentTransaction!!.origin)) {
             stageMap.remove(currentTransaction!!.origin)?.let {
                 it.close()
-                stageSizingService.findId(it)?.let { it1 -> stageSizingService.unregisterStage(it1) }
-                layoutStorageService.destructLayout(it)
+                val id = stageSizingService.findId(it) ?: return
+                stageSizingService.unregisterStage(id)
+                layoutStorageService.destructLayout(id)
             }
         }
+        currentTransaction = null
     }
 
     fun loadLayouts() {

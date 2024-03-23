@@ -35,7 +35,7 @@ import kotlin.math.pow
 import kotlin.math.roundToLong
 
 
-abstract class AutoCanvas(private val detachable: Boolean = true) : AnchorPane() {
+abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane() {
 
     protected var canvas: Canvas = Canvas()
     protected lateinit var infoPane: GridPane
