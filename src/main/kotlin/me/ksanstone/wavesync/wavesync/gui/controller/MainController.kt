@@ -4,6 +4,7 @@ import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
+import javafx.scene.Node
 import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
@@ -22,6 +23,7 @@ import java.net.URL
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.Consumer
 
 class MainController : Initializable {
 
@@ -157,36 +159,35 @@ class MainController : Initializable {
         }
     }
 
+    data class CompComponentToggle(
+        val check: CheckMenuItem, val clazz: Class<*>, val node: Node, val id: String
+    )
+
     private fun initializeWindowControls(layout: DragLayout) {
-        waveformOnOff.selectedProperty()
-            .set(layout.layoutRoot.queryComponentOfClassExists(WaveformVisualizer::class.java))
-        barOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(BarVisualizer::class.java))
-        fftInfoOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(FFTInfo::class.java))
-        runtimeInfoOnOff.selectedProperty().set(layout.layoutRoot.queryComponentOfClassExists(RuntimeInfo::class.java))
+        val list = listOf(
+            CompComponentToggle(waveformOnOff, WaveformVisualizer::class.java, waveformVisualizer, LayoutStorageService.MAIN_WAVEFORM_VISUALIZER_ID),
+            CompComponentToggle(barOnOff, BarVisualizer::class.java, barVisualizer, LayoutStorageService.MAIN_BAR_VISUALIZER_ID),
+            CompComponentToggle(fftInfoOnOff, FFTInfo::class.java, fftInfo, LayoutStorageService.MAIN_FFT_INFO_ID),
+            CompComponentToggle(runtimeInfoOnOff, RuntimeInfo::class.java, runtimeInfo, LayoutStorageService.MAIN_RUNTIME_INFO_ID),
+        )
 
-        barOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(barVisualizer, LayoutStorageService.MAIN_BAR_VISUALIZER_ID)
-            else layout.layoutRoot.removeComponentOfClass(BarVisualizer::class.java)
-            layout.fullUpdate()
+        list.forEach {
+            it.check.selectedProperty().set(globalLayoutService.queryComponentOfClassExists(it.clazz))
         }
 
-        waveformOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(waveformVisualizer, LayoutStorageService.MAIN_WAVEFORM_VISUALIZER_ID)
-            else layout.layoutRoot.removeComponentOfClass(WaveformVisualizer::class.java)
-            layout.fullUpdate()
+        list.forEach {
+            it.check.selectedProperty().addListener { _, _, v ->
+                if (v) layout.addComponent(it.node, it.id)
+                else layout.layoutRoot.removeComponentOfClass(it.clazz)
+                layout.fullUpdate()
+            }
         }
 
-        fftInfoOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(fftInfo, LayoutStorageService.MAIN_FFT_INFO_ID)
-            else layout.layoutRoot.removeComponentOfClass(FFTInfo::class.java)
-            layout.fullUpdate()
-        }
-
-        runtimeInfoOnOff.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(runtimeInfo, LayoutStorageService.MAIN_RUNTIME_INFO_ID)
-            else layout.layoutRoot.removeComponentOfClass(RuntimeInfo::class.java)
-            layout.fullUpdate()
-        }
+        globalLayoutService.layoutRemovalListeners.add(Consumer {
+            it.layoutRoot.iterateComponents {
+                list.forEach { predefined -> if (predefined.node == it.node) predefined.check.selectedProperty().set(false) }
+            }
+        })
     }
 
     @FXML

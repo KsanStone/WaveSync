@@ -122,9 +122,16 @@ class LayoutStorageService(
         }
     }
 
-    fun destructLayout(windowId: String) {
-        layouts.removeIf { it.windowId == windowId }
+    fun destructLayout(windowId: String): DragLayout? {
+        var ret: DragLayout? = null
+        layouts.removeIf {
+            if (it.windowId == windowId) {
+                ret = it.layout; return@removeIf true
+            }
+            return@removeIf false
+        }
         save()
+        return ret
     }
 
     protected fun createLayout(node: DragLayoutLeaf): DragLayout {

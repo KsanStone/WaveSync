@@ -19,6 +19,7 @@ import me.ksanstone.wavesync.wavesync.gui.initializer.AutoDisposalMode
 import me.ksanstone.wavesync.wavesync.gui.initializer.WaveSyncStageInitializer
 import org.springframework.stereotype.Service
 import java.util.*
+import java.util.function.Consumer
 
 @Service
 class GlobalLayoutService(
@@ -31,6 +32,7 @@ class GlobalLayoutService(
     var currentTransaction: NodeTransaction? = null
     var noAutoRemove = mutableSetOf<DragLayout>()
     private val stageMap = mutableMapOf<DragLayout, Stage>()
+    val layoutRemovalListeners = mutableListOf<Consumer<DragLayout>>()
 
     @PostConstruct
     fun initialize() {
@@ -83,7 +85,6 @@ class GlobalLayoutService(
                 it.screenToLocal(p),
                 DragLayout.encodeNodeId(currentTransaction!!.nodeId)
             )
-
             DragEvent.DRAG_ENTERED -> {}
             DragEvent.DRAG_DROPPED -> it.dragDropped(root!!, currentTransaction!!.nodeId, it.screenToLocal(p))
         }
@@ -121,7 +122,7 @@ class GlobalLayoutService(
 
             val stage =
                 waveSyncStageInitializer.createGeneralPurposeAppFrame(id, AutoDisposalMode.USER)
-                { layoutStorageService.destructLayout(newLayout) }
+                { layoutStorageService.destructLayout(newLayout); fireLayoutGone(newLayout) }
             stageMap[newLayout] = stage
             val scene = Scene(newLayout)
             stage.scene = scene
@@ -144,7 +145,9 @@ class GlobalLayoutService(
                 it.close()
                 val id = stageSizingService.findId(it) ?: return
                 stageSizingService.unregisterStage(id)
-                layoutStorageService.destructLayout(id)
+                layoutStorageService.destructLayout(id)?.let { l ->
+                    fireLayoutGone(l)
+                }
             }
         }
         currentTransaction = null
@@ -156,13 +159,28 @@ class GlobalLayoutService(
         }
     }
 
+
+    /**
+     * Same deal as DragLayoutNode.queryComponentOfClassExists buf across all layouts
+     */
+    fun queryComponentOfClassExists(clazz: Class<*>): Boolean {
+        for (layout in layoutStorageService.layouts) {
+            if (layout.layout.layoutRoot.queryComponentOfClassExists(clazz)) return true
+        }
+        return false
+    }
+
     protected fun reOpenSideLayout(appLayout: AppLayout) {
         val stage = waveSyncStageInitializer.createGeneralPurposeAppFrame(
             appLayout.windowId!!,
             AutoDisposalMode.USER
-        ) { layoutStorageService.destructLayout(appLayout.layout) }
+        ) { layoutStorageService.destructLayout(appLayout.layout); fireLayoutGone(appLayout.layout) }
         stage.scene = Scene(appLayout.layout)
         stage.show()
+    }
+
+    private fun fireLayoutGone(layout: DragLayout) {
+        layoutRemovalListeners.forEach { it.accept(layout) }
     }
 
     data class NodeTransaction(
