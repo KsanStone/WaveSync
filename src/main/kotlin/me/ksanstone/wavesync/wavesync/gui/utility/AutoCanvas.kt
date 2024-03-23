@@ -11,6 +11,7 @@ import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
+import javafx.scene.chart.ValueAxis
 import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.effect.BlurType
@@ -42,10 +43,10 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     protected lateinit var controlPane: HBox
     protected val detachedWindowNameProperty: StringProperty = SimpleStringProperty("AutoCanvas")
 
-    protected var xAxis = NumberAxis(0.0, 100.0, 10.0)
-    protected var yAxis = NumberAxis(0.0, 100.0, 10.0)
+    protected var xAxis: ValueAxis<Number> = NumberAxis(0.0, 100.0, 10.0)
+    protected var yAxis: ValueAxis<Number> = NumberAxis(0.0, 100.0, 10.0)
 
-    var canvasContainer: GraphCanvas
+    lateinit var canvasContainer: GraphCanvas
     val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.REFRESH_RATE)
     val info: BooleanProperty = SimpleBooleanProperty(INFO_SHOWN)
 
@@ -64,12 +65,7 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
         widthProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
 
-        canvasContainer = GraphCanvas(xAxis, yAxis, canvas)
-        setBottomAnchor(canvasContainer, 0.0)
-        setRightAnchor(canvasContainer, 0.0)
-        setTopAnchor(canvasContainer, 0.0)
-        setLeftAnchor(canvasContainer, 0.0)
-        children.add(canvasContainer)
+        createGraphCanvas()
 
         minWidth = 1.0
         minHeight = 1.0
@@ -80,6 +76,21 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
         initializeControlPane()
         initializeDrawLoop()
         initializeDetacherProperty()
+    }
+
+    fun updateXAxis(newAxis: ValueAxis<Number>) {
+        xAxis = newAxis
+        canvasContainer.updateXAxis(xAxis)
+        controlPane.toFront()
+    }
+
+    private fun createGraphCanvas() {
+        canvasContainer = GraphCanvas(xAxis, yAxis, canvas)
+        setBottomAnchor(canvasContainer, 0.0)
+        setRightAnchor(canvasContainer, 0.0)
+        setTopAnchor(canvasContainer, 0.0)
+        setLeftAnchor(canvasContainer, 0.0)
+        children.add(canvasContainer)
     }
 
     private fun initializeDrawLoop() {

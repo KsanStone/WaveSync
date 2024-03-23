@@ -8,6 +8,7 @@ import javafx.css.StyleableProperty
 import javafx.css.StyleablePropertyFactory
 import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.GraphicsContext
+import javafx.scene.chart.NumberAxis
 import javafx.scene.control.Label
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
@@ -58,8 +59,10 @@ class WaveformVisualizer : AutoCanvas() {
         canvasContainer.forceDrawVerticalAccentLines.value = true
         canvasContainer.verticalLinesVisible.value = true
         canvasContainer.highlightedHorizontalLines.addAll(1.0, -1.0)
-        yAxis.tickUnit = 0.2
-        xAxis.tickUnit = 100000000.0
+        if (yAxis is NumberAxis)
+            (yAxis as NumberAxis).tickUnit = 0.2
+        if (xAxis is NumberAxis)
+            (xAxis as NumberAxis).tickUnit = 100000000.0
         xAxis.minorTickCount = 0
         // .toString().toDouble() hack to get an exact conversion
         yAxis.lowerBoundProperty().bind(rangeMin.map { it.toString().toDouble() })

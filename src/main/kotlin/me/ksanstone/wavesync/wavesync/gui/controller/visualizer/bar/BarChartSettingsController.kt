@@ -17,6 +17,15 @@ import java.util.*
 class BarChartSettingsController : Initializable {
 
     @FXML
+    lateinit var fillToggleSwitch: ToggleSwitch
+
+    @FXML
+    lateinit var axisLogarithmicToggle: ToggleButton
+
+    @FXML
+    lateinit var axisLinearToggle: ToggleButton
+
+    @FXML
     lateinit var bar: ToggleButton
 
     @FXML
@@ -100,6 +109,11 @@ class BarChartSettingsController : Initializable {
 
         line.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.LINE)
         bar.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.BAR)
+        axisLogarithmicToggle.selectedProperty().set(visualizer.logarithmic.get())
+        axisLinearToggle.selectedProperty().set(!visualizer.logarithmic.get())
+        fillToggleSwitch.selectedProperty().set(visualizer.fillCurve.get())
+        fillToggleSwitch.disableProperty().bind(visualizer.renderMode.map { it == BarVisualizer.RenderMode.BAR })
+        visualizer.fillCurve.bind(fillToggleSwitch.selectedProperty())
 
         maxFreqSpinner.valueFactory = SpinnerValueFactory.IntegerSpinnerValueFactory(
             ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW,
@@ -134,7 +148,7 @@ class BarChartSettingsController : Initializable {
         }
 
         barWidthSlider.value = tw.toDouble()
-        gapSlider.disableProperty().bind(line.selectedProperty())
+        gapSlider.disableProperty().bind(line.selectedProperty().or(visualizer.logarithmic))
         scalingSlider.value = visualizer.exaggeratedScalar.get().toDouble()
         linearScalingSlider.value = visualizer.linearScalar.get().toDouble()
         dropRateSlider.value = visualizer.smoothing.get().toDouble()
@@ -182,5 +196,15 @@ class BarChartSettingsController : Initializable {
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
+    }
+
+    fun axisLinear() {
+        visualizer.logarithmic.set(false)
+        axisLogarithmicToggle.isSelected = false
+    }
+
+    fun axisLogarithmic() {
+        visualizer.logarithmic.set(true)
+        axisLinearToggle.isSelected = false
     }
 }

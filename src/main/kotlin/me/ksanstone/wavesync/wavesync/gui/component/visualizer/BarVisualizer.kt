@@ -11,8 +11,7 @@ import javafx.scene.chart.NumberAxis
 import javafx.scene.control.Label
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
-import javafx.scene.paint.Color
-import javafx.scene.paint.Paint
+import javafx.scene.paint.*
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
@@ -20,12 +19,15 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MAX
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MIN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_RENDER_MODE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FILL_UNDER_CURVE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_LOGARITHMIC_MODE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.LINEAR_BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.PEAK_LINE_VISIBLE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.component.util.LogarithmicAxis
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.FourierMath
@@ -42,7 +44,6 @@ import kotlin.math.max
 
 class BarVisualizer : AutoCanvas() {
 
-    private var frequencyAxis: NumberAxis = xAxis
     private var smoother: MagnitudeSmoother
     private var rawMaxTracker: MaxTracker
     private var localizationService: LocalizationService =
@@ -62,9 +63,12 @@ class BarVisualizer : AutoCanvas() {
     val linearScalar: FloatProperty = SimpleFloatProperty(LINEAR_BAR_SCALING)
     val dbMin: FloatProperty = SimpleFloatProperty(DB_MIN)
     val dbMax: FloatProperty = SimpleFloatProperty(DB_MAX)
+    val logarithmic: BooleanProperty = SimpleBooleanProperty(DEFAULT_LOGARITHMIC_MODE)
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_BAR_RENDER_MODE)
+    val fillCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_FILL_UNDER_CURVE)
 
     private var source: SupportedCaptureSource? = null
+    private var rate: Int = 44100
     private var fftSize: Int = 1024
     private var frequencyBinSkip: Int = 0
     private lateinit var fftDataArray: FloatArray
@@ -75,9 +79,12 @@ class BarVisualizer : AutoCanvas() {
 
     private val peakLineColor: StyleableProperty<Paint> =
         FACTORY.createStyleablePaintProperty(this, "peakLineColor", "-fx-peak-line-color") { vis -> vis.peakLineColor }
+    private val peakLineUnderColor: StyleableProperty<Paint> =
+        FACTORY.createStyleablePaintProperty(this, "peakLineUnderColor", "peakLineUnderColor") { vis -> vis.peakLineColor }
 
     init {
-        frequencyAxis.tickUnit = 1000.0
+        if (xAxis is NumberAxis)
+            (xAxis as NumberAxis).tickUnit = 1000.0
         canvasContainer.highlightedVerticalLines.add(20000.0)
         detachedWindowNameProperty.set("Bar")
         canvasContainer.tooltipEnabled.set(true)
@@ -107,6 +114,15 @@ class BarVisualizer : AutoCanvas() {
         this.stylesheets.add("/styles/bar-visualizer.css")
 
         controlPane.toFront()
+
+        logarithmic.addListener { _, _, v ->
+            if (v) {
+                updateXAxis(LogarithmicAxis(0.0, 20000.0))
+            } else {
+                updateXAxis(NumberAxis(0.0, 20000.0, 1000.0))
+            }
+            sizeFrequencyAxis()
+        }
     }
 
     fun initializeSettingMenu() {
@@ -134,6 +150,8 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(dbMin, "dbMin", this.javaClass, id)
         preferenceService.registerProperty(dbMax, "dbMax", this.javaClass, id)
         preferenceService.registerProperty(peakLineVisible, "peakLineVisible", this.javaClass, id)
+        preferenceService.registerProperty(fillCurve, "fillCurve", this.javaClass, id)
+        preferenceService.registerProperty(logarithmic, "logarithmic", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
@@ -219,15 +237,16 @@ class BarVisualizer : AutoCanvas() {
         val s = fftScalar.getAxisScale()
         yAxis.lowerBound = s.min
         yAxis.upperBound = s.max
-        yAxis.tickUnit = s.step
+        if (yAxis is NumberAxis)
+            (yAxis as NumberAxis).tickUnit = s.step
     }
 
     private fun sizeFrequencyAxis() {
         if (source == null) return
         val upper = source!!.trimResultTo(fftSize, cutoff.get())
         val lower = source!!.bufferBeginningSkipFor(lowPass.get(), fftSize)
-        frequencyAxis.lowerBound = FourierMath.frequencyOfBin(lower, source!!.rate, fftSize).toDouble()
-        frequencyAxis.upperBound = FourierMath.frequencyOfBin(upper, source!!.rate, fftSize).toDouble()
+        xAxis.lowerBound = FourierMath.frequencyOfBin(lower, source!!.rate, fftSize).toDouble()
+        xAxis.upperBound = FourierMath.frequencyOfBin(upper, source!!.rate, fftSize).toDouble()
     }
 
     fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
@@ -239,6 +258,7 @@ class BarVisualizer : AutoCanvas() {
             sizeFrequencyAxis()
         }
         this.fftSize = array.size * 2
+        this.rate = source.rate
         var size = source.trimResultTo(array.size * 2, cutoff.get())
         frequencyBinSkip = source.bufferBeginningSkipFor(lowPass.get(), array.size * 2)
         size = (size - frequencyBinSkip).coerceAtLeast(10)
@@ -268,7 +288,7 @@ class BarVisualizer : AutoCanvas() {
 
             gc.clearRect(0.0, 0.0, width, height)
 
-            val localGap = if (renderMode.get()!! == RenderMode.BAR) gap.get() else 0
+            val localGap = if (renderMode.get()!! == RenderMode.BAR && !logarithmic.get()) gap.get() else 0
             val bufferLength = smoother.dataSize
             var step = calculateStep(targetBarWidth.get(), bufferLength, width)
             val totalBars = floor(bufferLength.toDouble() / step)
@@ -278,8 +298,8 @@ class BarVisualizer : AutoCanvas() {
             gc.stroke = startColor.get()
 
             when (renderMode.get()!!) {
-                RenderMode.LINE -> drawLine(buffer, bufferLength, step, gc, barWidth, height)
-                RenderMode.BAR -> drawBars(buffer, bufferLength, step, gc, barWidth, localGap, padding, height)
+                RenderMode.LINE -> drawLine(buffer, bufferLength, step, gc, barWidth, height, width, fillCurve.get())
+                RenderMode.BAR -> drawBars(buffer, bufferLength, step, gc, barWidth, localGap, padding, height, width)
             }
 
             if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
@@ -288,11 +308,69 @@ class BarVisualizer : AutoCanvas() {
             gc.stroke = peakLineColor.value
             step = calculateStep(1, bufferLength, width)
             barWidth = width / floor(bufferLength.toDouble() / step)
-            drawLine(rawMaxTracker.data.map { fftScalar.scale(it) }.toFloatArray(), bufferLength, step, gc, barWidth, height)
+            drawLine(rawMaxTracker.data.map { fftScalar.scale(it) }.toFloatArray(), bufferLength, step, gc, barWidth, height, width, false)
         }
     }
 
-    private fun drawLine(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, height: Double) {
+    private fun drawLine(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, height: Double, width: Double, fill: Boolean) {
+        if (logarithmic.get()) {
+            drawLineLogarithmic(buffer, bufferLength, gc, barWidth, height, width, fill)
+        } else {
+            drawLineLinear(buffer, bufferLength, step, gc, barWidth, height, width, fill)
+        }
+    }
+
+    private fun drawLineLogarithmic(
+        buffer: FloatArray,
+        bufferLength: Int,
+        gc: GraphicsContext,
+        barWidth: Double,
+        height: Double,
+        width: Double,
+        fill: Boolean
+    ) {
+        var y = 0.0
+        var x: Double
+        var lastX = 0.0
+
+        gc.beginPath()
+        gc.moveTo(0.0, height - buffer[0].toDouble() * height)
+
+        for (i in 0 until bufferLength) {
+            y = max(buffer[i].toDouble(), y)
+            x = xAxis.getDisplayPosition(FourierMath.frequencyOfBin(i, rate, fftSize))
+            if (x - lastX < barWidth && i != 0) continue
+
+            gc.lineTo(x, height - y * height)
+            lastX = x
+            y = 0.0
+        }
+        gc.stroke()
+        fillUnderLine(fill, gc, width, height)
+    }
+
+    private fun fillUnderLine(
+        fill: Boolean,
+        gc: GraphicsContext,
+        width: Double,
+        height: Double
+    ) {
+        if (fill) {
+            gc.lineTo(width, height + 5.0)
+            gc.lineTo(0.0, height + 5.0)
+            gc.closePath()
+            if (gc.stroke is Color) {
+                val c1 = Color((gc.stroke as Color).red, (gc.stroke as Color).green, (gc.stroke as Color).blue, 0.25)
+                val c2 = Color((gc.stroke as Color).red, (gc.stroke as Color).green, (gc.stroke as Color).blue, 0.05)
+                gc.fill = LinearGradient(0.0, 0.0, 0.0, height, false, CycleMethod.NO_CYCLE, Stop(0.0, c1), Stop(1.0, c2))
+            } else {
+                gc.fill = peakLineUnderColor.value
+            }
+            gc.fill()
+        }
+    }
+
+    private fun drawLineLinear(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, height: Double, width: Double, fill: Boolean) {
         var x = 0.0
         var y = 0.0
         var stepAccumulator = 0.0
@@ -310,26 +388,66 @@ class BarVisualizer : AutoCanvas() {
         }
 
         gc.stroke()
+        fillUnderLine(fill, gc, width, height)
     }
 
-    private fun drawBars(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, localGap: Int, padding: Double, height: Double) {
-            var x = 0.0
-            var y = 0.0
-            var stepAccumulator = 0.0
+    private fun drawBars(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, localGap: Int, padding: Double, height: Double, width: Double) {
+        if (logarithmic.get()) {
+            drawBarsLogarithmic(buffer, bufferLength, gc, barWidth, padding, height, width)
+        } else {
+            drawBarsLinear(buffer, bufferLength, step, gc, barWidth, localGap, padding, height)
+        }
+    }
 
-            for (i in 0 until bufferLength) {
-                y = max(buffer[i].toDouble(), y)
-                if (++stepAccumulator < step) continue
-                stepAccumulator -= step
+    private fun drawBarsLogarithmic(
+        buffer: FloatArray,
+        bufferLength: Int,
+        gc: GraphicsContext,
+        barWidth: Double,
+        padding: Double,
+        height: Double,
+        width: Double
+    ) {
+        var y = 0.0
+        var lastX = 0.0
+        var lastEnd = 0.0
 
-                val barHeight = y * height
-                val color = startColor.get().interpolate(endColor.get(), y)
+        val xArray = DoubleArray(bufferLength) { xAxis.getDisplayPosition(FourierMath.frequencyOfBin(it, rate, fftSize)) }
 
-                gc.fill = color
-                gc.fillRect(x, height - barHeight, barWidth + padding, barHeight)
-                x += barWidth + localGap
-                y = 0.0
-            }
+        for (i in 0 until bufferLength) {
+            y = max(buffer[i].toDouble(), y)
+            val tmp = xArray.getOrElse(i+1) { width }
+            if (tmp - lastX < barWidth && i != 0) continue
+
+            val barHeight = y * height
+            val color = startColor.get().interpolate(endColor.get(), y)
+
+            gc.fill = color
+            gc.fillRect(lastEnd, height - barHeight, tmp - lastEnd + padding, barHeight)
+            lastEnd = tmp
+            lastX = tmp
+            y = 0.0
+        }
+    }
+
+    private fun drawBarsLinear(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, localGap: Int, padding: Double, height: Double) {
+        var x = 0.0
+        var y = 0.0
+        var stepAccumulator = 0.0
+
+        for (i in 0 until bufferLength) {
+            y = max(buffer[i].toDouble(), y)
+            if (++stepAccumulator < step) continue
+            stepAccumulator -= step
+
+            val barHeight = y * height
+            val color = startColor.get().interpolate(endColor.get(), y)
+
+            gc.fill = color
+            gc.fillRect(x, height - barHeight, barWidth + padding, barHeight)
+            x += barWidth + localGap
+            y = 0.0
+        }
     }
 
     override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {

@@ -9,7 +9,7 @@ import javafx.geometry.Point2D
 import javafx.geometry.Side
 import javafx.scene.Node
 import javafx.scene.canvas.Canvas
-import javafx.scene.chart.NumberAxis
+import javafx.scene.chart.ValueAxis
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.shape.Line
@@ -20,7 +20,7 @@ import javafx.scene.text.Text
 import java.lang.Double.isNaN
 import java.text.DecimalFormat
 
-class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, private val canvas: Canvas) : Pane() {
+class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: ValueAxis<Number>, private val canvas: Canvas) : Pane() {
 
     companion object {
         const val TOOLTIP_OFFSET = 5.0
@@ -66,13 +66,12 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             highlightedHorizontalGridLines,
             highlightedVerticalGridLines,
             tooltipCross,
-            xAxis,
             yAxis,
             canvas,
             tooltipContainer
         )
 
-        listOf(xAxisShown, yAxisShown, widthProperty(), heightProperty(), xAxis.heightProperty(), yAxis.widthProperty())
+        listOf(xAxisShown, yAxisShown, widthProperty(), heightProperty(), yAxis.widthProperty())
             .forEach { it.addListener { _ -> doLayout(); layoutTooltipCross() } }
 
         yAxis.side = Side.LEFT
@@ -84,33 +83,12 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
                     if (!c.wasAdded()) continue
                     for (mark in c.addedSubList) {
                         if (mark !is Text) continue
-                        val parsed = DecimalFormat("###,###.###").parse(mark.text).toDouble()
+                        val parsed = DecimalFormat("###,###.###").parse(mark.text.trim()).toDouble()
                         if (parsed == yAxis.lowerBound && !xAxisShown.get()) {
                             mark.text =
                                 if (mark.text.contains("\n")) mark.text else mark.text + "\n"
                         } else if (parsed == yAxis.upperBound) {
                             mark.text = if (mark.text.contains("\n")) mark.text else "\n" + mark.text
-                        }
-                    }
-                }
-            } as ListChangeListener<Node?>?)
-
-        xAxis.side = Side.BOTTOM
-        xAxis.animated = false
-        xAxis.managedProperty().bind(xAxis.visibleProperty())
-        xAxis.childrenUnmodifiable
-            .addListener(ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
-                while (c.next()) {
-                    if (!c.wasAdded()) continue
-                    for (mark in c.addedSubList) {
-                        if (mark !is Text) continue
-                        val parsed = DecimalFormat("###,###.###").parse(mark.text).toDouble()
-                        if (parsed == xAxis.lowerBound && !yAxisShown.get()) {
-                            mark.text =
-                                if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
-                        } else if (parsed == xAxis.upperBound) {
-                            mark.text =
-                                if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
                         }
                     }
                 }
@@ -136,7 +114,6 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             tooltipPosition
         ).forEach { it.addListener { _ -> layoutTooltipCross() } }
         listOf(
-            xAxis.tickMarks,
             yAxis.tickMarks
         ).forEach { it.addListener(ListChangeListener { c -> while (c.next()) { /* layout once updates have settled */ }; layoutGrid() }) }
         listOf(
@@ -148,12 +125,41 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
             yAxisShown
         ).forEach { it.addListener { _ -> layoutGrid() } }
 
+        registerXAxis(xAxis)
 
         minWidth = 1.0
         minHeight = 1.0
         maxWidth = Double.MAX_VALUE
         maxHeight = Double.MAX_VALUE
         stylesheets.add("/styles/axis-fix.css")
+    }
+
+    private fun registerXAxis(axis: ValueAxis<Number>) {
+        axis.tickMarks.addListener(ListChangeListener { c -> while (c.next()) { /* layout once updates have settled */ }; layoutGrid() })
+        axis.side = Side.BOTTOM
+        axis.animated = false
+        axis.managedProperty().bind(xAxis.visibleProperty())
+        axis.childrenUnmodifiable
+            .addListener(ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
+                while (c.next()) {
+                    if (!c.wasAdded()) continue
+                    for (mark in c.addedSubList) {
+                        if (mark !is Text) continue
+                        val parsed = DecimalFormat("###,###.###").parse(mark.text.trim()).toDouble()
+                        if (parsed == xAxis.lowerBound && !yAxisShown.get()) {
+                            mark.text =
+                                if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
+                        } else if (parsed == xAxis.upperBound) {
+                            mark.text =
+                                if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
+                        }
+                    }
+                }
+            } as ListChangeListener<Node?>?)
+        axis.heightProperty().addListener { _ -> doLayout(); layoutTooltipCross() }
+        children.add(axis)
+        axis.toBack()
+        this.xAxis = axis
     }
 
     private fun doLayout() {
@@ -274,5 +280,11 @@ class GraphCanvas(private val xAxis: NumberAxis, private val yAxis: NumberAxis, 
                 }
             }
         }
+    }
+
+    fun updateXAxis(axis: ValueAxis<Number>) {
+        // TODO unregister stuff from old axis, shouldn't matter for now
+        children.remove(xAxis)
+        registerXAxis(axis)
     }
 }
