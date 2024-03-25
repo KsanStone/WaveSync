@@ -38,8 +38,7 @@ import me.ksanstone.wavesync.wavesync.service.fftScaling.*
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import me.ksanstone.wavesync.wavesync.utility.MaxTracker
-import kotlin.math.floor
-import kotlin.math.max
+import kotlin.math.*
 
 
 class BarVisualizer : AutoCanvas() {
@@ -298,7 +297,7 @@ class BarVisualizer : AutoCanvas() {
             val padding = (barWidth * 0.33).coerceAtMost(1.0)
             gc.stroke = startColor.get()
 
-            calculateLocBuffer(buffer, logarithmic.get(), barWidth, step, height)
+            calculateLocBuffer(buffer, logarithmic.get(), barWidth, step, height, width)
 
             when (renderMode.get()!!) {
                 RenderMode.LINE -> drawLine(buffer, gc, height, width, fillCurve.get())
@@ -312,22 +311,23 @@ class BarVisualizer : AutoCanvas() {
             step = calculateStep(1, bufferLength, width)
             barWidth = width / floor(bufferLength.toDouble() / step)
             val tempBuffer = rawMaxTracker.data.map { fftScalar.scale(it) }.toFloatArray()
-            calculateLocBuffer(tempBuffer, logarithmic.get(), barWidth, step, height)
+            calculateLocBuffer(tempBuffer, logarithmic.get(), barWidth, step, height, width)
             drawLine(tempBuffer, gc, height, width, false)
         }
     }
 
-    private fun calculateLocBuffer(buffer: FloatArray, logarithmic: Boolean, barWidth: Double, step: Double, height: Double) {
+    private fun calculateLocBuffer(buffer: FloatArray, logarithmic: Boolean, barWidth: Double, step: Double, height: Double, width: Double) {
         if (fftLocBuffer.data.size != buffer.size)
             fftLocBuffer.data = Array(buffer.size) { _ -> FftLoc(0.0, 0.0, 0.0)}
 
         var y = 0.0
         var x = 0.0
         var num = 0
+        var added = false
         if(logarithmic) {
             var lastX = 0.0
             for (i in buffer.indices) {
-                y = max(buffer[i].toDouble(), y)
+                y = max(buffer[i].toDouble(), y); added = false
                 x = xAxis.getDisplayPosition(FourierMath.frequencyOfBin(i, rate, fftSize))
                 if (x - lastX < barWidth) continue
 
@@ -335,12 +335,12 @@ class BarVisualizer : AutoCanvas() {
                 fftLocBuffer.data[num].y = height - height * y
                 fftLocBuffer.data[num].raw = y
 
-                num++; lastX = x; y = 0.0
+                num++; lastX = x; y = 0.0; added = true
             }
         } else {
             var stepAccumulator = 0.0
             for (element in buffer) {
-                y = max(element.toDouble(), y)
+                y = max(element.toDouble(), y); added = false
                 if (++stepAccumulator < step) continue
                 stepAccumulator -= step
                 x += barWidth
@@ -349,8 +349,14 @@ class BarVisualizer : AutoCanvas() {
                 fftLocBuffer.data[num].y = height - height * y
                 fftLocBuffer.data[num].raw = y
 
-                num++; y = 0.0
+                num++; y = 0.0; added = true
             }
+        }
+
+        if (!added) {
+            fftLocBuffer.data[num].x = width
+            fftLocBuffer.data[num].y = height - height * y
+            fftLocBuffer.data[num].raw = y
         }
 
         fftLocBuffer.size = num
