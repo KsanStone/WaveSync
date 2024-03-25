@@ -72,6 +72,7 @@ class BarVisualizer : AutoCanvas() {
     private var fftSize: Int = 1024
     private var frequencyBinSkip: Int = 0
     private lateinit var fftDataArray: FloatArray
+    private var fftLocBuffer = FftLocBuffer(0, Array(0) { _ -> FftLoc(0.0, 0.0, 0.0) })
     private val bufferResizeLock = Object()
 
 
@@ -297,9 +298,11 @@ class BarVisualizer : AutoCanvas() {
             val padding = (barWidth * 0.33).coerceAtMost(1.0)
             gc.stroke = startColor.get()
 
+            calculateLocBuffer(buffer, logarithmic.get(), barWidth, step, height)
+
             when (renderMode.get()!!) {
-                RenderMode.LINE -> drawLine(buffer, bufferLength, step, gc, barWidth, height, width, fillCurve.get())
-                RenderMode.BAR -> drawBars(buffer, bufferLength, step, gc, barWidth, localGap, padding, height, width)
+                RenderMode.LINE -> drawLine(buffer, gc, height, width, fillCurve.get())
+                RenderMode.BAR -> drawBars(gc, barWidth, padding, height, logarithmic.get())
             }
 
             if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
@@ -308,145 +311,86 @@ class BarVisualizer : AutoCanvas() {
             gc.stroke = peakLineColor.value
             step = calculateStep(1, bufferLength, width)
             barWidth = width / floor(bufferLength.toDouble() / step)
-            drawLine(rawMaxTracker.data.map { fftScalar.scale(it) }.toFloatArray(), bufferLength, step, gc, barWidth, height, width, false)
+            val tempBuffer = rawMaxTracker.data.map { fftScalar.scale(it) }.toFloatArray()
+            calculateLocBuffer(tempBuffer, logarithmic.get(), barWidth, step, height)
+            drawLine(tempBuffer, gc, height, width, false)
         }
     }
 
-    private fun drawLine(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, height: Double, width: Double, fill: Boolean) {
-        if (logarithmic.get()) {
-            drawLineLogarithmic(buffer, bufferLength, gc, barWidth, height, width, fill)
-        } else {
-            drawLineLinear(buffer, bufferLength, step, gc, barWidth, height, width, fill)
-        }
-    }
+    private fun calculateLocBuffer(buffer: FloatArray, logarithmic: Boolean, barWidth: Double, step: Double, height: Double) {
+        if (fftLocBuffer.data.size != buffer.size)
+            fftLocBuffer.data = Array(buffer.size) { _ -> FftLoc(0.0, 0.0, 0.0)}
 
-    private fun drawLineLogarithmic(
-        buffer: FloatArray,
-        bufferLength: Int,
-        gc: GraphicsContext,
-        barWidth: Double,
-        height: Double,
-        width: Double,
-        fill: Boolean
-    ) {
         var y = 0.0
-        var x: Double
-        var lastX = 0.0
+        var x = 0.0
+        var num = 0
+        if(logarithmic) {
+            var lastX = 0.0
+            for (i in buffer.indices) {
+                y = max(buffer[i].toDouble(), y)
+                x = xAxis.getDisplayPosition(FourierMath.frequencyOfBin(i, rate, fftSize))
+                if (x - lastX < barWidth) continue
 
-        gc.beginPath()
-        gc.moveTo(0.0, height - buffer[0].toDouble() * height)
+                fftLocBuffer.data[num].x = x
+                fftLocBuffer.data[num].y = height - height * y
+                fftLocBuffer.data[num].raw = y
 
-        for (i in 0 until bufferLength) {
-            y = max(buffer[i].toDouble(), y)
-            x = xAxis.getDisplayPosition(FourierMath.frequencyOfBin(i, rate, fftSize))
-            if (x - lastX < barWidth && i != 0) continue
-
-            gc.lineTo(x, height - y * height)
-            lastX = x
-            y = 0.0
-        }
-        gc.stroke()
-        fillUnderLine(fill, gc, width, height)
-    }
-
-    private fun fillUnderLine(
-        fill: Boolean,
-        gc: GraphicsContext,
-        width: Double,
-        height: Double
-    ) {
-        if (fill) {
-            gc.lineTo(width, height + 5.0)
-            gc.lineTo(0.0, height + 5.0)
-            gc.closePath()
-            if (gc.stroke is Color) {
-                val c1 = Color((gc.stroke as Color).red, (gc.stroke as Color).green, (gc.stroke as Color).blue, 0.25)
-                val c2 = Color((gc.stroke as Color).red, (gc.stroke as Color).green, (gc.stroke as Color).blue, 0.05)
-                gc.fill = LinearGradient(0.0, 0.0, 0.0, height, false, CycleMethod.NO_CYCLE, Stop(0.0, c1), Stop(1.0, c2))
-            } else {
-                gc.fill = peakLineUnderColor.value
+                num++; lastX = x; y = 0.0
             }
-            gc.fill()
+        } else {
+            var stepAccumulator = 0.0
+            for (element in buffer) {
+                y = max(element.toDouble(), y)
+                if (++stepAccumulator < step) continue
+                stepAccumulator -= step
+                x += barWidth
+
+                fftLocBuffer.data[num].x = x
+                fftLocBuffer.data[num].y = height - height * y
+                fftLocBuffer.data[num].raw = y
+
+                num++; y = 0.0
+            }
         }
+
+        fftLocBuffer.size = num
     }
 
-    private fun drawLineLinear(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, height: Double, width: Double, fill: Boolean) {
-        var x = 0.0
-        var y = 0.0
-        var stepAccumulator = 0.0
+    private fun drawLine(buffer: FloatArray, gc: GraphicsContext, height: Double, width: Double, fill: Boolean) {
         gc.beginPath()
         gc.moveTo(0.0, height - buffer[0].toDouble() * height)
 
-        for (i in 0 until bufferLength) {
-            y = max(buffer[i].toDouble(), y)
-            if (++stepAccumulator < step) continue
-            stepAccumulator -= step
-
-            gc.lineTo(x, height - y * height)
-            x += barWidth
-            y = 0.0
-        }
+        for (i in 0 until fftLocBuffer.size)
+            gc.lineTo(fftLocBuffer.data[i].x, fftLocBuffer.data[i].y)
 
         gc.stroke()
         fillUnderLine(fill, gc, width, height)
     }
 
-    private fun drawBars(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, localGap: Int, padding: Double, height: Double, width: Double) {
-        if (logarithmic.get()) {
-            drawBarsLogarithmic(buffer, bufferLength, gc, barWidth, padding, height, width)
+    private fun fillUnderLine(fill: Boolean, gc: GraphicsContext, width: Double, height: Double) {
+        if (!fill) return
+        gc.lineTo(width, height + 5.0)
+        gc.lineTo(0.0, height + 5.0)
+        gc.closePath()
+        if (gc.stroke is Color) {
+            val c1 = Color((gc.stroke as Color).red, (gc.stroke as Color).green, (gc.stroke as Color).blue, 0.25)
+            val c2 = Color((gc.stroke as Color).red, (gc.stroke as Color).green, (gc.stroke as Color).blue, 0.05)
+            gc.fill = LinearGradient(0.0, 0.0, 0.0, height, false, CycleMethod.NO_CYCLE, Stop(0.0, c1), Stop(1.0, c2))
         } else {
-            drawBarsLinear(buffer, bufferLength, step, gc, barWidth, localGap, padding, height)
+            gc.fill = peakLineUnderColor.value
         }
+        gc.fill()
     }
 
-    private fun drawBarsLogarithmic(
-        buffer: FloatArray,
-        bufferLength: Int,
-        gc: GraphicsContext,
-        barWidth: Double,
-        padding: Double,
-        height: Double,
-        width: Double
-    ) {
-        var y = 0.0
+    private fun drawBars(gc: GraphicsContext, barWidth: Double, padding: Double, height: Double, logarithmic: Boolean) {
         var lastX = 0.0
-        var lastEnd = 0.0
-
-        val xArray = DoubleArray(bufferLength) { xAxis.getDisplayPosition(FourierMath.frequencyOfBin(it, rate, fftSize)) }
-
-        for (i in 0 until bufferLength) {
-            y = max(buffer[i].toDouble(), y)
-            val tmp = xArray.getOrElse(i+1) { width }
-            if (tmp - lastX < barWidth && i != 0) continue
-
-            val barHeight = y * height
-            val color = startColor.get().interpolate(endColor.get(), y)
+        for (i in 0 until fftLocBuffer.size) {
+            val color = startColor.get().interpolate(endColor.get(), fftLocBuffer.data[i].raw)
+            val width = if (logarithmic) fftLocBuffer.data[i].x - lastX else barWidth + padding
 
             gc.fill = color
-            gc.fillRect(lastEnd, height - barHeight, tmp - lastEnd + padding, barHeight)
-            lastEnd = tmp
-            lastX = tmp
-            y = 0.0
-        }
-    }
-
-    private fun drawBarsLinear(buffer: FloatArray, bufferLength: Int, step: Double, gc: GraphicsContext, barWidth: Double, localGap: Int, padding: Double, height: Double) {
-        var x = 0.0
-        var y = 0.0
-        var stepAccumulator = 0.0
-
-        for (i in 0 until bufferLength) {
-            y = max(buffer[i].toDouble(), y)
-            if (++stepAccumulator < step) continue
-            stepAccumulator -= step
-
-            val barHeight = y * height
-            val color = startColor.get().interpolate(endColor.get(), y)
-
-            gc.fill = color
-            gc.fillRect(x, height - barHeight, barWidth + padding, barHeight)
-            x += barWidth + localGap
-            y = 0.0
+            gc.fillRect(lastX, fftLocBuffer.data[i].y, width, height - fftLocBuffer.data[i].y)
+            lastX = fftLocBuffer.data[i].x
         }
     }
 
@@ -469,5 +413,26 @@ class BarVisualizer : AutoCanvas() {
     enum class RenderMode {
         LINE,
         BAR
+    }
+
+    data class FftLoc(var x: Double, var y: Double, var raw: Double)
+    data class FftLocBuffer(var size: Int, var data: Array<FftLoc>) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as FftLocBuffer
+
+            if (size != other.size) return false
+            if (!data.contentEquals(other.data)) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = size
+            result = 31 * result + data.contentHashCode()
+            return result
+        }
     }
 }

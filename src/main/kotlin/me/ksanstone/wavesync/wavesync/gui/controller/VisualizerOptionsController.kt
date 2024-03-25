@@ -71,7 +71,7 @@ class VisualizerOptionsController : Initializable {
             windowingFunctionChoiceBox.valueProperty().map { WindowFunctionType.fromDisplayName(it) })
 
         fftSizeChoiceBox.items.clear()
-        fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14, 15).map { 2.0.pow(it.toDouble()).toInt() }
+        fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14, 15, 16).map { 2.0.pow(it.toDouble()).toInt() }
             .toList())
         fftSizeChoiceBox.value = audioCaptureService.fftSize.get()
         fftUpsampleChoiceBox.items.addAll(listOf(1, 2, 4, 8, 16, 32).map { "${it}x" })
