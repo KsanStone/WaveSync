@@ -94,6 +94,7 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     }
 
     private fun initializeDrawLoop() {
+        println("init")
         drawLoop = Timeline(
             KeyFrame(Duration.seconds(1.0 / framerate.get()), { drawCall() })
         )
@@ -219,7 +220,7 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     private val isDrawing = AtomicBoolean(false)
 
     private fun drawCall() {
-        if (isDrawing.get()) return
+        if (isDrawing.get() || !isVisible || parent == null) return
 
         val now = System.nanoTime()
         val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0

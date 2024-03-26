@@ -369,12 +369,12 @@ class BarVisualizer : AutoCanvas() {
         for (i in 0 until fftLocBuffer.size)
             gc.lineTo(fftLocBuffer.data[i].x, fftLocBuffer.data[i].y)
 
+        if (!fillUnderLine(fill, gc, width, height)) gc.closePath()
         gc.stroke()
-        fillUnderLine(fill, gc, width, height)
     }
 
-    private fun fillUnderLine(fill: Boolean, gc: GraphicsContext, width: Double, height: Double) {
-        if (!fill) return
+    private fun fillUnderLine(fill: Boolean, gc: GraphicsContext, width: Double, height: Double): Boolean {
+        if (!fill) return false
         gc.lineTo(width, height + 5.0)
         gc.lineTo(0.0, height + 5.0)
         gc.closePath()
@@ -386,6 +386,7 @@ class BarVisualizer : AutoCanvas() {
             gc.fill = peakLineUnderColor.value
         }
         gc.fill()
+        return true
     }
 
     private fun drawBars(gc: GraphicsContext, barWidth: Double, padding: Double, height: Double, logarithmic: Boolean) {
