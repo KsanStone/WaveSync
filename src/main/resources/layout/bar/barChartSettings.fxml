@@ -16,6 +16,7 @@
         <RowConstraints minHeight="10.0" />
         <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" />
       <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" />
+      <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" />
         <RowConstraints minHeight="30.0" prefHeight="30.0" />
     </rowConstraints>
     <columnConstraints>
@@ -183,31 +184,37 @@
                 <FontIcon iconLiteral="mdal-border_outer" />
             </graphic>
         </Label>
-        <Label text="%visualizer.bar.settings.peak" GridPane.rowIndex="7">
+        <Label text="%visualizer.bar.settings.peak" GridPane.rowIndex="8">
             <graphic>
                 <FontIcon iconLiteral="mdmz-maximize" />
             </graphic>
         </Label>
-        <ToggleSwitch fx:id="peakToggleSwitch" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+        <ToggleSwitch fx:id="peakToggleSwitch" GridPane.columnIndex="1" GridPane.rowIndex="8" />
         <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="5">
             <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
             <InputGroup>
                 <ToggleButton fx:id="bar" onAction="#renderBar" prefHeight="30.0" text="%visualizer.bar.settings.render.bar" />
                 <ToggleButton fx:id="line" onAction="#renderLine" prefHeight="30.0" text="%visualizer.bar.settings.render.line" />
             </InputGroup>
-            <Label text="%visualizer.bar.settings.render.fillCurve"/>
-            <ToggleSwitch fx:id="fillToggleSwitch" />
         </HBox>
-      <Label layoutX="10.0" layoutY="400.0" text="%visualizer.bar.settings.xAxis" GridPane.rowIndex="6">
+      <Label layoutX="10.0" layoutY="400.0" text="%visualizer.bar.settings.xAxis" GridPane.rowIndex="7">
          <graphic>
             <FontIcon iconLiteral="mdal-border_outer" />
          </graphic>
       </Label>
-      <InputGroup GridPane.columnIndex="1" GridPane.rowIndex="6">
+      <InputGroup GridPane.columnIndex="1" GridPane.rowIndex="7">
          <children>
             <ToggleButton fx:id="axisLinearToggle" onAction="#axisLinear" prefHeight="30.0" text="%visualizer.bar.settings.render.linear" />
             <ToggleButton fx:id="axisLogarithmicToggle" onAction="#axisLogarithmic" prefHeight="30.0" text="%visualizer.bar.settings.render.logarithmic" />
          </children>
       </InputGroup>
+      <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="6">
+         <children>
+               <Label text="%visualizer.bar.settings.render.fillCurve" />
+               <ToggleSwitch fx:id="fillToggleSwitch" />
+               <Label text="%visualizer.bar.settings.render.smoothCurve" />
+               <ToggleSwitch fx:id="smoothToggleSwitch" />
+         </children>
+      </HBox>
     </children>
 </GridPane>

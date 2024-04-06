@@ -94,7 +94,6 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     }
 
     private fun initializeDrawLoop() {
-        println("init")
         drawLoop = Timeline(
             KeyFrame(Duration.seconds(1.0 / framerate.get()), { drawCall() })
         )

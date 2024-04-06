@@ -22,6 +22,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_REN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FILL_UNDER_CURVE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_LOGARITHMIC_MODE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SMOOTH_CURVE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.LINEAR_BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.PEAK_LINE_VISIBLE
@@ -65,6 +66,7 @@ class BarVisualizer : AutoCanvas() {
     val logarithmic: BooleanProperty = SimpleBooleanProperty(DEFAULT_LOGARITHMIC_MODE)
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_BAR_RENDER_MODE)
     val fillCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_FILL_UNDER_CURVE)
+    val smoothCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_SMOOTH_CURVE)
 
     private var source: SupportedCaptureSource? = null
     private var rate: Int = 44100
@@ -72,6 +74,7 @@ class BarVisualizer : AutoCanvas() {
     private var frequencyBinSkip: Int = 0
     private lateinit var fftDataArray: FloatArray
     private var fftLocBuffer = FftLocBuffer(0, Array(0) { _ -> FftLoc(0.0, 0.0, 0.0) })
+    private var lineAngleArray = DoubleArray(fftLocBuffer.size + 1)
     private val bufferResizeLock = Object()
 
 
@@ -151,6 +154,7 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(dbMax, "dbMax", this.javaClass, id)
         preferenceService.registerProperty(peakLineVisible, "peakLineVisible", this.javaClass, id)
         preferenceService.registerProperty(fillCurve, "fillCurve", this.javaClass, id)
+        preferenceService.registerProperty(smoothCurve, "smoothCurve", this.javaClass, id)
         preferenceService.registerProperty(logarithmic, "logarithmic", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
@@ -245,22 +249,23 @@ class BarVisualizer : AutoCanvas() {
         if (source == null) return
         val upper = source!!.trimResultTo(fftSize, cutoff.get())
         val lower = source!!.bufferBeginningSkipFor(lowPass.get(), fftSize)
-        xAxis.lowerBound = FourierMath.frequencyOfBin(lower, source!!.rate, fftSize).toDouble()
-        xAxis.upperBound = FourierMath.frequencyOfBin(upper, source!!.rate, fftSize).toDouble()
+        xAxis.lowerBound = FourierMath.frequencyOfBin(lower, rate, fftSize).toDouble()
+        xAxis.upperBound = FourierMath.frequencyOfBin(upper, rate, fftSize).toDouble()
     }
 
     fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
         if(isPaused) return
 
         fftDataArray = array
-        if (source != this.source) {
+        val oldFftSize = this.fftSize
+        this.fftSize = array.size * 2
+        this.rate = source.rate
+        if (source != this.source || oldFftSize != this.fftSize) {
             this.source = source
             sizeFrequencyAxis()
         }
-        this.fftSize = array.size * 2
-        this.rate = source.rate
-        var size = source.trimResultTo(array.size * 2, cutoff.get())
-        frequencyBinSkip = source.bufferBeginningSkipFor(lowPass.get(), array.size * 2)
+        var size = source.trimResultTo(this.fftSize, cutoff.get())
+        frequencyBinSkip = source.bufferBeginningSkipFor(lowPass.get(), this.fftSize)
         size = (size - frequencyBinSkip).coerceAtLeast(10)
         if (smoother.dataSize != size) {
             synchronized(bufferResizeLock) {
@@ -357,6 +362,7 @@ class BarVisualizer : AutoCanvas() {
             fftLocBuffer.data[num].x = width
             fftLocBuffer.data[num].y = height - height * y
             fftLocBuffer.data[num].raw = y
+            num++
         }
 
         fftLocBuffer.size = num
@@ -366,11 +372,104 @@ class BarVisualizer : AutoCanvas() {
         gc.beginPath()
         gc.moveTo(0.0, height - buffer[0].toDouble() * height)
 
-        for (i in 0 until fftLocBuffer.size)
-            gc.lineTo(fftLocBuffer.data[i].x, fftLocBuffer.data[i].y)
+        if (smoothCurve.get()) {
+            drawSmoothedLine(gc, height, width)
+        } else
+            for (i in 0 until fftLocBuffer.size)
+                gc.lineTo(fftLocBuffer.data[i].x, fftLocBuffer.data[i].y)
 
-        if (!fillUnderLine(fill, gc, width, height)) gc.closePath()
         gc.stroke()
+        if (!fillUnderLine(fill, gc, width, height)) gc.closePath()
+    }
+
+    private fun drawSmoothedLine(gc: GraphicsContext, height: Double, width: Double) {
+        val tension = 0.8
+
+        if(lineAngleArray.size != fftLocBuffer.size + 1)
+            lineAngleArray = DoubleArray(fftLocBuffer.size + 1)
+
+        for (i in 1 until fftLocBuffer.size - 1) {
+            val current = fftLocBuffer.data[i]
+            val previousRelative = FftLoc(
+                fftLocBuffer.data[i - 1].x - current.x,
+                fftLocBuffer.data[i - 1].y - current.y,
+                0.0
+            )
+            val nextRelative = FftLoc(
+                fftLocBuffer.data[i + 1].x - current.x,
+                fftLocBuffer.data[i + 1].y - current.y,
+                0.0
+            )
+            if (min(abs(previousRelative.x), abs(nextRelative.x)) < 3) {
+                lineAngleArray[i] = Double.NaN
+                break
+            }
+
+            // Dot product
+            val dotProduct = previousRelative.x * nextRelative.x + previousRelative.y * nextRelative.y
+            // Magnitudes
+            val magBA = hypot(previousRelative.x, previousRelative.y)
+            val magBC = hypot(nextRelative.x, nextRelative.y)
+
+            // Angle in radians
+            var angleTriangle = acos(dotProduct / (magBA * magBC))
+            if (angleTriangle.isNaN()) angleTriangle = PI
+            angleTriangle = 2 * PI - angleTriangle - PI
+            val angleNigger = angleTriangle / 2
+            val angleC = atan2(nextRelative.y, nextRelative.x)
+
+            val isDown = (previousRelative.y <= 0 && nextRelative.y <= 0)
+                    || (abs(previousRelative.y) > abs(nextRelative.y) && previousRelative.y <= 0)
+                    || (abs(previousRelative.y) < abs(nextRelative.y) && nextRelative.y <= 0)
+
+            lineAngleArray[i] = angleC + if (isDown) angleNigger else -angleNigger
+        }
+
+        gc.moveTo(0.0, fftLocBuffer.data[0].y)
+        var doSmooth = true
+        for (i in 1 until fftLocBuffer.size - 1) {
+            val pos = fftLocBuffer.data[i].x to fftLocBuffer.data[i].y
+            if (doSmooth && lineAngleArray[i].isNaN())
+                doSmooth = false
+            if(!doSmooth) {
+                gc.lineTo(pos.first, pos.second)
+                continue
+            }
+
+            val posPrev = fftLocBuffer.data[i - 1].x to fftLocBuffer.data[i - 1].y
+            val xPrev = fftLocBuffer.data[i - 1].x
+            val xNext = fftLocBuffer.data.getOrElse(i + 1) { _ -> FftLoc(width, 0.0, 0.0) }.x
+            val max = min(pos.first - xPrev, xNext - pos.first) / 2
+
+            val handleLength = max * tension
+
+            val handle2 = -cos(lineAngleArray[i]) * handleLength to -sin(lineAngleArray[i]) * handleLength
+            val handle1 = cos(lineAngleArray[i - 1]) * handleLength to sin(lineAngleArray[i - 1]) * handleLength
+
+            gc.bezierCurveTo(
+                handle1.first + posPrev.first,
+                (handle1.second + posPrev.second).coerceIn(0.0, height.coerceAtLeast(1.0)),
+                handle2.first + pos.first,
+                (handle2.second + pos.second).coerceIn(0.0, height.coerceAtLeast(1.0)),
+                pos.first, pos.second
+            )
+        }
+
+        if(fftLocBuffer.size > 2) {
+            val posPrev = fftLocBuffer.data[fftLocBuffer.size - 2]
+            val pos = fftLocBuffer.data[fftLocBuffer.size - 1]
+            val handleLength = (pos.x - posPrev.x) / 2.0 * tension
+            val handle1 = -handleLength to 0.0
+            val handle2 = cos(lineAngleArray[fftLocBuffer.size - 2]) * handleLength to sin(lineAngleArray[fftLocBuffer.size - 2]) * handleLength
+            gc.bezierCurveTo(
+                handle2.first + posPrev.x,
+                (handle2.second + posPrev.y).coerceIn(0.0, height.coerceAtLeast(1.0)),
+                handle1.first + pos.x,
+                (handle1.second + pos.y).coerceIn(0.0, height.coerceAtLeast(1.0)),
+                pos.x, pos.y
+            )
+        }
+
     }
 
     private fun fillUnderLine(fill: Boolean, gc: GraphicsContext, width: Double, height: Double): Boolean {

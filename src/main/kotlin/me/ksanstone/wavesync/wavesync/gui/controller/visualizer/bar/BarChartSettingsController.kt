@@ -17,6 +17,9 @@ import java.util.*
 class BarChartSettingsController : Initializable {
 
     @FXML
+    lateinit var smoothToggleSwitch: ToggleSwitch
+
+    @FXML
     lateinit var fillToggleSwitch: ToggleSwitch
 
     @FXML
@@ -112,8 +115,11 @@ class BarChartSettingsController : Initializable {
         axisLogarithmicToggle.selectedProperty().set(visualizer.logarithmic.get())
         axisLinearToggle.selectedProperty().set(!visualizer.logarithmic.get())
         fillToggleSwitch.selectedProperty().set(visualizer.fillCurve.get())
+        smoothToggleSwitch.selectedProperty().set(visualizer.smoothCurve.get())
         fillToggleSwitch.disableProperty().bind(visualizer.renderMode.map { it == BarVisualizer.RenderMode.BAR })
+        smoothToggleSwitch.disableProperty().bind(visualizer.renderMode.map { it == BarVisualizer.RenderMode.BAR })
         visualizer.fillCurve.bind(fillToggleSwitch.selectedProperty())
+        visualizer.smoothCurve.bind(smoothToggleSwitch.selectedProperty())
 
         maxFreqSpinner.valueFactory = SpinnerValueFactory.IntegerSpinnerValueFactory(
             ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW,
