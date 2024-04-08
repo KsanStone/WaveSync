@@ -390,39 +390,33 @@ class BarVisualizer : AutoCanvas() {
 
         for (i in 1 until fftLocBuffer.size - 1) {
             val current = fftLocBuffer.data[i]
-            val previousRelative = FftLoc(
-                fftLocBuffer.data[i - 1].x - current.x,
-                fftLocBuffer.data[i - 1].y - current.y,
-                0.0
-            )
-            val nextRelative = FftLoc(
-                fftLocBuffer.data[i + 1].x - current.x,
-                fftLocBuffer.data[i + 1].y - current.y,
-                0.0
-            )
-            if (min(abs(previousRelative.x), abs(nextRelative.x)) < 3) {
+            val previousRelativeX = fftLocBuffer.data[i - 1].x - current.x
+            val previousRelativeY = fftLocBuffer.data[i - 1].y - current.y
+            val nextRelativeX = fftLocBuffer.data[i + 1].x - current.x
+            val nextRelativeY =fftLocBuffer.data[i + 1].y - current.y
+
+            if (min(abs(previousRelativeX), abs(nextRelativeX)) < 3) {
                 lineAngleArray[i] = Double.NaN
                 break
             }
 
             // Dot product
-            val dotProduct = previousRelative.x * nextRelative.x + previousRelative.y * nextRelative.y
+            val dotProduct = previousRelativeX * nextRelativeX + previousRelativeY * nextRelativeY
             // Magnitudes
-            val magBA = hypot(previousRelative.x, previousRelative.y)
-            val magBC = hypot(nextRelative.x, nextRelative.y)
+            val magBA = hypot(previousRelativeX, previousRelativeY)
+            val magBC = hypot(nextRelativeX, nextRelativeY)
 
             // Angle in radians
             var angleTriangle = acos(dotProduct / (magBA * magBC))
             if (angleTriangle.isNaN()) angleTriangle = PI
             angleTriangle = 2 * PI - angleTriangle - PI
-            val angleNigger = angleTriangle / 2
-            val angleC = atan2(nextRelative.y, nextRelative.x)
+            val angleC = atan2(nextRelativeY, nextRelativeX)
 
-            val isDown = (previousRelative.y <= 0 && nextRelative.y <= 0)
-                    || (abs(previousRelative.y) > abs(nextRelative.y) && previousRelative.y <= 0)
-                    || (abs(previousRelative.y) < abs(nextRelative.y) && nextRelative.y <= 0)
+            val isDown = (previousRelativeY <= 0 && nextRelativeY <= 0)
+                    || (abs(previousRelativeY) > abs(nextRelativeY) && previousRelativeY <= 0)
+                    || (abs(previousRelativeY) < abs(nextRelativeY) && nextRelativeY <= 0)
 
-            lineAngleArray[i] = angleC + if (isDown) angleNigger else -angleNigger
+            lineAngleArray[i] = angleC + if (isDown) angleTriangle / 2 else angleTriangle / -2
         }
 
         gc.moveTo(0.0, fftLocBuffer.data[0].y)
@@ -436,19 +430,19 @@ class BarVisualizer : AutoCanvas() {
                 continue
             }
 
-            val posPrev = fftLocBuffer.data[i - 1].x to fftLocBuffer.data[i - 1].y
-            val xPrev = fftLocBuffer.data[i - 1].x
-            val xNext = fftLocBuffer.data.getOrElse(i + 1) { _ -> FftLoc(width, 0.0, 0.0) }.x
-            val max = min(pos.first - xPrev, xNext - pos.first) / 2
+            val previousY = fftLocBuffer.data[i - 1].y
+            val previousX = fftLocBuffer.data[i - 1].x
+            val nextX = fftLocBuffer.data.getOrElse(i + 1) { _ -> FftLoc(width, 0.0, 0.0) }.x
+            val maxHandleLength = min(pos.first - previousX, nextX - pos.first) / 2
 
-            val handleLength = max * tension
+            val handleLength = maxHandleLength * tension
 
-            val handle2 = -cos(lineAngleArray[i]) * handleLength to -sin(lineAngleArray[i]) * handleLength
             val handle1 = cos(lineAngleArray[i - 1]) * handleLength to sin(lineAngleArray[i - 1]) * handleLength
+            val handle2 = -cos(lineAngleArray[i]) * handleLength to -sin(lineAngleArray[i]) * handleLength
 
             gc.bezierCurveTo(
-                handle1.first + posPrev.first,
-                (handle1.second + posPrev.second).coerceIn(0.0, height.coerceAtLeast(1.0)),
+                handle1.first + previousX,
+                (handle1.second + previousY).coerceIn(0.0, height.coerceAtLeast(1.0)),
                 handle2.first + pos.first,
                 (handle2.second + pos.second).coerceIn(0.0, height.coerceAtLeast(1.0)),
                 pos.first, pos.second
