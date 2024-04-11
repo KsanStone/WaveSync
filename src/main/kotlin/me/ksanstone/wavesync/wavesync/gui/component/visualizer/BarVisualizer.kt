@@ -305,7 +305,7 @@ class BarVisualizer : AutoCanvas() {
             calculateLocBuffer(buffer, logarithmic.get(), barWidth, step, height, width)
 
             when (renderMode.get()!!) {
-                RenderMode.LINE -> drawLine(buffer, gc, height, width, fillCurve.get())
+                RenderMode.LINE -> drawLine(gc, height, width, fillCurve.get())
                 RenderMode.BAR -> drawBars(gc, barWidth, padding, height, logarithmic.get())
             }
 
@@ -317,7 +317,7 @@ class BarVisualizer : AutoCanvas() {
             barWidth = width / floor(bufferLength.toDouble() / step)
             val tempBuffer = rawMaxTracker.data.map { fftScalar.scale(it) }.toFloatArray()
             calculateLocBuffer(tempBuffer, logarithmic.get(), barWidth, step, height, width)
-            drawLine(tempBuffer, gc, height, width, false)
+            drawLine(gc, height, width, false)
         }
     }
 
@@ -368,9 +368,9 @@ class BarVisualizer : AutoCanvas() {
         fftLocBuffer.size = num
     }
 
-    private fun drawLine(buffer: FloatArray, gc: GraphicsContext, height: Double, width: Double, fill: Boolean) {
+    private fun drawLine(gc: GraphicsContext, height: Double, width: Double, fill: Boolean) {
         gc.beginPath()
-        gc.moveTo(0.0, height - buffer[0].toDouble() * height)
+        gc.moveTo(0.0, fftLocBuffer.data[0].y)
 
         if (smoothCurve.get()) {
             drawSmoothedLine(gc, height, width)
@@ -419,7 +419,6 @@ class BarVisualizer : AutoCanvas() {
             lineAngleArray[i] = angleC + if (isDown) angleTriangle / 2 else angleTriangle / -2
         }
 
-        gc.moveTo(0.0, fftLocBuffer.data[0].y)
         var doSmooth = true
         for (i in 1 until fftLocBuffer.size - 1) {
             val pos = fftLocBuffer.data[i].x to fftLocBuffer.data[i].y
