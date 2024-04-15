@@ -38,6 +38,7 @@ class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: Value
     val highlightedVerticalLines: ObservableList<Double> = FXCollections.observableArrayList()
     val highlightedHorizontalLines: ObservableList<Double> = FXCollections.observableArrayList()
     val forceDrawVerticalAccentLines = SimpleBooleanProperty(false)
+    val dependOnXAxis = SimpleBooleanProperty(false)
 
     private var horizontalGridLines: Path = Path()
     private var verticalGridLines: Path = Path()
@@ -173,7 +174,7 @@ class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: Value
             yAxis.resizeRelocate(0.0, 0.0, leftPad, height - bottomPad)
             yAxis.minHeight = height - bottomPad - 1
         }
-        if (xAxisShown.get().or(forceDrawVerticalAccentLines.get())) {
+        if (xAxisShown.get().or(forceDrawVerticalAccentLines.get()).or(dependOnXAxis.get())) {
             xAxis.resizeRelocate(leftPad, height - bottomPad, width - leftPad, bottomPad)
             xAxis.minWidth = width - leftPad - 1
         }

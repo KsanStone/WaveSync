@@ -1,6 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.controller
 
 import atlantafx.base.controls.ToggleSwitch
+import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
@@ -8,10 +9,14 @@ import javafx.scene.control.Alert.AlertType
 import javafx.scene.image.Image
 import javafx.stage.Stage
 import javafx.util.Duration
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_END_COLOR
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_START_COLOR
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.GlobalColorService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
 import xt.audio.Enums.XtSystem
 import java.net.URL
@@ -21,8 +26,15 @@ import kotlin.math.round
 import kotlin.math.roundToInt
 
 
-class VisualizerOptionsController : Initializable {
+class MainSettingsController : Initializable {
 
+    @FXML
+    lateinit var startColorPicker: ColorPicker
+
+    @FXML
+    lateinit var endColorPicker: ColorPicker
+
+    @FXML
     lateinit var fftUpsampleChoiceBox: ChoiceBox<String>
 
     @FXML
@@ -48,6 +60,8 @@ class VisualizerOptionsController : Initializable {
 
     private lateinit var audioCaptureService: AudioCaptureService
     private lateinit var localizationService: LocalizationService
+    private lateinit var preferenceService: PreferenceService
+    private lateinit var globalColorService: GlobalColorService
 
     private fun changeAudioSystem() {
         audioCaptureService.usedAudioSystem.set(XtSystem.valueOf(audioServerChoiceBox.value))
@@ -57,6 +71,13 @@ class VisualizerOptionsController : Initializable {
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
+        preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
+        globalColorService = WaveSyncBootApplication.applicationContext.getBean(GlobalColorService::class.java)
+
+        startColorPicker.value = globalColorService.startColor.get()
+        globalColorService.startColor.bind(startColorPicker.valueProperty())
+        endColorPicker.value = globalColorService.endColor.get()
+        globalColorService.endColor.bind(endColorPicker.valueProperty())
 
         audioServerChoiceBox.items.clear()
         audioServerChoiceBox.items.addAll(audioCaptureService.audioSystems.map { it.name })
@@ -145,6 +166,29 @@ class VisualizerOptionsController : Initializable {
         audioCaptureService.fftSize.set(fftSizeChoiceBox.value)
         applyFreqButton.styleClass.remove("accent")
         audioCaptureService.restartCapture()
+    }
+
+    fun purgeDataDialog(actionEvent: ActionEvent) {
+        val reset = ButtonType(localizationService.get("confirmation.yes"), ButtonBar.ButtonData.OK_DONE)
+        val cancel = ButtonType(localizationService.get("confirmation.no"), ButtonBar.ButtonData.CANCEL_CLOSE)
+
+        val alert = Alert(
+            AlertType.CONFIRMATION,
+            localizationService.get("confirmation.deviceOptions.purge"),
+            reset,
+            cancel
+        )
+        (alert.dialogPane.scene.window as Stage).icons.add(Image("icon.png"))
+
+        if (alert.showAndWait().get() == reset) {
+            fftSizeChoiceBox.value = FFT_SIZE
+            preferenceService.purgeAllData()
+        }
+    }
+
+    fun resetColors() {
+        startColorPicker.value = DEFAULT_START_COLOR
+        endColorPicker.value = DEFAULT_END_COLOR
     }
 
 }

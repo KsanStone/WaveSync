@@ -31,10 +31,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.util.LogarithmicAxis
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
-import me.ksanstone.wavesync.wavesync.service.FourierMath
-import me.ksanstone.wavesync.wavesync.service.LocalizationService
-import me.ksanstone.wavesync.wavesync.service.PreferenceService
-import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
+import me.ksanstone.wavesync.wavesync.service.*
 import me.ksanstone.wavesync.wavesync.service.fftScaling.*
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
@@ -88,10 +85,15 @@ class BarVisualizer : AutoCanvas() {
     init {
         if (xAxis is NumberAxis)
             (xAxis as NumberAxis).tickUnit = 1000.0
+        canvasContainer.dependOnXAxis.set(true)
         canvasContainer.highlightedVerticalLines.add(20000.0)
         detachedWindowNameProperty.set("Bar")
         canvasContainer.tooltipEnabled.set(true)
         canvasContainer.tooltipContainer.children.add(tooltip)
+
+        val globalColorService = WaveSyncBootApplication.applicationContext.getBean(GlobalColorService::class.java)
+        this.startColor.bind(globalColorService.startColor)
+        this.endColor.bind(globalColorService.endColor)
 
         smoother = MultiplicativeSmoother()
         smoother.dataSize = 512

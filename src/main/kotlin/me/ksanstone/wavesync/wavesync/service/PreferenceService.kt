@@ -124,6 +124,10 @@ class PreferenceService {
         getPreferences(clazz, id).removeNode()
     }
 
+    fun purgeAllData() {
+        rootPreferences.removeNode()
+    }
+
     companion object {
         const val DEFAULT_ID = "main"
     }
