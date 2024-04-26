@@ -170,7 +170,24 @@ class BarVisualizer : AutoCanvas() {
                 tooltip.text = "---"
                 return
             }
+            if (logarithmic.get()) logarithmicTooltipText() else linearTooltipText()
+        } catch (_: IndexOutOfBoundsException) { }
+    }
 
+    private fun logarithmicTooltipText() {
+        val x = canvasContainer.tooltipPosition.get().x
+        val freq = xAxis.getValueForDisplay(x).toDouble()
+        val bin = FourierMath.binOfFrequency(rate, fftSize, freq)
+        val rawValue = fftDataArray.getOrElse(bin) { _ -> Float.NEGATIVE_INFINITY }
+        val maxValue = rawMaxTracker.data.getOrElse(bin) { _ -> Float.NEGATIVE_INFINITY }
+        tooltip.text = "Freq: ${localizationService.formatNumber(freq, "Hz")}\n" +
+                       "Bin: ${localizationService.formatNumber(bin+1)}\n" +
+                       "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
+        if (peakLineVisible.get())
+            tooltip.text += "\nMax: ${localizationService.formatNumber(fftScalar.scaleRaw(maxValue))}"
+    }
+
+    private fun linearTooltipText() {
             val x = canvasContainer.tooltipPosition.get().x
             val bufferLength = smoother.dataSize
             val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
@@ -185,26 +202,11 @@ class BarVisualizer : AutoCanvas() {
             val rawValue = fftDataArray.slice(binStart + frequencyBinSkip..binEnd + frequencyBinSkip).max()
             tooltip.text =
                 "Bar: ${localizationService.formatNumber(bar)} \n" +
-                        "FFT: ${localizationService.formatNumber(binStart)} - ${
-                            localizationService.formatNumber(
-                                binEnd
-                            )
-                        }\n" +
-                        "Freq: ${
-                            localizationService.formatNumber(
-                                minFreq,
-                                "Hz"
-                            )
-                        } - ${localizationService.formatNumber(maxFreq, "Hz")}\n" +
-                        "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
-            if (peakLineVisible.get()) tooltip.text += "\nMax: ${
-                localizationService.formatNumber(
-                    fftScalar.scaleRaw(
-                        maxValue
-                    )
-                )
-            }"
-        } catch (_: IndexOutOfBoundsException) { }
+                "FFT: ${localizationService.formatNumber(binStart)} - ${localizationService.formatNumber(binEnd)}\n" +
+                "Freq: ${localizationService.formatNumber(minFreq, "Hz")} - ${localizationService.formatNumber(maxFreq, "Hz")}\n" +
+                "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
+            if (peakLineVisible.get())
+                tooltip.text += "\nMax: ${localizationService.formatNumber(fftScalar.scaleRaw(maxValue))}"
     }
 
     private fun changeScalar() {

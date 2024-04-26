@@ -1,9 +1,15 @@
 package me.ksanstone.wavesync.wavesync.service
 
 import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 object FourierMath {
+
+    fun binOfFrequency(rate: Int, fftSize: Int, freq: Double): Int {
+        val freqPerBin = rate.toDouble() / fftSize
+        return floor(freq / freqPerBin).toInt().coerceIn(0, fftSize)
+    }
 
     fun frequencyOfBin(rate: Int, fftSize: Int): Int {
         return frequencyOfBin(1, rate, fftSize)
