@@ -181,7 +181,7 @@ class AudioCaptureService(
         if (maxIdx == -1) return
 
         val peakV = fftResult[maxIdx]
-        if (peakV < 0.001f) return
+        if (peakV < 0.00005f) return
 
         peakFrequency.value = interpolator.calcPeak(fftResult, maxIdx, source.get().rate).toDouble()
         peakValue.value = peakV
