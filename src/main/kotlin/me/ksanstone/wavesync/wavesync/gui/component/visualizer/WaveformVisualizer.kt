@@ -75,13 +75,17 @@ class WaveformVisualizer : AutoCanvas() {
 
         val ls = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         alignLowPass.set(calcAlignLowPass())
+
         sampleRate.addListener { _, _, v ->
-            alignLowPass.value = calcAlignLowPass()
             resizeBuffer(bufferDuration.get(), v.toInt())
+            alignLowPass.value = calcAlignLowPass()
         }
-        bufferDuration.addListener { _, _, v -> resizeBuffer(v, sampleRate.get()) }
-        align.bind(
-            acs.peakValue.greaterThan(0.05f).and(enableAlign).and(acs.peakFrequency.greaterThan(alignLowPass))
+        bufferDuration.addListener { _, _, v ->
+            resizeBuffer(v, sampleRate.get())
+            alignLowPass.value = calcAlignLowPass()
+        }
+        align.bind( // 0.0001 ~ -40db
+            acs.peakValue.greaterThan(0.0001f).and(enableAlign).and(acs.peakFrequency.greaterThan(alignLowPass))
                 .and(acs.peakFrequency.lessThanOrEqualTo(20000))
         )
 
@@ -111,7 +115,7 @@ class WaveformVisualizer : AutoCanvas() {
     }
 
     private fun calcAlignLowPass(): Double {
-        return 1 / (buffer.size.toDouble() / sampleRate.get().toDouble()) * 1.5
+        return 1 / (buffer.size.toDouble() / sampleRate.get().toDouble()) * 1.2
     }
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
@@ -149,7 +153,7 @@ class WaveformVisualizer : AutoCanvas() {
 
     private fun info(label: Label) {
         Platform.runLater {
-            label.text = "${alignFrequency.value}Hz ${align.value}"
+            label.text = "${alignFrequency.value}Hz ${align.value} Lo: ${alignLowPass.value}"
         }
     }
 
