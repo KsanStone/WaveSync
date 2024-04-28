@@ -6,7 +6,7 @@ import kotlin.math.roundToInt
 
 object FourierMath {
 
-    const val ALIGN_THRESHOLD = -0.0001 // -40 Db
+    const val ALIGN_THRESHOLD = 0.0001 // -40 Db
 
     fun binOfFrequency(rate: Int, fftSize: Int, freq: Double): Int {
         val freqPerBin = rate.toDouble() / fftSize

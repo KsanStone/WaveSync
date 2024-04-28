@@ -181,10 +181,13 @@ class AudioCaptureService(
         if (maxIdx == -1) return
 
         val peakV = fftResult[maxIdx]
-        if (peakV < 0.00001f) return
+        if (peakV < 0.00001f) {
+            peakValue.value = 0.0f
+            return
+        }
 
         peakFrequency.value = interpolator.calcPeak(fftResult, maxIdx, source.get().rate).toDouble()
-        peakValue.value = peakV
+        peakValue.value = sqrt(peakV)
     }
 
     fun registerFFTObserver(observer: BiConsumer<FloatArray, SupportedCaptureSource>) {
