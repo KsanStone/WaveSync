@@ -387,7 +387,7 @@ class BarVisualizer : AutoCanvas() {
     }
 
     private fun drawSmoothedLine(gc: GraphicsContext, height: Double, width: Double) {
-        val tension = 0.8
+        val tension = 0.98
 
         if(lineAngleArray.size != fftLocBuffer.size + 1)
             lineAngleArray = DoubleArray(fftLocBuffer.size + 1)
