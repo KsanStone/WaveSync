@@ -22,11 +22,8 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.gui.utility.roundTo
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.*
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
-import me.ksanstone.wavesync.wavesync.service.LocalizationService
-import me.ksanstone.wavesync.wavesync.service.PreferenceService
-import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.roundToInt
 
@@ -84,8 +81,8 @@ class WaveformVisualizer : AutoCanvas() {
             resizeBuffer(v, sampleRate.get())
             alignLowPass.value = calcAlignLowPass()
         }
-        align.bind( // 0.0001 ~ -40db
-            acs.peakValue.greaterThan(0.0001f).and(enableAlign).and(acs.peakFrequency.greaterThan(alignLowPass))
+        align.bind(
+            acs.peakValue.greaterThan(FourierMath.ALIGN_THRESHOLD).and(enableAlign).and(acs.peakFrequency.greaterThan(alignLowPass))
                 .and(acs.peakFrequency.lessThanOrEqualTo(20000))
         )
 
