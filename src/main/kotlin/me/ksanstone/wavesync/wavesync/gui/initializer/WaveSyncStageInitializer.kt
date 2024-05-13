@@ -7,13 +7,14 @@ import javafx.scene.image.Image
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyCombination
 import javafx.scene.input.KeyEvent
+import javafx.scene.layout.Priority
+import javafx.scene.layout.VBox
 import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.WaveSyncApplication
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
-import me.ksanstone.wavesync.wavesync.service.LocalizationService
-import me.ksanstone.wavesync.wavesync.service.StageSizingService
-import me.ksanstone.wavesync.wavesync.service.ThemeService
+import me.ksanstone.wavesync.wavesync.gui.component.control.MainControl
+import me.ksanstone.wavesync.wavesync.gui.window.CaptionConfiguration
+import me.ksanstone.wavesync.wavesync.service.*
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
@@ -26,7 +27,8 @@ class WaveSyncStageInitializer(
     private val themeService: ThemeService,
     private val localizationService: LocalizationService,
     private val stageSizingService: StageSizingService,
-    private val audioCaptureService: AudioCaptureService
+    private val audioCaptureService: AudioCaptureService,
+    private val stageManager: StageManager
 ) : ApplicationListener<StageReadyEvent> {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
@@ -51,6 +53,7 @@ class WaveSyncStageInitializer(
             stage.minHeight = 350.0
             stage.icons.add(Image("icon.png"))
             stage.scene = scene
+            customize(stage)
             stage.show()
             WaveSyncApplication.logTimePoint("Showing stage")
         }
@@ -116,6 +119,16 @@ class WaveSyncStageInitializer(
                 audioCaptureService.paused.value = false
             }
         }
+    }
+
+    /**
+     * Register custom controls & take care of the scene
+     */
+    fun customize(stage: Stage) {
+        val parent = stage.scene.root
+        val control = MainControl().apply { this.children.add(parent); VBox.setVgrow(parent, Priority.ALWAYS) }
+        stage.scene.root = control
+        stageManager.registerStage(stage, CaptionConfiguration())
     }
 }
 

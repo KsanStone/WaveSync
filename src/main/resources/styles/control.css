@@ -1,0 +1,38 @@
+.caption-button {
+    -fx-pref-height: 31px;
+    -fx-max-height: 31px;
+    -fx-min-height: 31px;
+    -fx-border-radius: 0;
+    -fx-border-style: none;
+
+    -fx-pref-width: 46px;
+    -fx-min-width: 46px;
+    -fx-max-width: 46px;
+    -fx-font-family: "Segoe MDL2 Assets";
+    -fx-alignment: center;
+    -fx-font-size: 10px;
+    -fx-text-fill: -color-fg-default;
+}
+
+.caption, .bar-height {
+    -fx-min-height: 31px;
+    -fx-pref-height: 31px;
+}
+
+.control-title {
+    -fx-font-size: 10px;
+}
+
+.caption {
+    -fx-max-width: 138px;
+}
+
+.control-minimize.hover {
+    -fx-background-color: -color-base-6 !important;
+}
+.control-maximise.hover {
+    -fx-background-color: -color-base-6 !important;
+}
+.control-close.hover {
+    -fx-background-color: -color-danger-4 !important;
+}
