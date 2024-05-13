@@ -1,16 +1,18 @@
-package me.ksanstone.wavesync.wavesync.gui.window.data;
+package me.ksanstone.wavesync.wavesync.gui.window.data
 
-import com.sun.jna.Pointer;
-import com.sun.jna.Structure;
-import com.sun.jna.platform.win32.WinDef;
+import com.sun.jna.Pointer
+import com.sun.jna.Structure
+import com.sun.jna.Structure.FieldOrder
+import com.sun.jna.platform.win32.WinDef
 
-@Structure.FieldOrder({"rgrc", "lppos"})
-public class NCCALCSIZE_PARAMS extends Structure {
-    public WinDef.RECT[] rgrc = new WinDef.RECT[3];
-    public Pointer lppos;
+@FieldOrder("rgrc", "lppos")
+class NCCALCSIZE_PARAMS(p: Pointer?) : Structure(p) {
+    @JvmField
+    var rgrc: Array<WinDef.RECT?> = arrayOfNulls(3)
+    @JvmField
+    var lppos: Pointer? = null
 
-    public NCCALCSIZE_PARAMS(Pointer p) {
-        super(p);
-        read();
+    init {
+        read()
     }
 }

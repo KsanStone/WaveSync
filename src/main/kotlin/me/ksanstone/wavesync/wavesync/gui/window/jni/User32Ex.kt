@@ -1,45 +1,51 @@
-package me.ksanstone.wavesync.wavesync.gui.window.jni;
+package me.ksanstone.wavesync.wavesync.gui.window.jni
 
-import com.sun.jna.Native;
-import com.sun.jna.platform.win32.User32;
-import com.sun.jna.win32.W32APIOptions;
-import me.ksanstone.wavesync.wavesync.gui.window.data.TRACKMOUSEEVENT;
+import com.sun.jna.Native
+import com.sun.jna.platform.win32.BaseTSD.LONG_PTR
+import com.sun.jna.platform.win32.User32
+import com.sun.jna.platform.win32.WinDef
+import com.sun.jna.platform.win32.WinDef.*
+import com.sun.jna.platform.win32.WinUser.WindowProc
+import com.sun.jna.win32.W32APIOptions
+import me.ksanstone.wavesync.wavesync.gui.window.data.TRACKMOUSEEVENT
 
-public interface User32Ex extends User32 {
-
-    User32Ex INSTANCE = Native.load("user32", User32Ex.class, W32APIOptions.DEFAULT_OPTIONS);
-
+interface User32Ex : User32 {
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowlongptra
-    LONG_PTR SetWindowLongPtr( HWND hWnd, int nIndex, WindowProc wndProc );
-    LONG_PTR SetWindowLongPtr( HWND hWnd, int nIndex, LONG_PTR wndProc );
+    fun SetWindowLongPtr(hWnd: HWND?, nIndex: Int, wndProc: WindowProc?): LONG_PTR?
+    fun SetWindowLongPtr(hWnd: HWND?, nIndex: Int, wndProc: LONG_PTR?): LONG_PTR?
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-callwindowproca
-    LRESULT CallWindowProc( LONG_PTR lpPrevWndFunc, HWND hWnd, int uMsg, WPARAM wParam, LPARAM lParam );
+    fun CallWindowProc(lpPrevWndFunc: LONG_PTR?, hWnd: HWND?, uMsg: Int, wParam: WPARAM?, lParam: LPARAM?): LRESULT?
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-iszoomed
-    boolean IsZoomed( HWND hWnd );
+    fun IsZoomed(hWnd: HWND?): Boolean
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-drawframecontrol
-    boolean DrawFrameControl(HDC hdc, RECT rect, int uType, int uState);
+    fun DrawFrameControl(hdc: HDC?, rect: WinDef.RECT?, uType: Int, uState: Int): Boolean
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow
-    int GetDpiForWindow( HWND hwnd );
+    fun GetDpiForWindow(hwnd: HWND?): Int
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsystemmetricsfordpi
-    int GetSystemMetricsForDpi( int nIndex, int dpi );
+    fun GetSystemMetricsForDpi(nIndex: Int, dpi: Int): Int
 
     // https://docs.microsoft.com/de-DE/windows/win32/api/winuser/nf-winuser-getdcex
-    HDC GetDCEx(HWND hWnd, HRGN hrgnClip, int flags);
+    fun GetDCEx(hWnd: HWND?, hrgnClip: HRGN?, flags: Int): HDC?
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect
-    int FillRect(HDC hdc, RECT lprc, HBRUSH hbr);
+    fun FillRect(hdc: HDC?, lprc: WinDef.RECT?, hbr: HBRUSH?): Int
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-adjustwindowrectexfordpi
-    boolean AdjustWindowRectExForDpi(RECT lpRect, int dwStyle, boolean bMenu, int dwExStyle, int dpi);
+    fun AdjustWindowRectExForDpi(lpRect: WinDef.RECT?, dwStyle: Int, bMenu: Boolean, dwExStyle: Int, dpi: Int): Boolean
 
     // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-trackmouseevent
-    boolean TrackMouseEvent(TRACKMOUSEEVENT lpEventTrack);
+    fun TrackMouseEvent(lpEventTrack: TRACKMOUSEEVENT?): Boolean
 
     // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-screentoclient
-    boolean ScreenToClient(HWND hWnd, POINT lpPoint);
+    fun ScreenToClient(hWnd: HWND?, lpPoint: POINT?): Boolean
+
+    companion object {
+        @JvmField
+        val INSTANCE: User32Ex = Native.load("user32", User32Ex::class.java, W32APIOptions.DEFAULT_OPTIONS)
+    }
 }
