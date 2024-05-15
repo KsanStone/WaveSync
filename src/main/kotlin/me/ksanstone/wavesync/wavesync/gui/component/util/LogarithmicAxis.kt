@@ -46,10 +46,9 @@ class LogarithmicAxis(lowerBound: Double, upperBound: Double) : ValueAxis<Number
      * [0,Double.MAX_VALUE]
      *
      */
-    @Throws(Exception::class)
     private fun validateBounds(lowerBound: Double, upperBound: Double) {
         if (lowerBound < 0 || upperBound < 0 || lowerBound > upperBound) {
-            throw Exception(
+            throw IllegalArgumentException(
                 "The logarithmic range should be include to [0,Double.MAX_VALUE] and the lowerBound should be less than the upperBound"
             )
         }

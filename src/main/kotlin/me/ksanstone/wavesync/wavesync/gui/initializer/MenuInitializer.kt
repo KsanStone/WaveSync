@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component
 
 @Component
 class MenuInitializer(
-    private val localizationService: LocalizationService
+    private val localizationService: LocalizationService,
+    private val waveSyncStageInitializer: WaveSyncStageInitializer
 ) {
 
     private var dialogWindows: MutableMap<String, Stage> = mutableMapOf()
@@ -26,6 +27,7 @@ class MenuInitializer(
         } else {
             val stage = createDialogStage(fxml, title)
             dialogWindows[fxml] = stage
+            waveSyncStageInitializer.customize(stage)
             stage.show()
         }
     }

@@ -77,6 +77,7 @@ class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: Value
 
         yAxis.side = Side.LEFT
         yAxis.animated = false
+        yAxis.minWidth = 33.0
         yAxis.managedProperty().bind(yAxis.visibleProperty())
         yAxis.childrenUnmodifiable
             .addListener(ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
@@ -164,7 +165,7 @@ class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: Value
     }
 
     private fun doLayout() {
-        val leftPad = if (yAxisShown.get()) yAxis.prefWidth(-1.0) else 0.0
+        val leftPad = if (yAxisShown.get()) yAxis.prefWidth(-1.0).coerceAtLeast(yAxis.minWidth) else 0.0
         val bottomPad = if (xAxisShown.get()) xAxis.prefHeight(-1.0) else 0.0
 
         yAxis.isVisible = yAxisShown.get()

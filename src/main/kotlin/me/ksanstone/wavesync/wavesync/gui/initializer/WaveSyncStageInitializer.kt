@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.initializer
 
+import javafx.beans.value.ChangeListener
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
 import javafx.scene.Scene
@@ -100,6 +101,8 @@ class WaveSyncStageInitializer(
             }
         }
 
+        customize(stage)
+
         return stage
     }
 
@@ -125,6 +128,20 @@ class WaveSyncStageInitializer(
      * Register custom controls & take care of the scene
      */
     fun customize(stage: Stage) {
+        if (stage.scene == null) {
+            var listener: ChangeListener<Scene>? = null
+            listener = ChangeListener<Scene>  { _, _, v ->
+                if (v!=null)
+                    injectControls(stage)
+                stage.sceneProperty().removeListener(listener)
+            }
+            stage.sceneProperty().addListener(listener)
+        } else {
+            injectControls(stage)
+        }
+    }
+
+    fun injectControls(stage: Stage) {
         val parent = stage.scene.root
         val control = MainControl().apply { this.children.add(parent); VBox.setVgrow(parent, Priority.ALWAYS) }
         stage.scene.root = control

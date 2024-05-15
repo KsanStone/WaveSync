@@ -11,6 +11,10 @@
     -fx-font-family: "Segoe MDL2 Assets";
     -fx-alignment: center;
     -fx-font-size: 10px;
+    -fx-text-fill: -color-fg-subtle;
+}
+
+.caption-button.hover {
     -fx-text-fill: -color-fg-default;
 }
 
@@ -20,7 +24,8 @@
 }
 
 .control-title {
-    -fx-font-size: 10px;
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-subtle;
 }
 
 .caption {
