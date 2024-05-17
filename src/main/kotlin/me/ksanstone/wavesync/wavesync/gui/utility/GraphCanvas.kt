@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
+import javafx.beans.InvalidationListener
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.FXCollections
@@ -20,7 +21,11 @@ import javafx.scene.text.Text
 import java.lang.Double.isNaN
 import java.text.DecimalFormat
 
-class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: ValueAxis<Number>, private val canvas: Canvas) : Pane() {
+class GraphCanvas(
+    private var xAxis: ValueAxis<Number>,
+    private var yAxis: ValueAxis<Number>,
+    private val canvas: Canvas
+) : Pane() {
 
     companion object {
         const val TOOLTIP_OFFSET = 5.0
@@ -50,6 +55,15 @@ class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: Value
     private var horizontalZeroLineVisible = true
     private var verticalZeroLineVisible = true
 
+    private lateinit var xAxisChildListener: ListChangeListener<Node?>
+    private lateinit var yAxisChildListener: ListChangeListener<Node?>
+    private val reLayoutListener = InvalidationListener { _ -> doLayout(); layoutTooltipCross() }
+    private val tickMarkListener = ListChangeListener<Any> { c ->
+        while (c.next()) { /* layout once updates have settled */
+        }; layoutGrid()
+    }
+
+
     init {
         horizontalGridLines.styleClass.setAll("horizontal-grid-lines")
         verticalGridLines.styleClass.setAll("vertical-grid-lines")
@@ -67,7 +81,6 @@ class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: Value
             highlightedHorizontalGridLines,
             highlightedVerticalGridLines,
             tooltipCross,
-            yAxis,
             canvas,
             tooltipContainer
         )
@@ -75,12 +88,113 @@ class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: Value
         listOf(xAxisShown, yAxisShown, widthProperty(), heightProperty(), yAxis.widthProperty())
             .forEach { it.addListener { _ -> doLayout(); layoutTooltipCross() } }
 
-        yAxis.side = Side.LEFT
-        yAxis.animated = false
-        yAxis.minWidth = 33.0
-        yAxis.managedProperty().bind(yAxis.visibleProperty())
-        yAxis.childrenUnmodifiable
-            .addListener(ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
+//        yAxis.side = Side.LEFT
+//        yAxis.animated = false
+//        yAxis.minWidth = 33.0
+//        yAxis.managedProperty().bind(yAxis.visibleProperty())
+//        yAxis.childrenUnmodifiable
+//            .addListener( as ListChangeListener<Node?>?)
+
+        canvas.setOnMouseMoved {
+            tooltipPosition.set(Point2D(it.x, it.y))
+        }
+
+        tooltipContainer.visibleProperty().bind(canvas.hoverProperty().and(tooltipEnabled))
+        tooltipContainer.isMouseTransparent = true
+
+        // the canvas is not always snapped to x=0, but it is snapped to the right edge, thus we use `this`.width
+        tooltipContainer.layoutXProperty().bind(tooltipPosition.map
+        {
+            (canvas.localToParent(it).x).let { x ->
+                if (x > this.width - TOOLTIP_OFFSET - tooltipContainer.width) (x - tooltipContainer.width - TOOLTIP_OFFSET).coerceAtLeast(
+                    0.0
+                ) else x + TOOLTIP_OFFSET
+            }
+        })
+
+        // the canvas is always snapped to the top, so we use canvas.height, to make the tooltip not cover the x-axis
+        tooltipContainer.layoutYProperty().bind(tooltipPosition.map
+        {
+            (canvas.localToParent(it).y).let { y ->
+                if (y > canvas.height - TOOLTIP_OFFSET - tooltipContainer.height) (y - tooltipContainer.height - TOOLTIP_OFFSET).coerceAtLeast(
+                    0.0
+                ) else y + TOOLTIP_OFFSET
+            }
+        })
+
+        listOf(
+            tooltipContainer.visibleProperty(),
+            tooltipPosition
+        ).forEach { it.addListener { _ -> layoutTooltipCross() } }
+        listOf(
+            yAxis.tickMarks
+        ).forEach {
+            it.addListener(ListChangeListener { c ->
+                while (c.next()) { /* layout once updates have settled */
+                }; layoutGrid()
+            })
+        }
+        listOf(
+            horizontalLinesVisible,
+            verticalLinesVisible,
+            highlightedVerticalLines,
+            highlightedHorizontalLines,
+            xAxisShown,
+            yAxisShown
+        ).forEach { it.addListener { _ -> layoutGrid() } }
+
+        registerXAxis(xAxis)
+        registerYAxis(yAxis)
+
+        minWidth = 1.0
+        minHeight = 1.0
+        maxWidth = Double.MAX_VALUE
+        maxHeight = Double.MAX_VALUE
+        stylesheets.add("/styles/axis-fix.css")
+    }
+
+    private fun registerCommon(axis: ValueAxis<Number>) {
+        axis.tickMarks.addListener(tickMarkListener)
+        axis.animated = false
+        axis.heightProperty().addListener(reLayoutListener)
+        axis.minWidth = 33.0
+        children.add(axis)
+        axis.toBack()
+    }
+
+    private fun unregisterCommon(axis: ValueAxis<Number>) {
+        axis.managedProperty().unbind()
+        axis.heightProperty().removeListener(reLayoutListener)
+        axis.tickMarks.removeListener(tickMarkListener)
+        children.remove(axis)
+    }
+
+    private fun registerXAxis(axis: ValueAxis<Number>) {
+        xAxisChildListener = ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
+            while (c.next()) {
+                if (!c.wasAdded()) continue
+                for (mark in c.addedSubList) {
+                    if (mark !is Text) continue
+                    val parsed = DecimalFormat("###,###.###").parse(mark.text.trim()).toDouble()
+                    if (parsed == xAxis.lowerBound && !yAxisShown.get()) {
+                        mark.text =
+                            if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
+                    } else if (parsed == xAxis.upperBound) {
+                        mark.text =
+                            if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
+                    }
+                }
+            }
+        }
+        axis.childrenUnmodifiable.addListener(xAxisChildListener)
+        axis.side = Side.BOTTOM
+        axis.managedProperty().bind(xAxis.visibleProperty())
+        registerCommon(axis)
+        this.xAxis = axis
+    }
+
+    private fun registerYAxis(axis: ValueAxis<Number>) {
+        yAxisChildListener = ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
                 while (c.next()) {
                     if (!c.wasAdded()) continue
                     for (mark in c.addedSubList) {
@@ -94,74 +208,12 @@ class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: Value
                         }
                     }
                 }
-            } as ListChangeListener<Node?>?)
-
-        canvas.setOnMouseMoved {
-            tooltipPosition.set(Point2D(it.x, it.y))
-        }
-
-        tooltipContainer.visibleProperty().bind(canvas.hoverProperty().and(tooltipEnabled))
-        tooltipContainer.isMouseTransparent = true
-
-        // the canvas is not always snapped to x=0, but it is snapped to the right edge, thus we use `this`.width
-        tooltipContainer.layoutXProperty().bind(tooltipPosition.map
-        { (canvas.localToParent(it).x).let { x -> if (x > this.width - TOOLTIP_OFFSET - tooltipContainer.width) (x - tooltipContainer.width - TOOLTIP_OFFSET).coerceAtLeast(0.0) else x + TOOLTIP_OFFSET } })
-
-        // the canvas is always snapped to the top, so we use canvas.height, to make the tooltip not cover the x-axis
-        tooltipContainer.layoutYProperty().bind(tooltipPosition.map
-        { (canvas.localToParent(it).y).let { y -> if (y > canvas.height - TOOLTIP_OFFSET - tooltipContainer.height) (y - tooltipContainer.height - TOOLTIP_OFFSET).coerceAtLeast(0.0) else y + TOOLTIP_OFFSET } })
-
-        listOf(
-            tooltipContainer.visibleProperty(),
-            tooltipPosition
-        ).forEach { it.addListener { _ -> layoutTooltipCross() } }
-        listOf(
-            yAxis.tickMarks
-        ).forEach { it.addListener(ListChangeListener { c -> while (c.next()) { /* layout once updates have settled */ }; layoutGrid() }) }
-        listOf(
-            horizontalLinesVisible,
-            verticalLinesVisible,
-            highlightedVerticalLines,
-            highlightedHorizontalLines,
-            xAxisShown,
-            yAxisShown
-        ).forEach { it.addListener { _ -> layoutGrid() } }
-
-        registerXAxis(xAxis)
-
-        minWidth = 1.0
-        minHeight = 1.0
-        maxWidth = Double.MAX_VALUE
-        maxHeight = Double.MAX_VALUE
-        stylesheets.add("/styles/axis-fix.css")
-    }
-
-    private fun registerXAxis(axis: ValueAxis<Number>) {
-        axis.tickMarks.addListener(ListChangeListener { c -> while (c.next()) { /* layout once updates have settled */ }; layoutGrid() })
-        axis.side = Side.BOTTOM
-        axis.animated = false
-        axis.managedProperty().bind(xAxis.visibleProperty())
-        axis.childrenUnmodifiable
-            .addListener(ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
-                while (c.next()) {
-                    if (!c.wasAdded()) continue
-                    for (mark in c.addedSubList) {
-                        if (mark !is Text) continue
-                        val parsed = DecimalFormat("###,###.###").parse(mark.text.trim()).toDouble()
-                        if (parsed == xAxis.lowerBound && !yAxisShown.get()) {
-                            mark.text =
-                                if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
-                        } else if (parsed == xAxis.upperBound) {
-                            mark.text =
-                                if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
-                        }
-                    }
-                }
-            } as ListChangeListener<Node?>?)
-        axis.heightProperty().addListener { _ -> doLayout(); layoutTooltipCross() }
-        children.add(axis)
-        axis.toBack()
-        this.xAxis = axis
+            }
+        axis.childrenUnmodifiable.addListener(yAxisChildListener)
+        axis.side = Side.LEFT
+        axis.managedProperty().bind(yAxis.visibleProperty())
+        registerCommon(axis)
+        this.yAxis = axis
     }
 
     private fun doLayout() {
@@ -285,8 +337,15 @@ class GraphCanvas(private var xAxis: ValueAxis<Number>, private var yAxis: Value
     }
 
     fun updateXAxis(axis: ValueAxis<Number>) {
-        // TODO unregister stuff from old axis, shouldn't matter for now
-        children.remove(xAxis)
+        xAxis.childrenUnmodifiable.removeListener(xAxisChildListener)
+        unregisterCommon(xAxis)
         registerXAxis(axis)
+    }
+
+    @Suppress("unused")
+    fun updateYAxis(axis: ValueAxis<Number>) {
+        yAxis.childrenUnmodifiable.removeListener(yAxisChildListener)
+        unregisterCommon(yAxis)
+        registerYAxis(axis)
     }
 }
