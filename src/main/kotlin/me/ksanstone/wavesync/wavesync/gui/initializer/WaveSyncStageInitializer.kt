@@ -150,6 +150,9 @@ class WaveSyncStageInitializer(
 }
 
 enum class AutoDisposalMode {
+    /**
+     * Noop
+     */
     NONE,
 
     /**

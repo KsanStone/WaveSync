@@ -5,10 +5,11 @@ import javafx.application.Platform
 import javafx.stage.Stage
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
+import me.ksanstone.wavesync.wavesync.utility.BannerUtil
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.boot.builder.SpringApplicationBuilder
 import org.springframework.context.ConfigurableApplicationContext
+import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import java.lang.management.ManagementFactory
 import kotlin.properties.Delegates
 import kotlin.system.exitProcess
@@ -18,8 +19,10 @@ class WaveSyncApplication : Application() {
 
     override fun init() {
         startTime = System.currentTimeMillis()
+        BannerUtil.banner()
         logTimePoint("JFX init")
-        applicationContext = SpringApplicationBuilder(WaveSyncBootApplication::class.java).run()
+        applicationContext = AnnotationConfigApplicationContext("me.ksanstone.wavesync")
+        logTimePoint("Context Instantiated")
     }
 
     override fun start(stage: Stage) {

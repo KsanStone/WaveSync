@@ -33,3 +33,4 @@ build/
 .vscode/
 /img/
 /src/main/resources/application-dev.properties
+dependency-reduced-pom.xml

@@ -4,16 +4,18 @@ import jakarta.annotation.PostConstruct
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.REFRESH_RATE
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.ConfigurableApplicationContext
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.PropertySource
 import java.awt.DisplayMode
 import java.awt.GraphicsEnvironment
 import java.awt.HeadlessException
 import java.util.concurrent.CompletableFuture
 
 
-@SpringBootApplication
-class WaveSyncBootApplication(
+@Configuration
+@PropertySource("/application.properties")
+open class WaveSyncBootApplication(
     applicationContext: ConfigurableApplicationContext
 ) {
 
