@@ -20,4 +20,6 @@ open module wavesync {
     requires com.google.gson;
     requires jdk.management;
     requires org.fusesource.jansi;
+    requires ch.qos.logback.core;
+    requires ch.qos.logback.classic;
 }
