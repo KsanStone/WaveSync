@@ -88,13 +88,6 @@ class GraphCanvas(
         listOf(xAxisShown, yAxisShown, widthProperty(), heightProperty(), yAxis.widthProperty())
             .forEach { it.addListener { _ -> doLayout(); layoutTooltipCross() } }
 
-//        yAxis.side = Side.LEFT
-//        yAxis.animated = false
-//        yAxis.minWidth = 33.0
-//        yAxis.managedProperty().bind(yAxis.visibleProperty())
-//        yAxis.childrenUnmodifiable
-//            .addListener( as ListChangeListener<Node?>?)
-
         canvas.setOnMouseMoved {
             tooltipPosition.set(Point2D(it.x, it.y))
         }

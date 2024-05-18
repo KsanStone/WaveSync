@@ -1,6 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
 import javafx.beans.property.*
+import javafx.beans.value.ObservableValue
 import javafx.css.CssMetaData
 import javafx.css.Styleable
 import javafx.css.StyleableProperty
@@ -23,6 +24,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FILL_UN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_LOGARITHMIC_MODE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SMOOTH_CURVE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_USE_CSS_COLOR
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.LINEAR_BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.PEAK_LINE_VISIBLE
@@ -46,8 +48,8 @@ class BarVisualizer : AutoCanvas() {
     private var localizationService: LocalizationService =
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     private val tooltip = Label()
-    private val startColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
-    private val endColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
+    private val setStartColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
+    private val setEndColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
     val cutoff: IntegerProperty = SimpleIntegerProperty(BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
@@ -65,6 +67,7 @@ class BarVisualizer : AutoCanvas() {
     val fillCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_FILL_UNDER_CURVE)
     val smoothCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_SMOOTH_CURVE)
 
+    private val useCssColor: BooleanProperty = SimpleBooleanProperty(DEFAULT_USE_CSS_COLOR)
     private var source: SupportedCaptureSource? = null
     private var rate: Int = 44100
     private var fftSize: Int = 1024
@@ -81,6 +84,13 @@ class BarVisualizer : AutoCanvas() {
         FACTORY.createStyleablePaintProperty(this, "peakLineColor", "-fx-peak-line-color") { vis -> vis.peakLineColor }
     private val peakLineUnderColor: StyleableProperty<Paint> =
         FACTORY.createStyleablePaintProperty(this, "peakLineUnderColor", "peakLineUnderColor") { vis -> vis.peakLineColor }
+    private val startCssColor: StyleableProperty<Color> =
+        FACTORY.createStyleableColorProperty(this, "startCssColor", "-fx-start-color") { vis -> vis.startCssColor }
+    private val endCssColor: StyleableProperty<Color> =
+        FACTORY.createStyleableColorProperty(this, "endCssColor", "-fx-end-color") { vis -> vis.endCssColor }
+
+    private val effectiveStartColor: ObjectProperty<Color> = SimpleObjectProperty()
+    private val effectiveEndColor: ObjectProperty<Color> = SimpleObjectProperty()
 
     init {
         if (xAxis is NumberAxis)
@@ -91,9 +101,13 @@ class BarVisualizer : AutoCanvas() {
         canvasContainer.tooltipEnabled.set(true)
         canvasContainer.tooltipContainer.children.add(tooltip)
 
+        useCssColor.addListener { _ -> colorSwitch() }
+        colorSwitch()
+
         val globalColorService = WaveSyncBootApplication.applicationContext.getBean(GlobalColorService::class.java)
-        this.startColor.bind(globalColorService.startColor)
-        this.endColor.bind(globalColorService.endColor)
+        this.setStartColor.bind(globalColorService.startColor)
+        this.setEndColor.bind(globalColorService.endColor)
+        this.useCssColor.bind(globalColorService.barUseCssColor)
 
         smoother = MultiplicativeSmoother()
         smoother.dataSize = 512
@@ -127,6 +141,19 @@ class BarVisualizer : AutoCanvas() {
                 updateXAxis(NumberAxis(0.0, 20000.0, 1000.0))
             }
             sizeFrequencyAxis()
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun colorSwitch() {
+        effectiveStartColor.unbind()
+        effectiveEndColor.unbind()
+        if (useCssColor.get()) {
+            effectiveStartColor.bind(startCssColor as ObservableValue<Color>)
+            effectiveEndColor.bind(endCssColor as ObservableValue<Color>)
+        } else {
+            effectiveStartColor.bind(setStartColor)
+            effectiveEndColor.bind(setEndColor)
         }
     }
 
@@ -304,7 +331,7 @@ class BarVisualizer : AutoCanvas() {
             var barWidth = (width - (totalBars - 1) * localGap) / totalBars
             val buffer = smoother.data
             val padding = (barWidth * 0.33).coerceAtMost(1.0)
-            gc.stroke = startColor.get()
+            gc.stroke = effectiveStartColor.get()
 
             calculateLocBuffer(buffer, logarithmic.get(), barWidth, step, height, width)
 
@@ -488,7 +515,7 @@ class BarVisualizer : AutoCanvas() {
     private fun drawBars(gc: GraphicsContext, barWidth: Double, padding: Double, height: Double, logarithmic: Boolean) {
         var lastX = 0.0
         for (i in 0 until fftLocBuffer.size) {
-            val color = startColor.get().interpolate(endColor.get(), fftLocBuffer.data[i].raw)
+            val color = effectiveStartColor.get().interpolate(effectiveEndColor.get(), fftLocBuffer.data[i].raw)
             val width = if (logarithmic) fftLocBuffer.data[i].x - lastX else barWidth + padding
 
             gc.fill = color

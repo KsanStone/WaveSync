@@ -29,6 +29,7 @@ object ApplicationSettingDefaults {
     const val DEFAULT_LOGARITHMIC_MODE = false
     const val DEFAULT_FILL_UNDER_CURVE = true
     const val DEFAULT_SMOOTH_CURVE = true
+    const val DEFAULT_USE_CSS_COLOR = true
     val DEFAULT_SCALAR_TYPE = FFTScalarType.DECIBEL
     val DEFAULT_WINDOWING_FUNCTION = WindowFunctionType.HAMMING
     val DEFAULT_BAR_RENDER_MODE = BarVisualizer.RenderMode.BAR
