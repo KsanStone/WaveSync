@@ -1,8 +1,6 @@
 package me.ksanstone.wavesync.wavesync.service
 
 import com.sun.jna.Platform
-import javafx.beans.value.ChangeListener
-import javafx.beans.value.ObservableValue
 import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.gui.window.CaptionConfiguration
 import me.ksanstone.wavesync.wavesync.gui.window.CustomizedStage
@@ -21,20 +19,9 @@ class StageManager {
 
         val customStage = CustomizedStage(stage, config)
 
-        if (!stage.isShowing) {
-            stage.showingProperty().addListener(object : ChangeListener<Boolean> {
-                override fun changed(
-                    observable: ObservableValue<out Boolean>,
-                    oldValue: Boolean,
-                    newValue: Boolean
-                ) {
-                    customStage.inject()
-                    stage.showingProperty().removeListener(this)
-                }
-            })
-        } else {
-            customStage.inject()
-        }
+        stage.showingProperty().addListener { _, _, newValue -> if (newValue) customStage.inject() }
+        if (stage.isShowing) customStage.inject()
+
         customizedStages[stage] = customStage
     }
 

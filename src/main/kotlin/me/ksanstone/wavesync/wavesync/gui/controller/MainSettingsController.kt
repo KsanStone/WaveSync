@@ -29,6 +29,9 @@ import kotlin.math.roundToInt
 class MainSettingsController : Initializable {
 
     @FXML
+    lateinit var useThemeColorToggleSwitch: ToggleSwitch
+
+    @FXML
     lateinit var startColorPicker: ColorPicker
 
     @FXML
@@ -43,13 +46,11 @@ class MainSettingsController : Initializable {
     @FXML
     lateinit var debugToggleSwitch: ToggleSwitch
 
-
     @FXML
     lateinit var audioServerChoiceBox: ChoiceBox<String>
 
     @FXML
     lateinit var applyFreqButton: Button
-
 
     @FXML
     lateinit var fftInfoLabel: Label
@@ -78,6 +79,10 @@ class MainSettingsController : Initializable {
         globalColorService.startColor.bind(startColorPicker.valueProperty())
         endColorPicker.value = globalColorService.endColor.get()
         globalColorService.endColor.bind(endColorPicker.valueProperty())
+        useThemeColorToggleSwitch.selectedProperty().value = globalColorService.barUseCssColor.value
+        globalColorService.barUseCssColor.bind(useThemeColorToggleSwitch.selectedProperty())
+        startColorPicker.disableProperty().bind(useThemeColorToggleSwitch.selectedProperty())
+        endColorPicker.disableProperty().bind(useThemeColorToggleSwitch.selectedProperty())
 
         audioServerChoiceBox.items.clear()
         audioServerChoiceBox.items.addAll(audioCaptureService.audioSystems.map { it.name })

@@ -7,6 +7,7 @@ import me.ksanstone.wavesync.wavesync.gui.window.DragRegion
 class MainControl : VBox() {
 
     val controls = ControlBar()
+    private var isSetup = false
 
     init {
         this.children.addAll(controls)
@@ -14,6 +15,8 @@ class MainControl : VBox() {
     }
 
     fun setup() {
+        if (isSetup) return
+        isSetup = true
         this.controls.setup()
     }
 
