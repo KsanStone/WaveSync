@@ -19,7 +19,8 @@ import kotlin.math.roundToInt
 
 @Service
 class StageSizingService(
-    private val preferenceService: PreferenceService
+    private val preferenceService: PreferenceService,
+    private val stageManager: StageManager
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(this.javaClass)
@@ -115,6 +116,7 @@ class StageSizingService(
             it.xProperty.unbind()
             it.yProperty.unbind()
             preferenceService.unregisterObjectTree(this.javaClass, id)
+            stageManager.releaseStage(it.stage)
         }
     }
 

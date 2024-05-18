@@ -55,6 +55,7 @@ class WaveSyncStageInitializer(
             stage.icons.add(Image("icon.png"))
             stage.scene = scene
             customize(stage)
+
             stage.show()
             WaveSyncApplication.logTimePoint("Showing stage")
         }

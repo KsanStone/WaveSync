@@ -22,7 +22,7 @@ import java.util.*
 import java.util.function.Consumer
 
 @Service
-class GlobalLayoutService(
+open class GlobalLayoutService(
     private val waveSyncStageInitializer: WaveSyncStageInitializer,
     private val layoutStorageService: LayoutStorageService,
     private val stageSizingService: StageSizingService
@@ -170,7 +170,7 @@ class GlobalLayoutService(
         return false
     }
 
-    protected fun reOpenSideLayout(appLayout: AppLayout) {
+    private fun reOpenSideLayout(appLayout: AppLayout) {
         val stage = waveSyncStageInitializer.createGeneralPurposeAppFrame(
             appLayout.windowId!!,
             AutoDisposalMode.USER

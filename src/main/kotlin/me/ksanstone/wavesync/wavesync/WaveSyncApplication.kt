@@ -2,6 +2,7 @@ package me.ksanstone.wavesync.wavesync
 
 import javafx.application.Application
 import javafx.application.Platform
+import javafx.application.Preloader
 import javafx.stage.Stage
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
@@ -30,6 +31,7 @@ class WaveSyncApplication : Application() {
             logTimePoint("JFX start")
             primaryStage = stage
             applicationContext.publishEvent(StageReadyEvent(stage))
+            notifyPreloader(Preloader.ProgressNotification(1.0))
         } catch (t: Throwable) {
             t.printStackTrace()
             exitProcess(1)
@@ -59,5 +61,6 @@ class WaveSyncApplication : Application() {
 
 fun main(args: Array<String>) {
     System.setProperty("java.awt.headless", "false")
+    System.setProperty("javafx.preloader", "me.ksanstone.wavesync.wavesync.WavePreloader")
     Application.launch(WaveSyncApplication::class.java, *args)
 }

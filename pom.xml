@@ -5,7 +5,7 @@
 
     <groupId>me.ksanstone.wavesync</groupId>
     <artifactId>wavesync</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0</version>
     <name>wavesync</name>
     <description>wavesync</description>
 
@@ -203,10 +203,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <version>3.5.1</version>
                 <configuration>
                     <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
                     <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <shadedArtifactAttached>false</shadedArtifactAttached>
+                    <outputDirectory>${project.build.directory}</outputDirectory>
+                    <finalName>${project.artifactId}</finalName>
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>
@@ -234,6 +237,40 @@
                                 </transformer>
                             </transformers>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>1</id>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <!-- Delete the old build
+                            to prevent the shade plugin
+                            from creating multiple output files -->
+                            <target>
+                                <delete file="${project.build.directory}/${project.artifactId}.jar"/>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>2</id>
+                        <phase>package</phase>
+                        <configuration>
+                            <target>
+                                <delete file="${project.build.directory}/${project.artifactId}-${project.version}.jar"/>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
