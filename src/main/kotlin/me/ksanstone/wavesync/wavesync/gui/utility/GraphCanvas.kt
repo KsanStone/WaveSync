@@ -233,7 +233,11 @@ class GraphCanvas(
     }
 
     private fun layoutGrid() {
-        val leftPad = if (yAxisShown.get()) yAxis.prefWidth(-1.0) else 0.0
+        val leftPad = if (yAxisShown.get()) try { // TODO figure out whu this call fails
+            yAxis.prefWidth(-1.0)
+        } catch (e: ArrayIndexOutOfBoundsException) {
+            0.0
+        } else 0.0
         createGrid(left = leftPad, xAxisWidth = canvas.width, yAxisHeight = canvas.height)
     }
 

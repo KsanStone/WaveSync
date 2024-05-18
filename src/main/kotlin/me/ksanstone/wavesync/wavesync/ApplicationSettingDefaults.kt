@@ -34,6 +34,6 @@ object ApplicationSettingDefaults {
     val DEFAULT_WINDOWING_FUNCTION = WindowFunctionType.HAMMING
     val DEFAULT_BAR_RENDER_MODE = BarVisualizer.RenderMode.BAR
     val DEFAULT_WAVEFORM_RENDER_MODE = WaveformVisualizer.RenderMode.LINE
-    val DEFAULT_START_COLOR = Color.rgb(255, 120, 246)
-    val DEFAULT_END_COLOR = Color.AQUA
+    val DEFAULT_START_COLOR: Color = Color.rgb(255, 120, 246)
+    val DEFAULT_END_COLOR: Color = Color.AQUA
 }

@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 @Service
 class StatisticMonitor(
-    val statisticBeans: List<StatisticBean>
+    private val statisticBeans: List<StatisticBean>
 ) {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
