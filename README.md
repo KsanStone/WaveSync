@@ -5,4 +5,3 @@
 ## TODO
 * Spectrogram
   - OpenGL render, as doing it on the cpu would be too slow
-  - Color config

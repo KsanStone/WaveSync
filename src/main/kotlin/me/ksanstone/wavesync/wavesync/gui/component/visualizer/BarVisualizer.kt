@@ -23,6 +23,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_REN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FILL_UNDER_CURVE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_LOGARITHMIC_MODE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SHOW_PEAK
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SMOOTH_CURVE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_USE_CSS_COLOR
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
@@ -66,6 +67,7 @@ class BarVisualizer : AutoCanvas() {
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_BAR_RENDER_MODE)
     val fillCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_FILL_UNDER_CURVE)
     val smoothCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_SMOOTH_CURVE)
+    val showPeak: BooleanProperty = SimpleBooleanProperty(DEFAULT_SHOW_PEAK)
 
     private val useCssColor: BooleanProperty = SimpleBooleanProperty(DEFAULT_USE_CSS_COLOR)
     private var source: SupportedCaptureSource? = null
@@ -77,13 +79,16 @@ class BarVisualizer : AutoCanvas() {
     private var lineAngleArray = DoubleArray(fftLocBuffer.size + 1)
     private val bufferResizeLock = Object()
 
-
     private lateinit var fftScalar: FFTScalar<*>
 
     private val peakLineColor: StyleableProperty<Paint> =
         FACTORY.createStyleablePaintProperty(this, "peakLineColor", "-fx-peak-line-color") { vis -> vis.peakLineColor }
     private val peakLineUnderColor: StyleableProperty<Paint> =
-        FACTORY.createStyleablePaintProperty(this, "peakLineUnderColor", "peakLineUnderColor") { vis -> vis.peakLineColor }
+        FACTORY.createStyleablePaintProperty(
+            this,
+            "peakLineUnderColor",
+            "peakLineUnderColor"
+        ) { vis -> vis.peakLineColor }
     private val startCssColor: StyleableProperty<Color> =
         FACTORY.createStyleableColorProperty(this, "startCssColor", "-fx-start-color") { vis -> vis.startCssColor }
     private val endCssColor: StyleableProperty<Color> =
@@ -91,6 +96,9 @@ class BarVisualizer : AutoCanvas() {
 
     private val effectiveStartColor: ObjectProperty<Color> = SimpleObjectProperty()
     private val effectiveEndColor: ObjectProperty<Color> = SimpleObjectProperty()
+
+    private val audioCaptureService: AudioCaptureService =
+        WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
 
     init {
         if (xAxis is NumberAxis)
@@ -125,7 +133,7 @@ class BarVisualizer : AutoCanvas() {
         listOf(exaggeratedScalar, dbMax, dbMin, linearScalar)
             .forEach { it.addListener { _ -> refreshScalar() } }
         dbMin.addListener { _ -> refreshScalar() }
-        peakLineVisible.addListener { _, _, v -> if(v) rawMaxTracker.zero() }
+        peakLineVisible.addListener { _, _, v -> if (v) rawMaxTracker.zero() }
 
         canvasContainer.tooltipPosition.addListener { _ -> refreshTooltipLabel() }
 
@@ -187,8 +195,18 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(logarithmic, "logarithmic", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(
+            canvasContainer.horizontalLinesVisible,
+            "horizontalLinesVisible",
+            this.javaClass,
+            id
+        )
+        preferenceService.registerProperty(
+            canvasContainer.verticalLinesVisible,
+            "verticalLinesVisible",
+            this.javaClass,
+            id
+        )
     }
 
     private fun refreshTooltipLabel() {
@@ -198,42 +216,48 @@ class BarVisualizer : AutoCanvas() {
                 return
             }
             if (logarithmic.get()) logarithmicTooltipText() else linearTooltipText()
-        } catch (_: IndexOutOfBoundsException) { }
+        } catch (_: IndexOutOfBoundsException) {
+        }
     }
 
     private fun logarithmicTooltipText() {
         val x = canvasContainer.tooltipPosition.get().x
         val freq = xAxis.getValueForDisplay(x).toDouble()
-        val bin = FourierMath.binOfFrequency(rate, fftSize, freq)
+        val bin = FourierMath.binOfFrequency(rate, fftSize, freq) + 1 + frequencyBinSkip
         val rawValue = fftDataArray.getOrElse(bin) { _ -> Float.NEGATIVE_INFINITY }
         val maxValue = rawMaxTracker.data.getOrElse(bin) { _ -> Float.NEGATIVE_INFINITY }
         tooltip.text = "Freq: ${localizationService.formatNumber(freq, "Hz")}\n" +
-                       "Bin: ${localizationService.formatNumber(bin+1)}\n" +
-                       "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
+                "Bin: ${localizationService.formatNumber(bin + 1)}\n" +
+                "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
         if (peakLineVisible.get())
             tooltip.text += "\nMax: ${localizationService.formatNumber(fftScalar.scaleRaw(maxValue))}"
     }
 
     private fun linearTooltipText() {
-            val x = canvasContainer.tooltipPosition.get().x
-            val bufferLength = smoother.dataSize
-            val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
-            val totalBars = floor(bufferLength.toDouble() / step)
-            val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
-            val bar = floor(x / barWidth)
-            val binStart = floor(bar * step).toInt()
-            val binEnd = floor((bar + 1) * step).toInt()
-            val minFreq = FourierMath.frequencyOfBin(binStart, source!!.rate, fftSize)
-            val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.rate, fftSize)
-            val maxValue = rawMaxTracker.data.slice(binStart..binEnd).max()
-            val rawValue = fftDataArray.slice(binStart + frequencyBinSkip..binEnd + frequencyBinSkip).max()
-            tooltip.text =
-                "Bar: ${localizationService.formatNumber(bar)} \n" +
-                "FFT: ${localizationService.formatNumber(binStart)} - ${localizationService.formatNumber(binEnd)}\n" +
-                "Freq: ${localizationService.formatNumber(minFreq, "Hz")} - ${localizationService.formatNumber(maxFreq, "Hz")}\n" +
-                "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
-            if (peakLineVisible.get())
-                tooltip.text += "\nMax: ${localizationService.formatNumber(fftScalar.scaleRaw(maxValue))}"
+        val x = canvasContainer.tooltipPosition.get().x
+        val bufferLength = smoother.dataSize
+        val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
+        val totalBars = floor(bufferLength.toDouble() / step)
+        val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
+        val bar = floor(x / barWidth)
+        val binStart = floor(bar * step).toInt()
+        val binEnd = floor((bar + 1) * step).toInt()
+        val minFreq = FourierMath.frequencyOfBin(binStart, source!!.rate, fftSize)
+        val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.rate, fftSize)
+        val maxValue = rawMaxTracker.data.slice(binStart..binEnd).max()
+        val rawValue = fftDataArray.slice(binStart + frequencyBinSkip..binEnd + frequencyBinSkip).max()
+        tooltip.text =
+            "Bar: ${localizationService.formatNumber(bar)} \n" +
+                    "FFT: ${localizationService.formatNumber(binStart)} - ${localizationService.formatNumber(binEnd)}\n" +
+                    "Freq: ${localizationService.formatNumber(minFreq, "Hz")} - ${
+                        localizationService.formatNumber(
+                            maxFreq,
+                            "Hz"
+                        )
+                    }\n" +
+                    "Scaled: ${localizationService.formatNumber(fftScalar.scaleRaw(rawValue))}"
+        if (peakLineVisible.get())
+            tooltip.text += "\nMax: ${localizationService.formatNumber(fftScalar.scaleRaw(maxValue))}"
     }
 
     private fun changeScalar() {
@@ -285,7 +309,7 @@ class BarVisualizer : AutoCanvas() {
     }
 
     fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
-        if(isPaused) return
+        if (isPaused) return
 
         fftDataArray = array
         val oldFftSize = this.fftSize
@@ -342,6 +366,17 @@ class BarVisualizer : AutoCanvas() {
 
             if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
 
+            if (showPeak.get()) {
+                val s = 4.0
+                gc.fill = Color.RED
+                gc.fillRect(
+                    xAxis.getDisplayPosition(audioCaptureService.peakFrequency.value) - s / 2,
+                    height - height * fftScalar.scale(audioCaptureService.peakValue.value) - s / 2,
+                    s,
+                    s
+                )
+            }
+
             if (!peakLineVisible.get()) return
             gc.stroke = peakLineColor.value
             step = calculateStep(1, bufferLength, width)
@@ -352,19 +387,26 @@ class BarVisualizer : AutoCanvas() {
         }
     }
 
-    private fun calculateLocBuffer(buffer: FloatArray, logarithmic: Boolean, barWidth: Double, step: Double, height: Double, width: Double) {
+    private fun calculateLocBuffer(
+        buffer: FloatArray,
+        logarithmic: Boolean,
+        barWidth: Double,
+        step: Double,
+        height: Double,
+        width: Double
+    ) {
         if (fftLocBuffer.data.size != buffer.size)
-            fftLocBuffer.data = Array(buffer.size) { _ -> FftLoc(0.0, 0.0, 0.0)}
+            fftLocBuffer.data = Array(buffer.size) { _ -> FftLoc(0.0, 0.0, 0.0) }
 
         var y = 0.0
         var x = 0.0
         var num = 0
         var added = false
-        if(logarithmic) {
+        if (logarithmic) {
             var lastX = 0.0
             for (i in buffer.indices) {
                 y = max(buffer[i].toDouble(), y); added = false
-                x = xAxis.getDisplayPosition(FourierMath.frequencyOfBin(i, rate, fftSize))
+                x = xAxis.getDisplayPosition(FourierMath.frequencyOfBin(i + frequencyBinSkip, rate, fftSize))
                 if (x - lastX < barWidth) continue
 
                 fftLocBuffer.data[num].x = x
@@ -416,7 +458,7 @@ class BarVisualizer : AutoCanvas() {
     private fun drawSmoothedLine(gc: GraphicsContext, height: Double, width: Double) {
         val tension = 0.98
 
-        if(lineAngleArray.size != fftLocBuffer.size + 1)
+        if (lineAngleArray.size != fftLocBuffer.size + 1)
             lineAngleArray = DoubleArray(fftLocBuffer.size + 1)
 
         for (i in 1 until fftLocBuffer.size - 1) {
@@ -424,7 +466,7 @@ class BarVisualizer : AutoCanvas() {
             val previousRelativeX = fftLocBuffer.data[i - 1].x - current.x
             val previousRelativeY = fftLocBuffer.data[i - 1].y - current.y
             val nextRelativeX = fftLocBuffer.data[i + 1].x - current.x
-            val nextRelativeY =fftLocBuffer.data[i + 1].y - current.y
+            val nextRelativeY = fftLocBuffer.data[i + 1].y - current.y
 
             if (min(abs(previousRelativeX), abs(nextRelativeX)) < 3) {
                 lineAngleArray[i] = Double.NaN
@@ -455,7 +497,7 @@ class BarVisualizer : AutoCanvas() {
             val pos = fftLocBuffer.data[i].x to fftLocBuffer.data[i].y
             if (doSmooth && lineAngleArray[i].isNaN())
                 doSmooth = false
-            if(!doSmooth) {
+            if (!doSmooth) {
                 gc.lineTo(pos.first, pos.second)
                 continue
             }
@@ -479,12 +521,13 @@ class BarVisualizer : AutoCanvas() {
             )
         }
 
-        if(fftLocBuffer.size > 2) {
+        if (fftLocBuffer.size > 2) {
             val posPrev = fftLocBuffer.data[fftLocBuffer.size - 2]
             val pos = fftLocBuffer.data[fftLocBuffer.size - 1]
             val handleLength = (pos.x - posPrev.x) / 2.0 * tension
             val handle1 = -handleLength to 0.0
-            val handle2 = cos(lineAngleArray[fftLocBuffer.size - 2]) * handleLength to sin(lineAngleArray[fftLocBuffer.size - 2]) * handleLength
+            val handle2 =
+                cos(lineAngleArray[fftLocBuffer.size - 2]) * handleLength to sin(lineAngleArray[fftLocBuffer.size - 2]) * handleLength
             gc.bezierCurveTo(
                 handle2.first + posPrev.x,
                 (handle2.second + posPrev.y).coerceIn(0.0, height.coerceAtLeast(1.0)),
