@@ -6,7 +6,7 @@ import javafx.application.Application
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.beans.property.StringProperty
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.THEME
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_THEME
 import org.springframework.stereotype.Service
 
 @Service
@@ -14,11 +14,11 @@ class ThemeService(
     private val preferenceService: PreferenceService
 ) {
 
-    final val themes =
+    private val themes =
         listOf(CupertinoDark(), CupertinoLight(), NordDark(), NordLight(), PrimerDark(), PrimerLight(), Dracula())
             .map { return@map Pair(it.name, it) }.toMap()
-    final var themePairs: List<Pair<Theme, Theme?>>
-    final val isDark = SimpleBooleanProperty(true)
+    var themePairs: List<Pair<Theme, Theme?>>
+    val isDark = SimpleBooleanProperty(true)
 
     init {
         val pairs = mutableListOf<Pair<Theme, Theme?>>()
@@ -36,7 +36,7 @@ class ThemeService(
     }
 
     private var current: String = ""
-    final val selectedTheme: StringProperty = SimpleStringProperty(THEME)
+    val selectedTheme: StringProperty = SimpleStringProperty(DEFAULT_THEME)
 
     @PostConstruct
     fun initialize() {

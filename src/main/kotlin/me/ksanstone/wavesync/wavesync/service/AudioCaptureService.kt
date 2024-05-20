@@ -5,9 +5,9 @@ import com.sun.jna.Pointer
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import javafx.beans.property.*
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FFT_SIZE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_UPSAMPLING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.service.interpolation.ParabolicInterpolator
 import me.ksanstone.wavesync.wavesync.service.windowing.*
 import me.ksanstone.wavesync.wavesync.utility.*
@@ -20,7 +20,6 @@ import xt.audio.Structs.*
 import xt.audio.XtAudio
 import xt.audio.XtSafeBuffer
 import xt.audio.XtStream
-import java.lang.AssertionError
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -59,7 +58,7 @@ class AudioCaptureService(
     val channelVolumes = FloatChanneledStore()
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
-    val fftSize: IntegerProperty = SimpleIntegerProperty(FFT_SIZE)
+    val fftSize: IntegerProperty = SimpleIntegerProperty(DEFAULT_FFT_SIZE)
     val fftUpsample: IntegerProperty = SimpleIntegerProperty(DEFAULT_UPSAMPLING)
     val usedAudioSystem: ObjectProperty<XtSystem> = SimpleObjectProperty()
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
@@ -268,7 +267,7 @@ class AudioCaptureService(
         startCapture(source)
     }
 
-    private final fun setScanWindowSize(size: Int) {
+    private fun setScanWindowSize(size: Int) {
         logger.info("Using window size $size")
         fftSampleBuffer = RollingBuffer(size, 0.0f)
         fftResult.resize(1, size / 2).label(CommonChannel.MASTER)

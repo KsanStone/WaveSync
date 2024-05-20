@@ -1,7 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.controller
 
 import atlantafx.base.controls.ToggleSwitch
-import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
@@ -10,8 +9,8 @@ import javafx.scene.image.Image
 import javafx.stage.Stage
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_END_COLOR
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FFT_SIZE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_START_COLOR
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.FFT_SIZE
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.GlobalColorService
@@ -136,7 +135,7 @@ class MainSettingsController : Initializable {
         (alert.dialogPane.scene.window as Stage).icons.add(Image("icon.png"))
 
         if (alert.showAndWait().get() == reset) {
-            fftSizeChoiceBox.value = FFT_SIZE
+            fftSizeChoiceBox.value = DEFAULT_FFT_SIZE
             applyFreqSettings()
         }
 
@@ -173,7 +172,7 @@ class MainSettingsController : Initializable {
         audioCaptureService.restartCapture()
     }
 
-    fun purgeDataDialog(actionEvent: ActionEvent) {
+    fun purgeDataDialog() {
         val reset = ButtonType(localizationService.get("confirmation.yes"), ButtonBar.ButtonData.OK_DONE)
         val cancel = ButtonType(localizationService.get("confirmation.no"), ButtonBar.ButtonData.CANCEL_CLOSE)
 
@@ -186,7 +185,7 @@ class MainSettingsController : Initializable {
         (alert.dialogPane.scene.window as Stage).icons.add(Image("icon.png"))
 
         if (alert.showAndWait().get() == reset) {
-            fftSizeChoiceBox.value = FFT_SIZE
+            fftSizeChoiceBox.value = DEFAULT_FFT_SIZE
             preferenceService.purgeAllData()
         }
     }

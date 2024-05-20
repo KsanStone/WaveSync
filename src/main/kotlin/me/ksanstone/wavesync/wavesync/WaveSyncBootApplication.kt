@@ -1,7 +1,7 @@
 package me.ksanstone.wavesync.wavesync
 
 import jakarta.annotation.PostConstruct
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.REFRESH_RATE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_REFRESH_RATE
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.ConfigurableApplicationContext
@@ -20,7 +20,7 @@ open class WaveSyncBootApplication(
 ) {
 
     val logger: Logger = LoggerFactory.getLogger("Main")
-    var targetRefreshRate: Int = REFRESH_RATE
+    private var targetRefreshRate: Int = DEFAULT_REFRESH_RATE
 
     init {
         WaveSyncBootApplication.applicationContext = applicationContext
@@ -39,10 +39,10 @@ open class WaveSyncBootApplication(
             val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
             val gs = ge.screenDevices
             gs.map { it.displayMode.refreshRate }.filter { it != DisplayMode.REFRESH_RATE_UNKNOWN }.maxOrNull()
-                ?: REFRESH_RATE
+                ?: DEFAULT_REFRESH_RATE
         } catch (e: HeadlessException) {
             logger.warn("Headless exception")
-            REFRESH_RATE
+            DEFAULT_REFRESH_RATE
         }
     }
 

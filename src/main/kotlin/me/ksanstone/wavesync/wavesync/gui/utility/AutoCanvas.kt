@@ -22,7 +22,7 @@ import javafx.scene.layout.HBox
 import javafx.stage.Stage
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.INFO_SHOWN
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_INFO_SHOWN
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
@@ -47,8 +47,8 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     protected var yAxis: ValueAxis<Number> = NumberAxis(0.0, 100.0, 10.0)
 
     lateinit var canvasContainer: GraphCanvas
-    val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.REFRESH_RATE)
-    val info: BooleanProperty = SimpleBooleanProperty(INFO_SHOWN)
+    val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.DEFAULT_REFRESH_RATE)
+    val info: BooleanProperty = SimpleBooleanProperty(DEFAULT_INFO_SHOWN)
 
     private var detachedStage: Stage? = null
     private var lastDraw = System.nanoTime()

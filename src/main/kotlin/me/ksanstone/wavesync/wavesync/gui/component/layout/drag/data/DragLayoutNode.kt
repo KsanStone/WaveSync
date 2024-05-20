@@ -10,6 +10,7 @@ import javafx.scene.Node
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragDivider
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.fire
+import java.lang.ref.WeakReference
 import java.util.function.Consumer
 import java.util.function.Predicate
 import kotlin.math.abs
@@ -23,7 +24,8 @@ data class DragLayoutNode(
     val children: ObservableList<DragLayoutLeaf> = FXCollections.observableArrayList(),
     var dividerLocations: MutableList<Double> = mutableListOf(),
     var dividers: MutableList<DragDivider> = mutableListOf(),
-    var parent: DragLayoutLeaf? = null
+    var parent: DragLayoutLeaf? = null,
+    val layout: WeakReference<DragLayout>? = null
 ) {
 
     private val layoutChangeListeners = mutableListOf<DragLayout.LayoutChangeListener>()
@@ -516,6 +518,13 @@ data class DragLayoutNode(
     fun toLeaf(): DragLayoutLeaf {
         return DragLayoutLeaf(node = this)
     }
+
+    fun getEffectiveLayout(): WeakReference<DragLayout> {
+        if (this.layout != null)
+            return layout
+        return this.parent!!.parent!!.getEffectiveLayout()
+    }
+
 }
 
 data class ComponentCallbackResult(

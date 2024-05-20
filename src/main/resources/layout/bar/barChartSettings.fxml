@@ -189,7 +189,11 @@
                 <FontIcon iconLiteral="mdmz-maximize" />
             </graphic>
         </Label>
-        <ToggleSwitch fx:id="peakToggleSwitch" GridPane.columnIndex="1" GridPane.rowIndex="8" />
+        <HBox GridPane.columnIndex="1" GridPane.rowIndex="8" spacing="5.0">
+            <ToggleSwitch fx:id="peakToggleSwitch"/>
+            <Label text="%visualizer.bar.settings.peakPoint" />
+            <ToggleSwitch fx:id="peakPointToggleSwitch"/>
+        </HBox>
         <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="5">
             <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
             <InputGroup>

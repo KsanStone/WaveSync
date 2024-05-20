@@ -3,4 +3,5 @@
     -fx-peak-line-under-color: rgba(227, 52, 204, 0.33);
     -fx-start-color:ladder(-color-bg-default, -color-accent-2 49%, -color-accent-6 50%);
     -fx-end-color: -color-accent-9;
+    -fx-peak-point-color: -color-danger-fg;
 }

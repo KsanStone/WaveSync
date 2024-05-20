@@ -13,23 +13,23 @@ import javafx.scene.control.Label
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.paint.*
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_CUTOFF
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_LOW_PASS
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SCALING
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.BAR_SMOOTHING
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MAX
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DB_MIN
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_CUTOFF
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_RENDER_MODE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_SCALING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_SMOOTHING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_DB_MAX
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_DB_MIN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FILL_UNDER_CURVE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_GAP
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_LINEAR_BAR_SCALING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_LOGARITHMIC_MODE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_PEAK_LINE_VISIBLE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SCALAR_TYPE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SHOW_PEAK
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SMOOTH_CURVE
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_USE_CSS_COLOR
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.GAP
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.LINEAR_BAR_SCALING
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.PEAK_LINE_VISIBLE
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.TARGET_BAR_WIDTH
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.util.LogarithmicAxis
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarSettingsController
@@ -51,18 +51,18 @@ class BarVisualizer : AutoCanvas() {
     private val tooltip = Label()
     private val setStartColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
     private val setEndColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
-    val smoothing: FloatProperty = SimpleFloatProperty(BAR_SMOOTHING)
-    val cutoff: IntegerProperty = SimpleIntegerProperty(BAR_CUTOFF)
-    val lowPass: IntegerProperty = SimpleIntegerProperty(BAR_LOW_PASS)
-    val targetBarWidth: IntegerProperty = SimpleIntegerProperty(TARGET_BAR_WIDTH)
-    val gap: IntegerProperty = SimpleIntegerProperty(GAP)
-    val peakLineVisible: BooleanProperty = SimpleBooleanProperty(PEAK_LINE_VISIBLE)
+    val smoothing: FloatProperty = SimpleFloatProperty(DEFAULT_BAR_SMOOTHING)
+    val cutoff: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
+    val lowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
+    val targetBarWidth: IntegerProperty = SimpleIntegerProperty(DEFAULT_TARGET_BAR_WIDTH)
+    val gap: IntegerProperty = SimpleIntegerProperty(DEFAULT_GAP)
+    val peakLineVisible: BooleanProperty = SimpleBooleanProperty(DEFAULT_PEAK_LINE_VISIBLE)
 
     val scalarType: ObjectProperty<FFTScalarType> = SimpleObjectProperty(DEFAULT_SCALAR_TYPE)
-    val exaggeratedScalar: FloatProperty = SimpleFloatProperty(BAR_SCALING)
-    val linearScalar: FloatProperty = SimpleFloatProperty(LINEAR_BAR_SCALING)
-    val dbMin: FloatProperty = SimpleFloatProperty(DB_MIN)
-    val dbMax: FloatProperty = SimpleFloatProperty(DB_MAX)
+    val exaggeratedScalar: FloatProperty = SimpleFloatProperty(DEFAULT_BAR_SCALING)
+    val linearScalar: FloatProperty = SimpleFloatProperty(DEFAULT_LINEAR_BAR_SCALING)
+    val dbMin: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MIN)
+    val dbMax: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MAX)
     val logarithmic: BooleanProperty = SimpleBooleanProperty(DEFAULT_LOGARITHMIC_MODE)
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_BAR_RENDER_MODE)
     val fillCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_FILL_UNDER_CURVE)
@@ -84,11 +84,9 @@ class BarVisualizer : AutoCanvas() {
     private val peakLineColor: StyleableProperty<Paint> =
         FACTORY.createStyleablePaintProperty(this, "peakLineColor", "-fx-peak-line-color") { vis -> vis.peakLineColor }
     private val peakLineUnderColor: StyleableProperty<Paint> =
-        FACTORY.createStyleablePaintProperty(
-            this,
-            "peakLineUnderColor",
-            "peakLineUnderColor"
-        ) { vis -> vis.peakLineColor }
+        FACTORY.createStyleablePaintProperty(this, "peakLineUnderColor", "peakLineUnderColor") { vis -> vis.peakLineColor }
+    private val peakPointUnderColor: StyleableProperty<Color> =
+        FACTORY.createStyleableColorProperty(this, "peakPointUnderColor", "-fx-peak-point-color") { vis -> vis.peakPointUnderColor }
     private val startCssColor: StyleableProperty<Color> =
         FACTORY.createStyleableColorProperty(this, "startCssColor", "-fx-start-color") { vis -> vis.startCssColor }
     private val endCssColor: StyleableProperty<Color> =
@@ -195,18 +193,9 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(logarithmic, "logarithmic", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(
-            canvasContainer.horizontalLinesVisible,
-            "horizontalLinesVisible",
-            this.javaClass,
-            id
-        )
-        preferenceService.registerProperty(
-            canvasContainer.verticalLinesVisible,
-            "verticalLinesVisible",
-            this.javaClass,
-            id
-        )
+        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(showPeak, "showPeak", this.javaClass, id)
     }
 
     private fun refreshTooltipLabel() {
@@ -366,14 +355,13 @@ class BarVisualizer : AutoCanvas() {
 
             if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
 
-            if (showPeak.get()) {
+            if (showPeak.get() && audioCaptureService.peakValue.value != 0.0F) {
                 val s = 4.0
-                gc.fill = Color.RED
+                gc.fill = peakPointUnderColor.value
                 gc.fillRect(
                     xAxis.getDisplayPosition(audioCaptureService.peakFrequency.value) - s / 2,
                     height - height * fftScalar.scale(audioCaptureService.peakValue.value) - s / 2,
-                    s,
-                    s
+                    s, s
                 )
             }
 
