@@ -35,6 +35,8 @@ open class GlobalLayoutService(
     private val stageMap = mutableMapOf<DragLayout, Stage>()
     val layoutRemovalListeners = mutableListOf<Consumer<DragLayout>>()
 
+    val logger = LoggerFactory.getLogger("Niger")
+
     @PostConstruct
     fun initialize() {
         windowList = Window.getWindows()
