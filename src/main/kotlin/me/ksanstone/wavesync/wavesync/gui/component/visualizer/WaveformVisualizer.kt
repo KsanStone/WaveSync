@@ -14,10 +14,10 @@ import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
 import javafx.util.Duration
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WAVEFORM_RANGE_LINK
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WAVEFORM_RANGE_MAX
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WAVEFORM_RANGE_MIN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WAVEFORM_RENDER_MODE
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_LINK
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_MAX
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.WAVEFORM_RANGE_MIN
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
@@ -32,9 +32,9 @@ class WaveformVisualizer : AutoCanvas() {
 
     val enableAlign: BooleanProperty = SimpleBooleanProperty(false)
     val autoAlign: BooleanProperty = SimpleBooleanProperty(false)
-    val rangeMax: FloatProperty = SimpleFloatProperty(WAVEFORM_RANGE_MAX)
-    val rangeMin: FloatProperty = SimpleFloatProperty(WAVEFORM_RANGE_MIN)
-    val rangeLink: BooleanProperty = SimpleBooleanProperty(WAVEFORM_RANGE_LINK)
+    val rangeMax: FloatProperty = SimpleFloatProperty(DEFAULT_WAVEFORM_RANGE_MAX)
+    val rangeMin: FloatProperty = SimpleFloatProperty(DEFAULT_WAVEFORM_RANGE_MIN)
+    val rangeLink: BooleanProperty = SimpleBooleanProperty(DEFAULT_WAVEFORM_RANGE_LINK)
     val targetAlignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_WAVEFORM_RENDER_MODE)
     val bufferDuration: ObjectProperty<Duration> = SimpleObjectProperty(Duration.millis(60.0))

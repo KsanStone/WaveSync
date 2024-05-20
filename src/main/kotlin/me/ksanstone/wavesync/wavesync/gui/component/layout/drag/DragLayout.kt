@@ -17,10 +17,11 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DIVIDER_SIZ
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.service.GlobalLayoutService
+import java.lang.ref.WeakReference
 
 class DragLayout : Pane() {
 
-    var layoutRoot: DragLayoutNode = DragLayoutNode("root")
+    var layoutRoot: DragLayoutNode = DragLayoutNode("root", layout = WeakReference(this))
 
     private val dragCueShowing = SimpleBooleanProperty(false)
     private val drawCueRect: Pane = Pane()

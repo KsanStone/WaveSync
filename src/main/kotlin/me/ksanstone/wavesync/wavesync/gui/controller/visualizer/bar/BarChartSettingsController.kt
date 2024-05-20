@@ -17,6 +17,9 @@ import java.util.*
 class BarChartSettingsController : Initializable {
 
     @FXML
+    lateinit var peakPointToggleSwitch: ToggleSwitch
+
+    @FXML
     lateinit var smoothToggleSwitch: ToggleSwitch
 
     @FXML
@@ -113,6 +116,7 @@ class BarChartSettingsController : Initializable {
         line.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.LINE)
         bar.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.BAR)
         axisLogarithmicToggle.selectedProperty().set(visualizer.logarithmic.get())
+        peakPointToggleSwitch.selectedProperty().set(visualizer.showPeak.value)
         axisLinearToggle.selectedProperty().set(!visualizer.logarithmic.get())
         fillToggleSwitch.selectedProperty().set(visualizer.fillCurve.get())
         smoothToggleSwitch.selectedProperty().set(visualizer.smoothCurve.get())
@@ -120,15 +124,16 @@ class BarChartSettingsController : Initializable {
         smoothToggleSwitch.disableProperty().bind(visualizer.renderMode.map { it == BarVisualizer.RenderMode.BAR })
         visualizer.fillCurve.bind(fillToggleSwitch.selectedProperty())
         visualizer.smoothCurve.bind(smoothToggleSwitch.selectedProperty())
+        visualizer.showPeak.bind(peakPointToggleSwitch.selectedProperty())
 
         maxFreqSpinner.valueFactory = SpinnerValueFactory.IntegerSpinnerValueFactory(
-            ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW,
+            ApplicationSettingDefaults.DEFAULT_MIN_UI_VISUALIZER_WINDOW,
             maxFreq,
             visualizer.cutoff.get()
         )
         minFreqSpinner.valueFactory = SpinnerValueFactory.IntegerSpinnerValueFactory(
             0,
-            maxFreq - ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW,
+            maxFreq - ApplicationSettingDefaults.DEFAULT_MIN_UI_VISUALIZER_WINDOW,
             visualizer.lowPass.get()
         )
         dbMinSpinner.valueFactory = SpinnerValueFactory.DoubleSpinnerValueFactory(
@@ -143,14 +148,14 @@ class BarChartSettingsController : Initializable {
         )
 
         maxFreqSpinner.valueProperty().addListener { _ ->
-            if (minFreqSpinner.valueFactory.value > maxFreqSpinner.valueFactory.value - ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW)
+            if (minFreqSpinner.valueFactory.value > maxFreqSpinner.valueFactory.value - ApplicationSettingDefaults.DEFAULT_MIN_UI_VISUALIZER_WINDOW)
                 minFreqSpinner.valueFactory.value =
-                    maxFreqSpinner.valueFactory.value - ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW
+                    maxFreqSpinner.valueFactory.value - ApplicationSettingDefaults.DEFAULT_MIN_UI_VISUALIZER_WINDOW
         }
         minFreqSpinner.valueProperty().addListener { _ ->
-            if (minFreqSpinner.valueFactory.value + ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW > maxFreqSpinner.value)
+            if (minFreqSpinner.valueFactory.value + ApplicationSettingDefaults.DEFAULT_MIN_UI_VISUALIZER_WINDOW > maxFreqSpinner.value)
                 maxFreqSpinner.valueFactory.value =
-                    minFreqSpinner.valueFactory.value + ApplicationSettingDefaults.MIN_UI_VISUALIZER_WINDOW
+                    minFreqSpinner.valueFactory.value + ApplicationSettingDefaults.DEFAULT_MIN_UI_VISUALIZER_WINDOW
         }
 
         barWidthSlider.value = tw.toDouble()

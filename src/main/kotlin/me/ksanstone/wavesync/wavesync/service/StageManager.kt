@@ -10,11 +10,12 @@ import org.springframework.stereotype.Service
 class StageManager {
     private val customizedStages = HashMap<Stage, CustomizedStage>()
 
-    fun isSupported(): Boolean {
+    private fun isSupported(): Boolean {
         return Platform.isWindows()
     }
 
     fun registerStage(stage: Stage, config: CaptionConfiguration) {
+        if (!isSupported()) return
         require(!customizedStages.containsKey(stage)) { "stage was already registered" }
 
         val customStage = CustomizedStage(stage, config)
@@ -26,9 +27,9 @@ class StageManager {
     }
 
     fun releaseStage(stage: Stage) {
-        val customizedStage = customizedStages[stage]
-            ?: throw IllegalArgumentException("cannot remove customization if stage was not customized")
+        val customizedStage = customizedStages[stage] ?: return
         customizedStage.release()
         customizedStages.remove(stage)
     }
+
 }

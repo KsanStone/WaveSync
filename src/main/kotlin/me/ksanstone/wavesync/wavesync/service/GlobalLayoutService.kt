@@ -17,6 +17,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.gui.initializer.AutoDisposalMode
 import me.ksanstone.wavesync.wavesync.gui.initializer.WaveSyncStageInitializer
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.*
 import java.util.function.Consumer
@@ -29,10 +30,12 @@ open class GlobalLayoutService(
 ) {
 
     private lateinit var windowList: ObservableList<Window>
-    var currentTransaction: NodeTransaction? = null
+    private var currentTransaction: NodeTransaction? = null
     var noAutoRemove = mutableSetOf<DragLayout>()
     private val stageMap = mutableMapOf<DragLayout, Stage>()
     val layoutRemovalListeners = mutableListOf<Consumer<DragLayout>>()
+
+    val logger = LoggerFactory.getLogger("Niger")
 
     @PostConstruct
     fun initialize() {
@@ -78,15 +81,19 @@ open class GlobalLayoutService(
         this.currentTransaction = NodeTransaction(nodeId, origin, null)
     }
 
+    private fun translateTo(layout: DragLayout, p: Point2D): Point2D {
+        return layout.screenToLocal(p)
+//        val local = layout.screenToLocal(p)
+//        logger.info(local.toString())
+//        return Point2D(local.x, local.y - stageManager.stageOffset(layout.scene.window as Stage))
+    }
+
     private fun fakeDragEvent(type: EventType<DragEvent>, p: Point2D, it: DragLayout, root: DragLayoutNode? = null) {
         when (type) {
             DragEvent.DRAG_EXITED -> it.dragExited()
-            DragEvent.DRAG_OVER -> it.dragOver(
-                it.screenToLocal(p),
-                DragLayout.encodeNodeId(currentTransaction!!.nodeId)
-            )
+            DragEvent.DRAG_OVER -> it.dragOver(translateTo(it, p), DragLayout.encodeNodeId(currentTransaction!!.nodeId))
             DragEvent.DRAG_ENTERED -> {}
-            DragEvent.DRAG_DROPPED -> it.dragDropped(root!!, currentTransaction!!.nodeId, it.screenToLocal(p))
+            DragEvent.DRAG_DROPPED -> it.dragDropped(root!!, currentTransaction!!.nodeId, translateTo(it, p))
         }
     }
 
