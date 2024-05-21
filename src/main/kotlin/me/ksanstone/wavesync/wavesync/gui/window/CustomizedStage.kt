@@ -2,10 +2,10 @@ package me.ksanstone.wavesync.wavesync.gui.window
 
 import com.sun.jna.Pointer
 import com.sun.jna.platform.win32.BaseTSD.LONG_PTR
-import com.sun.jna.platform.win32.WinDef
 import com.sun.jna.platform.win32.WinDef.*
 import com.sun.jna.platform.win32.WinUser
 import com.sun.jna.platform.win32.WinUser.WindowProc
+import javafx.geometry.BoundingBox
 import javafx.geometry.Bounds
 import javafx.scene.Node
 import javafx.scene.robot.Robot
@@ -35,7 +35,7 @@ class CustomizedStage(private val stage: Stage, private val config: CaptionConfi
         val a = stage.scene.root
         if (a is MainControl) {
             mainControl = a
-            mainControl!!.setup()
+            mainControl!!.setup(stage)
             closeButton = mainControl!!.controls.closeButton
             restoreButton = mainControl!!.controls.maximiseButton
             minimizeButton = mainControl!!.controls.minimizeButton
@@ -53,7 +53,7 @@ class CustomizedStage(private val stage: Stage, private val config: CaptionConfi
         this.defWndProc = User32Ex.INSTANCE.SetWindowLongPtr(hWnd, WinUser.GWL_WNDPROC, wndProc)
 
         // trigger new WM_NCCALCSIZE message
-        val rect = WinDef.RECT()
+        val rect = RECT()
         User32Ex.INSTANCE.GetWindowRect(hWnd, rect)
         User32Ex.INSTANCE.SetWindowPos(
             hWnd,
@@ -72,7 +72,7 @@ class CustomizedStage(private val stage: Stage, private val config: CaptionConfi
         User32Ex.INSTANCE.SetWindowLongPtr(hWnd, WinUser.GWL_WNDPROC, defWndProc)
 
         // trigger new WM_NCCALCSIZE message
-        val rect = WinDef.RECT()
+        val rect = RECT()
         User32Ex.INSTANCE.GetWindowRect(hWnd, rect)
         User32Ex.INSTANCE.SetWindowPos(
             hWnd,
@@ -86,13 +86,13 @@ class CustomizedStage(private val stage: Stage, private val config: CaptionConfi
     }
 
     private val closeBtnLocation: Bounds
-        get() = closeButton!!.localToScreen(closeButton!!.boundsInLocal)
+        get() = closeButton!!.localToScreen(closeButton!!.boundsInLocal) ?: BoundingBox(0.0,0.0,0.0,0.0)
 
     private val maximizeBtnLocation: Bounds
-        get() = restoreButton!!.localToScreen(restoreButton!!.boundsInLocal)
+        get() = restoreButton!!.localToScreen(restoreButton!!.boundsInLocal) ?: BoundingBox(0.0,0.0,0.0,0.0)
 
     private val minimizeBtnLocation: Bounds
-        get() = minimizeButton!!.localToScreen(minimizeButton!!.boundsInLocal)
+        get() = minimizeButton!!.localToScreen(minimizeButton!!.boundsInLocal) ?: BoundingBox(0.0,0.0,0.0,0.0)
 
 
     internal inner class WndProc : WindowProc {
@@ -192,7 +192,7 @@ class CustomizedStage(private val stage: Stage, private val config: CaptionConfi
         private fun onWmNcHitTest(hWnd: HWND, msg: Int, wParam: WPARAM, lParam: LPARAM): LRESULT {
             // handle border interactions
 
-            val rect = WinDef.RECT()
+            val rect = RECT()
             User32Ex.INSTANCE.GetClientRect(hWnd, rect)
 
             val screenX = GET_X_LPARAM(lParam)

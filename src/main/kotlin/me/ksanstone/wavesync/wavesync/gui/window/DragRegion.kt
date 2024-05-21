@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.window
 
+import javafx.geometry.BoundingBox
 import javafx.geometry.Bounds
 import javafx.geometry.Point2D
 import javafx.scene.Node
@@ -38,7 +39,7 @@ class DragRegion(private val base: Node) {
     }
 
     private fun nodeToScreenBounds(node: Node): Bounds {
-        return node.localToScreen(node.boundsInLocal)
+        return node.localToScreen(node.boundsInLocal) ?: BoundingBox(0.0,0.0,0.0,0.0)
     }
 
 
