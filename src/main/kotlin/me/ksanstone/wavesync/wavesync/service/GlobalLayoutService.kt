@@ -83,9 +83,6 @@ open class GlobalLayoutService(
 
     private fun translateTo(layout: DragLayout, p: Point2D): Point2D {
         return layout.screenToLocal(p)
-//        val local = layout.screenToLocal(p)
-//        logger.info(local.toString())
-//        return Point2D(local.x, local.y - stageManager.stageOffset(layout.scene.window as Stage))
     }
 
     private fun fakeDragEvent(type: EventType<DragEvent>, p: Point2D, it: DragLayout, root: DragLayoutNode? = null) {
