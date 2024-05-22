@@ -33,7 +33,7 @@ import kotlin.math.sqrt
 class AudioCaptureService(
     private val preferenceService: PreferenceService,
     private var fftTransformerService: FFTTransformerService
-) {
+) : AsyncInit() {
 
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
 
@@ -64,12 +64,11 @@ class AudioCaptureService(
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
     val paused: BooleanProperty = SimpleBooleanProperty(false)
     var audioSystems: List<XtSystem> = listOf()
-    val initLatch = CountDownLatch(1)
 
     private val defaultChannelLabels = arrayOf(CommonChannel.MASTER.label)
 
     @PostConstruct
-    fun registerProperties() {
+    override fun init() {
         preferenceService.registerProperty(fftSize, "fftSize", this.javaClass)
         preferenceService.registerProperty(usedAudioSystem, "audioSystem", XtSystem::class.java, this.javaClass)
         preferenceService.registerProperty(
@@ -81,12 +80,12 @@ class AudioCaptureService(
         preferenceService.registerProperty(fftUpsample, "fftUpsample", this.javaClass)
 
         // XtAudio cries like a baby when in a daemon thread
-        Thread(this::asyncInit).apply {
+        Thread(this::doAsyncInit).apply {
             isDaemon = false
         }.start()
     }
 
-    protected fun asyncInit() {
+    override fun asyncInit() {
         setScanWindowSize(512)
         detectSupportedAudioSystems()
         if (usedAudioSystem.get() == null) {
@@ -101,7 +100,6 @@ class AudioCaptureService(
 
         usedAudioSystem.addListener { _ -> stopCapture() }
         usedAudioSystem.addListener { _ -> changeWindowingFunction() }
-        initLatch.countDown()
     }
 
     fun detectSupportedAudioSystems() {

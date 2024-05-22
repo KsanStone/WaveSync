@@ -205,8 +205,8 @@ class BarVisualizer : AutoCanvas() {
                 return
             }
             if (logarithmic.get()) logarithmicTooltipText() else linearTooltipText()
-        } catch (_: IndexOutOfBoundsException) {
-        }
+        } catch (_: IndexOutOfBoundsException) { }
+        catch (_: NullPointerException) { }
     }
 
     private fun logarithmicTooltipText() {

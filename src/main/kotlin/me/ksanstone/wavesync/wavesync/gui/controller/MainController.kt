@@ -15,6 +15,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
+import me.ksanstone.wavesync.wavesync.gui.component.visualizer.ExtendedWaveformVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
@@ -26,6 +27,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 
 class MainController : Initializable {
+
+    @FXML
+    lateinit var extendedWaveformVisualizerOnOff: CheckMenuItem
 
     @FXML
     lateinit var runtimeInfoOnOff: CheckMenuItem
@@ -60,6 +64,7 @@ class MainController : Initializable {
     private var lastDeviceId: String? = null
     private var barVisualizer: BarVisualizer
     private var waveformVisualizer: WaveformVisualizer
+    private var extendedWaveformVisualizer: ExtendedWaveformVisualizer
     private var fftInfo: FFTInfo
     private var layoutService: LayoutStorageService
     private var globalLayoutService: GlobalLayoutService
@@ -81,6 +86,7 @@ class MainController : Initializable {
         barVisualizer = BarVisualizer()
         fftInfo = FFTInfo()
         runtimeInfo = RuntimeInfo()
+        extendedWaveformVisualizer = ExtendedWaveformVisualizer()
     }
 
     @FXML
@@ -169,6 +175,7 @@ class MainController : Initializable {
             CompComponentToggle(barOnOff, BarVisualizer::class.java, barVisualizer, LayoutStorageService.MAIN_BAR_VISUALIZER_ID),
             CompComponentToggle(fftInfoOnOff, FFTInfo::class.java, fftInfo, LayoutStorageService.MAIN_FFT_INFO_ID),
             CompComponentToggle(runtimeInfoOnOff, RuntimeInfo::class.java, runtimeInfo, LayoutStorageService.MAIN_RUNTIME_INFO_ID),
+            CompComponentToggle(extendedWaveformVisualizerOnOff, ExtendedWaveformVisualizer::class.java, extendedWaveformVisualizer, LayoutStorageService.MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID),
         )
 
         list.forEach {
@@ -200,6 +207,7 @@ class MainController : Initializable {
 
         audioCaptureService.registerFFTObserver(barVisualizer::handleFFT)
         audioCaptureService.registerSampleObserver(waveformVisualizer::handleSamples)
+        audioCaptureService.registerSampleObserver(extendedWaveformVisualizer::handleSamples)
 
         audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
         barVisualizer.cutoff.addListener { _ -> refreshInfoLabel() }
@@ -221,7 +229,7 @@ class MainController : Initializable {
         waveformVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-        layoutService.createDefaultNodeFactory(waveformVisualizer, barVisualizer, fftInfo, runtimeInfo)
+        layoutService.createDefaultNodeFactory(waveformVisualizer, barVisualizer, fftInfo, runtimeInfo, extendedWaveformVisualizer)
         layoutService.loadLayouts()
         val layout = layoutService.getMainLayout()
         initializeWindowControls(layout)

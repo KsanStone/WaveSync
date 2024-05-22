@@ -1,3 +1,3 @@
-.waveform-visualizer {
+.extended-waveform-visualizer, .waveform-visualizer {
     -fx-color: ladder(-color-bg-default, -color-accent-2 49%, -color-accent-6 50%);
 }

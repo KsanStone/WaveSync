@@ -13,6 +13,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
+import me.ksanstone.wavesync.wavesync.gui.component.visualizer.ExtendedWaveformVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -39,7 +40,8 @@ class LayoutStorageService(
         wVis: WaveformVisualizer,
         bVis: BarVisualizer,
         fftInfo: FFTInfo,
-        runtimeInfo: RuntimeInfo
+        runtimeInfo: RuntimeInfo,
+        ewVis: ExtendedWaveformVisualizer
     ) {
         this.nodeFactory =
             DragLayoutSerializerService.NodeFactory {
@@ -47,7 +49,8 @@ class LayoutStorageService(
                     MAIN_WAVEFORM_VISUALIZER_ID to wVis,
                     MAIN_BAR_VISUALIZER_ID to bVis,
                     MAIN_FFT_INFO_ID to fftInfo,
-                    MAIN_RUNTIME_INFO_ID to runtimeInfo
+                    MAIN_RUNTIME_INFO_ID to runtimeInfo,
+                    MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID to ewVis
                 )[it]
             }
     }
@@ -152,6 +155,7 @@ class LayoutStorageService(
     companion object {
         const val MAIN_BAR_VISUALIZER_ID = "barVisualizer"
         const val MAIN_WAVEFORM_VISUALIZER_ID = "waveformVisualizer"
+        const val MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID = "extendedWaveformVisualizer"
         const val MAIN_FFT_INFO_ID = "fftInfo"
         const val MAIN_RUNTIME_INFO_ID = "runtimeInfo"
     }
