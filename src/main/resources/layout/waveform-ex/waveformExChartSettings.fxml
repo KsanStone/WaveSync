@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.extendedWaveform.ExtendedWaveformChartSettingsController">
+    <rowConstraints>
+      <RowConstraints minHeight="30.0" prefHeight="30.0" />
+    </rowConstraints>
+    <columnConstraints>
+        <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0" />
+        <ColumnConstraints minWidth="10.0" />
+    </columnConstraints>
+    <children>
+      <Label text="%visualizer.waveformEx.settings.bufferLength" />
+      <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1">
+         <children>
+            <Spinner fx:id="bufferLengthSpinner" editable="true" />
+            <Label text="Seconds" />
+         </children>
+      </HBox>
+    </children>
+</GridPane>

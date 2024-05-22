@@ -4,6 +4,9 @@ import java.lang.Integer.max
 
 class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Iterable<T> {
 
+    val tail: Long
+        get() { return written - size }
+
     var written: Long = 0L
         private set
 

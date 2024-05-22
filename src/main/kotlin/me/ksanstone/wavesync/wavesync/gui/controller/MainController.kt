@@ -227,6 +227,8 @@ class MainController : Initializable {
         barVisualizer.initializeSettingMenu()
         waveformVisualizer.registerPreferences("main", preferenceService)
         waveformVisualizer.initializeSettingMenu()
+        extendedWaveformVisualizer.registerPreferences("main", preferenceService)
+        extendedWaveformVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
         layoutService.createDefaultNodeFactory(waveformVisualizer, barVisualizer, fftInfo, runtimeInfo, extendedWaveformVisualizer)
