@@ -20,12 +20,18 @@ import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
 import xt.audio.Enums.XtSystem
 import java.net.URL
 import java.util.*
+import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.round
-import kotlin.math.roundToInt
 
 
 class MainSettingsController : Initializable {
+
+    @FXML
+    lateinit var fftRateLabel: Label
+
+    @FXML
+    lateinit var fftRateSpinner: Spinner<Int>
 
     @FXML
     lateinit var useThemeColorToggleSwitch: ToggleSwitch
@@ -35,9 +41,6 @@ class MainSettingsController : Initializable {
 
     @FXML
     lateinit var endColorPicker: ColorPicker
-
-    @FXML
-    lateinit var fftUpsampleChoiceBox: ChoiceBox<String>
 
     @FXML
     lateinit var windowingFunctionChoiceBox: ChoiceBox<String>
@@ -90,6 +93,15 @@ class MainSettingsController : Initializable {
             changeAudioSystem()
         }
 
+        fftRateSpinner.valueFactory = SpinnerValueFactory.IntegerSpinnerValueFactory(
+            10,
+            512,
+            audioCaptureService.fftRate.get(),
+            1
+        )
+        audioCaptureService.fftRate.bind(fftRateSpinner.valueProperty())
+        fftRateSpinner.valueProperty().addListener { _, _, _ -> updateFftRateInfoLabel() }
+
         windowingFunctionChoiceBox.items.addAll(WindowFunctionType.entries.map { it.displayName })
         windowingFunctionChoiceBox.value = audioCaptureService.usedWindowingFunction.value.displayName
         audioCaptureService.usedWindowingFunction.bind(
@@ -99,8 +111,6 @@ class MainSettingsController : Initializable {
         fftSizeChoiceBox.items.addAll(listOf(8, 9, 10, 11, 12, 13, 14, 15, 16).map { 2.0.pow(it.toDouble()).toInt() }
             .toList())
         fftSizeChoiceBox.value = audioCaptureService.fftSize.get()
-        fftUpsampleChoiceBox.items.addAll(listOf(1, 2, 4, 8, 16, 32).map { "${it}x" })
-        fftUpsampleChoiceBox.value = "${audioCaptureService.fftUpsample.get()}x"
         fftSizeChoiceBox.valueProperty().addListener { _ -> updateFftInfoLabel() }
         audioCaptureService.source.addListener { _ -> updateFftInfoLabel() }
 
@@ -111,15 +121,12 @@ class MainSettingsController : Initializable {
                 applyFreqButton.styleClass.remove("accent")
             }
         }
-        fftUpsampleChoiceBox.valueProperty().addListener { _, _, v ->
-            audioCaptureService.fftUpsample.set(v.replace("x", "").toInt())
-            updateFftInfoLabel()
-        }
 
         debugToggleSwitch.selectedProperty().set(MainController.instance.infoShown.get())
         MainController.instance.infoShown.bind(debugToggleSwitch.selectedProperty())
 
         updateFftInfoLabel()
+        updateFftRateInfoLabel()
     }
 
     fun showResetToDefaultsDialog() {
@@ -141,26 +148,34 @@ class MainSettingsController : Initializable {
 
     }
 
+    private fun updateFftRateInfoLabel() {
+        if (audioCaptureService.source.get() != null) {
+            val rate = fftRateSpinner.value
+            val captureRate = audioCaptureService.source.get().rate
+            val effectiveRate = max(rate, (captureRate.toDouble() / audioCaptureService.fftSize.get()).toInt())
+            val frameMs = (1.0 / effectiveRate) * 1000
+            val frameSamples = (1.0 / effectiveRate) * captureRate
+            val bufferAmount = frameSamples / audioCaptureService.fftSize.get()
+
+            fftRateLabel.text = localizationService.format(
+                if (effectiveRate != rate) "dialog.deviceOptions.fft.effectiveRateInfo" else "dialog.deviceOptions.fft.rateInfo",
+                effectiveRate,
+                frameMs,
+                frameSamples.toInt(),
+                bufferAmount,
+            )
+        } else {
+            fftInfoLabel.text = localizationService.get("dialog.deviceOptions.noDevice")
+        }
+    }
+
     private fun updateFftInfoLabel() {
+        updateFftRateInfoLabel()
         if (audioCaptureService.source.get() != null) {
             val freq = audioCaptureService.source.get().getMinimumFrequency(fftSizeChoiceBox.value)
             var updateInterval = audioCaptureService.source.get().getUpdateInterval(fftSizeChoiceBox.value)
             updateInterval = Duration.millis(round(updateInterval.toMillis() * 10.0) / 10.0)
-            if (audioCaptureService.fftUpsample.get() <= 1) {
-                fftInfoLabel.text =
-                    localizationService.format("dialog.deviceOptions.windowSizeInfo", freq, updateInterval)
-            } else {
-                val upsampledDuration = updateInterval.divide(audioCaptureService.fftUpsample.get().toDouble())
-                val upsampledHertz = 1.0 / upsampledDuration.toSeconds()
-                fftInfoLabel.text =
-                    localizationService.format(
-                        "dialog.deviceOptions.upSampledWindowSizeInfo",
-                        freq,
-                        updateInterval,
-                        upsampledDuration,
-                        upsampledHertz.roundToInt()
-                    )
-            }
+            fftInfoLabel.text = localizationService.format("dialog.deviceOptions.windowSizeInfo", freq, updateInterval)
         } else {
             fftInfoLabel.text = localizationService.get("dialog.deviceOptions.noDevice")
         }
@@ -170,6 +185,7 @@ class MainSettingsController : Initializable {
         audioCaptureService.fftSize.set(fftSizeChoiceBox.value)
         applyFreqButton.styleClass.remove("accent")
         audioCaptureService.restartCapture()
+        updateFftRateInfoLabel()
     }
 
     fun purgeDataDialog() {

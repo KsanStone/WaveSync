@@ -5,9 +5,10 @@ import com.sun.jna.Pointer
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import javafx.beans.property.*
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FFT_RATE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FFT_SIZE
-import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_UPSAMPLING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION
+import me.ksanstone.wavesync.wavesync.service.FourierMath.calcRMS
 import me.ksanstone.wavesync.wavesync.service.interpolation.ParabolicInterpolator
 import me.ksanstone.wavesync.wavesync.service.windowing.*
 import me.ksanstone.wavesync.wavesync.utility.*
@@ -25,8 +26,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.function.BiConsumer
 import kotlin.math.log10
-import kotlin.math.pow
-import kotlin.math.sqrt
 
 
 @Service
@@ -59,7 +58,7 @@ class AudioCaptureService(
 
     val source: ObjectProperty<SupportedCaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(DEFAULT_FFT_SIZE)
-    val fftUpsample: IntegerProperty = SimpleIntegerProperty(DEFAULT_UPSAMPLING)
+    val fftRate: IntegerProperty = SimpleIntegerProperty(DEFAULT_FFT_RATE)
     val usedAudioSystem: ObjectProperty<XtSystem> = SimpleObjectProperty()
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> = SimpleObjectProperty(DEFAULT_WINDOWING_FUNCTION)
     val paused: BooleanProperty = SimpleBooleanProperty(false)
@@ -77,7 +76,7 @@ class AudioCaptureService(
             WindowFunctionType::class.java,
             this.javaClass
         )
-        preferenceService.registerProperty(fftUpsample, "fftUpsample", this.javaClass)
+        preferenceService.registerProperty(fftRate, "fftRate", this.javaClass)
 
         // XtAudio cries like a baby when in a daemon thread
         Thread(this::doAsyncInit).apply {
@@ -126,7 +125,7 @@ class AudioCaptureService(
         if (paused.get()) return
         val channels = source.get().format.channels.inputs
         val sampleFactor = 1.0f / channels.toFloat()
-        val targetSamplesUntilRefresh = (fftSampleBuffer.size / fftUpsample.get()).toLong()
+        val targetSamplesUntilRefresh = ((1.0 / fftRate.get()) * source.get().rate).toInt().coerceAtMost(fftSize.get())
         for (frame in 0 until frames) {
             val sampleIndex = frame * channels
             var sample = 0.0f
@@ -147,12 +146,6 @@ class AudioCaptureService(
         doLoudnessCalc(frames)
         val sampleSlice = samples[0].data.sliceArray(0 until frames)
         sampleObservers.forEach { it.accept(sampleSlice, source.get()) }
-    }
-
-    private fun calcRMS(samples: FloatArray, frames: Int): Double {
-        var s = 0.0
-        for (i in 0 until frames) s += samples[i].toDouble().pow(2)
-        return sqrt(s / samples.size)
     }
 
     fun doLoudnessCalc(frames: Int) {

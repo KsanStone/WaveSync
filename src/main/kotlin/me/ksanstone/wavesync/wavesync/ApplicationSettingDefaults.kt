@@ -24,7 +24,7 @@ object ApplicationSettingDefaults {
     const val DEFAULT_WAVEFORM_RANGE_MIN = -1.0f
     const val DEFAULT_WAVEFORM_RANGE_MAX = 1.0f
     const val DEFAULT_WAVEFORM_RANGE_LINK = true
-    const val DEFAULT_UPSAMPLING = 1
+    const val DEFAULT_FFT_RATE = 60
     const val DEFAULT_PEAK_LINE_VISIBLE = false
     const val DEFAULT_LOGARITHMIC_MODE = false
     const val DEFAULT_FILL_UNDER_CURVE = true

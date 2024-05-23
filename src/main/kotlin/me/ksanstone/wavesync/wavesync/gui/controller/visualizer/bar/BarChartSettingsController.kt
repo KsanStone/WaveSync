@@ -212,10 +212,12 @@ class BarChartSettingsController : Initializable {
     fun axisLinear() {
         visualizer.logarithmic.set(false)
         axisLogarithmicToggle.isSelected = false
+        axisLinearToggle.isSelected = true
     }
 
     fun axisLogarithmic() {
         visualizer.logarithmic.set(true)
         axisLinearToggle.isSelected = false
+        axisLogarithmicToggle.isSelected = true
     }
 }

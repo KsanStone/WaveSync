@@ -17,9 +17,12 @@ import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.extendedWaveform.ExtendedWaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.service.FourierMath
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
+import me.ksanstone.wavesync.wavesync.service.fftScaling.LinearFFTScalar
+import me.ksanstone.wavesync.wavesync.service.fftScaling.LinearFFTScalarParams
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.max
 import kotlin.math.min
@@ -36,9 +39,12 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
     private var bufferPos = 0
     private var accumulator = 0.0
 
-
     private val waveColor: StyleableProperty<Color> =
         FACTORY.createStyleableColorProperty(this, "waveColor", "-fx-color") { vis -> vis.waveColor }
+    private val rmsColor: StyleableProperty<Color> =
+        FACTORY.createStyleableColorProperty(this, "waveColor", "-fx-rms-color") { vis -> vis.rmsColor }
+
+    private val rmsScalar = LinearFFTScalar()
 
     init {
         canvasContainer.xAxisShown.value = true
@@ -65,6 +71,8 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         resizeBuffer(bufferDuration.get(), effectiveBufferSampleRate)
         sizeXAxis()
 
+        rmsScalar.update(LinearFFTScalarParams(6.5F))
+
         styleClass.add("extended-waveform-visualizer")
         stylesheets.add("/styles/waveform-visualizer.css")
     }
@@ -73,8 +81,18 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(
+            canvasContainer.horizontalLinesVisible,
+            "horizontalLinesVisible",
+            this.javaClass,
+            id
+        )
+        preferenceService.registerProperty(
+            canvasContainer.verticalLinesVisible,
+            "verticalLinesVisible",
+            this.javaClass,
+            id
+        )
     }
 
     fun initializeSettingMenu() {
@@ -134,10 +152,12 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
                 continue
             }
 
+            val rms = FourierMath.calcRMS(buffer, bufferPos, tempPos - bufferPos)
             bufferPos = tempPos
 
             computedBuffer.insert(cMin)
             computedBuffer.insert(cMax)
+            computedBuffer.insert(rms.toFloat())
 
             accumulator -= step
             cMin = 1.0F
@@ -153,9 +173,9 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
 
     private fun handleWidth(width: Double) {
         val px = width.toInt()
-        if (px<= 0) return
-        if (computedBuffer.size != px * 2) {
-            computedBuffer = RollingBuffer(px * 2, 0F)
+        if (px <= 0) return
+        if (computedBuffer.size != px * 3) {
+            computedBuffer = RollingBuffer(px * 3, 0F)
             resetBuffer()
             calculateDiffPoints()
         } else {
@@ -166,17 +186,23 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         gc.clearRect(0.0, 0.0, width, height)
         handleWidth(width)
-        gc.fill = waveColor.value
 
         val rangeBreadth = 2.0
 
-        for (i in 0 until computedBuffer.size / 2) {
-            val cMin = computedBuffer[i * 2]
-            val cMax = computedBuffer[i * 2 + 1]
+        for (i in 0 until computedBuffer.size / 3) {
+            val cMin = computedBuffer[i * 3]
+            val cMax = computedBuffer[i * 3 + 1]
+            val rms = rmsScalar.scale(computedBuffer[i * 3 + 2])
             val yEnd = (cMax + 1.0F).toDouble() / rangeBreadth * height
             val yStart = (cMin + 1.0F).toDouble() / rangeBreadth * height
+            val rmsH = rms * height / 2
+            val rmsStart = max(yStart, (height - rmsH) / 2)
+            val rmsEnd = min(yEnd, rmsH + (height - rmsH) / 2)
 
+            gc.fill = waveColor.value
             gc.fillRect(i.toDouble(), yStart, 1.0, yEnd - yStart)
+            gc.fill = rmsColor.value
+            gc.fillRect(i.toDouble(), rmsStart, 1.0, rmsEnd - rmsStart)
         }
     }
 

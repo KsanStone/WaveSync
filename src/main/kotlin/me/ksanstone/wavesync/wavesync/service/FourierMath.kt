@@ -1,8 +1,7 @@
 package me.ksanstone.wavesync.wavesync.service
 
-import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.roundToInt
+import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
+import kotlin.math.*
 
 object FourierMath {
 
@@ -32,6 +31,18 @@ object FourierMath {
 
     fun frequencySamplesAtRate(frequency: Double, rate: Int): Double {
         return 1.0 / frequency * rate
+    }
+
+    fun calcRMS(samples: FloatArray, frames: Int): Double {
+        var s = 0.0
+        for (i in 0 until frames) s += samples[i].toDouble().pow(2)
+        return sqrt(s / samples.size)
+    }
+
+    fun calcRMS(samples: RollingBuffer<Float>, start: Int, frames: Int): Double {
+        var s = 0.0
+        for (i in start until start + frames) s += samples[i].toDouble().pow(2)
+        return sqrt(s / samples.size)
     }
 
     /**
