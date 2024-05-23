@@ -9,6 +9,7 @@ import javafx.css.StyleableProperty
 import javafx.css.StyleablePropertyFactory
 import javafx.fxml.FXMLLoader
 import javafx.scene.canvas.GraphicsContext
+import javafx.scene.chart.NumberAxis
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
@@ -40,8 +41,14 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         FACTORY.createStyleableColorProperty(this, "waveColor", "-fx-color") { vis -> vis.waveColor }
 
     init {
-        canvasContainer.xAxisShown.value = false
-        canvasContainer.yAxisShown.value = false
+        canvasContainer.xAxisShown.value = true
+        canvasContainer.yAxisShown.value = true
+
+        xAxis.minorTickCount = 5
+        (xAxis as NumberAxis).tickUnit = 0.5
+        yAxis.lowerBound = -1.0
+        yAxis.upperBound = 1.0
+        (yAxis as NumberAxis).tickUnit = 0.2
 
         sourceRate.addListener { _, _, v ->
             effectiveBufferSampleRate = 48000.coerceAtMost(v.toInt())
@@ -52,9 +59,11 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         bufferDuration.addListener { _, _, _ ->
             resizeBuffer(bufferDuration.get(), effectiveBufferSampleRate)
             resetBuffer()
+            sizeXAxis()
         }
 
         resizeBuffer(bufferDuration.get(), effectiveBufferSampleRate)
+        sizeXAxis()
 
         styleClass.add("extended-waveform-visualizer")
         stylesheets.add("/styles/waveform-visualizer.css")
@@ -62,6 +71,10 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
     }
 
     fun initializeSettingMenu() {
@@ -74,6 +87,11 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         val controller: ExtendedWaveformSettingsController = loader.getController()
         controller.extendedWaveformChartSettingsController.initialize(this)
         controlPane.children.add(controls)
+    }
+
+    private fun sizeXAxis() {
+        xAxis.lowerBound = -bufferDuration.get().toSeconds()
+        xAxis.upperBound = 0.0
     }
 
     fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
@@ -135,7 +153,7 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
 
     private fun handleWidth(width: Double) {
         val px = width.toInt()
-        if (px == 0) return
+        if (px<= 0) return
         if (computedBuffer.size != px * 2) {
             computedBuffer = RollingBuffer(px * 2, 0F)
             resetBuffer()

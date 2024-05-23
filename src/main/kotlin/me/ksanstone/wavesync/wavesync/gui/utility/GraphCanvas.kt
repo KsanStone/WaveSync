@@ -234,7 +234,7 @@ class GraphCanvas(
 
     private fun layoutGrid() {
         val leftPad = if (yAxisShown.get()) try { // TODO figure out why this call fails
-            yAxis.prefWidth(-1.0)
+            yAxis.prefWidth(-1.0).coerceAtLeast(yAxis.minWidth)
         } catch (e: ArrayIndexOutOfBoundsException) {
             0.0
         } catch (e: NullPointerException) {
