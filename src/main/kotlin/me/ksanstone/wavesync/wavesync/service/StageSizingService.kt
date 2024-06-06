@@ -14,6 +14,7 @@ import java.awt.GraphicsEnvironment
 import java.awt.Rectangle
 import java.lang.reflect.Method
 import java.util.*
+import java.util.concurrent.CompletableFuture
 import kotlin.math.roundToInt
 
 
@@ -78,11 +79,14 @@ class StageSizingService(
             )
             getStageHome(stage, id)
 
-            Platform.runLater {
-                val maximizedPropWrapper = SimpleBooleanProperty(stage.isMaximized)
-                preferenceService.registerProperty(maximizedPropWrapper, "isMaximized", this.javaClass, id)
-                stage.isMaximized = maximizedPropWrapper.get()
-                maximizedPropWrapper.bind(stage.maximizedProperty())
+            CompletableFuture.runAsync {
+                Thread.sleep(500)
+                Platform.runLater {
+                    val maximizedPropWrapper = SimpleBooleanProperty(stage.isMaximized)
+                    preferenceService.registerProperty(maximizedPropWrapper, "isMaximized", this.javaClass, id)
+                    stage.isMaximized = maximizedPropWrapper.get()
+                    maximizedPropWrapper.bind(stage.maximizedProperty())
+                }
             }
         }
     }

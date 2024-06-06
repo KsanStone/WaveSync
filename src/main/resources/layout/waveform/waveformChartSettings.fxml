@@ -1,76 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import atlantafx.base.controls.*?>
-<?import atlantafx.base.layout.*?>
+<?import atlantafx.base.controls.ToggleSwitch?>
+<?import atlantafx.base.layout.InputGroup?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.*?>
-
-<GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformChartSettingsController">
+<GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10"
+          xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+          fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformChartSettingsController">
     <rowConstraints>
-        <RowConstraints minHeight="30.0" prefHeight="30.0" />
-        <RowConstraints minHeight="30.0" />
-        <RowConstraints minHeight="30.0" prefHeight="30.0" />
-      <RowConstraints minHeight="30.0" prefHeight="30.0" />
-        <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" />
+        <RowConstraints minHeight="30.0" prefHeight="30.0"/>
+        <RowConstraints minHeight="30.0"/>
+        <RowConstraints minHeight="30.0" prefHeight="30.0"/>
+        <RowConstraints minHeight="30.0" prefHeight="30.0"/>
+        <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0"/>
     </rowConstraints>
     <columnConstraints>
-        <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0" />
-        <ColumnConstraints minWidth="10.0" />
+        <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0"/>
+        <ColumnConstraints minWidth="10.0"/>
     </columnConstraints>
-    <children>
-        <Label text="%visualizer.waveform.settings.autoAlign" GridPane.rowIndex="1">
+    <Label text="%visualizer.waveform.settings.autoAlign" GridPane.rowIndex="1">
+        <graphic>
+            <FontIcon iconLiteral="mdmz-swap_calls"/>
+        </graphic>
+    </Label>
+    <ToggleSwitch fx:id="autoAlignToggleSwitch" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+    <Label text="%visualizer.waveform.settings.displayRange" GridPane.rowIndex="2">
+        <graphic>
+            <FontIcon iconLiteral="mdal-align_vertical_center"/>
+        </graphic>
+    </Label>
+    <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+        <ToggleButton fx:id="linkToggleButton" mnemonicParsing="false">
             <graphic>
-                <FontIcon iconLiteral="mdmz-swap_calls" />
+                <FontIcon iconLiteral="mdal-insert_link"/>
             </graphic>
-        </Label>
-        <ToggleSwitch fx:id="autoAlignToggleSwitch" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-        <Label text="%visualizer.waveform.settings.displayRange" GridPane.rowIndex="2">
-            <graphic>
-                <FontIcon iconLiteral="mdal-align_vertical_center" />
-            </graphic>
-        </Label>
-        <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
-            <children>
-                <ToggleButton fx:id="linkToggleButton" mnemonicParsing="false">
-                    <graphic>
-                        <FontIcon iconLiteral="mdal-insert_link" />
-                    </graphic>
-                </ToggleButton>
-                <Spinner fx:id="waveformRangeMinSpinner" editable="true" />
-                <Spinner fx:id="waveformRangeMaxSpinner" editable="true" />
-            </children>
-        </HBox>
-        <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="4">
-            <graphic>
-                <FontIcon iconLiteral="mdal-border_outer" />
-            </graphic>
-        </Label>
-        <Label text="%visualizer.waveform.settings.alignFrequency">
-            <graphic>
-                <FontIcon iconLiteral="mdmz-swap_calls" />
-            </graphic>
-        </Label>
-        <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1">
-            <children>
-                <ToggleSwitch fx:id="alignFrequencyToggleSwitch" />
-                <Spinner fx:id="alignFrequency" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
-                <Label text="Hz" />
-            </children>
-        </HBox>
-        <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="4">
-            <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml" />
-            <InputGroup>
-                <ToggleButton fx:id="pointCloud" onAction="#renderCloud" prefHeight="30.0" text="%visualizer.waveform.settings.render.pointCloud" />
-                <ToggleButton fx:id="waveformLine" onAction="#renderLine" prefHeight="30.0" text="%visualizer.waveform.settings.render.lines" />
-            </InputGroup>
-        </HBox>
-      <Label text="%visualizer.waveform.settings.bufferLength" GridPane.rowIndex="3" />
-      <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
-         <children>
-            <Spinner fx:id="bufferLengthSpinner" editable="true"/>
-            <Label text="Milliseconds" />
-         </children>
-      </HBox>
-    </children>
+        </ToggleButton>
+        <Spinner fx:id="waveformRangeMinSpinner" editable="true"/>
+        <Spinner fx:id="waveformRangeMaxSpinner" editable="true"/>
+    </HBox>
+    <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="4">
+        <graphic>
+            <FontIcon iconLiteral="mdal-border_outer"/>
+        </graphic>
+    </Label>
+    <Label text="%visualizer.waveform.settings.alignFrequency">
+        <graphic>
+            <FontIcon iconLiteral="mdmz-swap_calls"/>
+        </graphic>
+    </Label>
+    <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1">
+        <ToggleSwitch fx:id="alignFrequencyToggleSwitch"/>
+        <Spinner fx:id="alignFrequency" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS"/>
+        <Label text="Hz"/>
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="4">
+        <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
+        <InputGroup>
+            <ToggleButton fx:id="pointCloud" onAction="#renderCloud" prefHeight="30.0"
+                          text="%visualizer.waveform.settings.render.pointCloud"/>
+            <ToggleButton fx:id="waveformLine" onAction="#renderLine" prefHeight="30.0"
+                          text="%visualizer.waveform.settings.render.lines"/>
+        </InputGroup>
+    </HBox>
+    <Label text="%visualizer.waveform.settings.bufferLength" GridPane.rowIndex="3">
+        <graphic>
+            <FontIcon iconLiteral="mdal-av_timer"/>
+        </graphic>
+    </Label>
+    <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="3">
+        <Spinner fx:id="bufferLengthSpinner" editable="true"/>
+        <Label text="Milliseconds"/>
+    </HBox>
 </GridPane>

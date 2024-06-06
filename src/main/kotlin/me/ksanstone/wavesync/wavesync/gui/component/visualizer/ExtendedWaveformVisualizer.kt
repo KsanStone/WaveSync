@@ -50,8 +50,8 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         canvasContainer.xAxisShown.value = true
         canvasContainer.yAxisShown.value = true
 
-        xAxis.minorTickCount = 5
-        (xAxis as NumberAxis).tickUnit = 0.5
+        xAxis.minorTickCount = 10
+        (xAxis as NumberAxis).tickUnit = 1.0
         yAxis.lowerBound = -1.0
         yAxis.upperBound = 1.0
         (yAxis as NumberAxis).tickUnit = 0.2

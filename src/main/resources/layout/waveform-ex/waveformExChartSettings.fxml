@@ -14,20 +14,20 @@
         <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0"/>
         <ColumnConstraints minWidth="10.0"/>
     </columnConstraints>
-    <children>
-        <Label text="%visualizer.waveformEx.settings.bufferLength"/>
-        <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1">
-            <children>
-                <Spinner fx:id="bufferLengthSpinner" editable="true"/>
-                <Label text="Seconds"/>
-            </children>
-        </HBox>
-        <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="1">
-            <graphic>
-                <FontIcon iconLiteral="mdal-border_outer"/>
-            </graphic>
-        </Label>
-        <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml" GridPane.columnIndex="1"
-                    GridPane.rowIndex="1"/>
-    </children>
+    <Label text="%visualizer.waveformEx.settings.bufferLength">
+        <graphic>
+            <FontIcon iconLiteral="mdal-av_timer"/>
+        </graphic>
+    </Label>
+    <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1">
+        <Spinner fx:id="bufferLengthSpinner" editable="true"/>
+        <Label text="Seconds"/>
+    </HBox>
+    <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="1">
+        <graphic>
+            <FontIcon iconLiteral="mdal-border_outer"/>
+        </graphic>
+    </Label>
+    <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml" GridPane.columnIndex="1"
+                GridPane.rowIndex="1"/>
 </GridPane>
