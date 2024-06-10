@@ -158,6 +158,7 @@ class LayoutStorageService(
         const val MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID = "extendedWaveformVisualizer"
         const val MAIN_FFT_INFO_ID = "fftInfo"
         const val MAIN_RUNTIME_INFO_ID = "runtimeInfo"
+        const val MAIN_SPECTROGRAM_ID = "spectrogram"
     }
 }
 

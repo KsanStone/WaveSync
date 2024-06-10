@@ -14,10 +14,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
-import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
-import me.ksanstone.wavesync.wavesync.gui.component.visualizer.ExtendedWaveformVisualizer
-import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VolumeVisualizer
-import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
+import me.ksanstone.wavesync.wavesync.gui.component.visualizer.*
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.*
 import java.net.URL
@@ -30,6 +27,9 @@ class MainController : Initializable {
 
     @FXML
     lateinit var extendedWaveformVisualizerOnOff: CheckMenuItem
+
+    @FXML
+    lateinit var spectrogramVisualizerOnOff: CheckMenuItem
 
     @FXML
     lateinit var runtimeInfoOnOff: CheckMenuItem
@@ -64,6 +64,7 @@ class MainController : Initializable {
     private var lastDeviceId: String? = null
     private var barVisualizer: BarVisualizer
     private var waveformVisualizer: WaveformVisualizer
+    private var spectrogramVisualizer: SpectrogramVisualizer
     private var extendedWaveformVisualizer: ExtendedWaveformVisualizer
     private var fftInfo: FFTInfo
     private var layoutService: LayoutStorageService
@@ -86,6 +87,7 @@ class MainController : Initializable {
         barVisualizer = BarVisualizer()
         fftInfo = FFTInfo()
         runtimeInfo = RuntimeInfo()
+        spectrogramVisualizer = SpectrogramVisualizer()
         extendedWaveformVisualizer = ExtendedWaveformVisualizer()
     }
 
@@ -176,6 +178,7 @@ class MainController : Initializable {
             CompComponentToggle(fftInfoOnOff, FFTInfo::class.java, fftInfo, LayoutStorageService.MAIN_FFT_INFO_ID),
             CompComponentToggle(runtimeInfoOnOff, RuntimeInfo::class.java, runtimeInfo, LayoutStorageService.MAIN_RUNTIME_INFO_ID),
             CompComponentToggle(extendedWaveformVisualizerOnOff, ExtendedWaveformVisualizer::class.java, extendedWaveformVisualizer, LayoutStorageService.MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID),
+            CompComponentToggle(spectrogramVisualizerOnOff, SpectrogramVisualizer::class.java, spectrogramVisualizer, LayoutStorageService.MAIN_SPECTROGRAM_ID),
         )
 
         list.forEach {
@@ -229,6 +232,8 @@ class MainController : Initializable {
         waveformVisualizer.initializeSettingMenu()
         extendedWaveformVisualizer.registerPreferences("main", preferenceService)
         extendedWaveformVisualizer.initializeSettingMenu()
+        spectrogramVisualizer.registerPreferences("main", preferenceService)
+        spectrogramVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
         layoutService.createDefaultNodeFactory(waveformVisualizer, barVisualizer, fftInfo, runtimeInfo, extendedWaveformVisualizer)

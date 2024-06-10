@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.CustomMenuItem?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.layout.HBox?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<HBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.spectrogram.SpectrogramSettingsController">
+    <children>
+        <MenuButton mnemonicParsing="false">
+            <items>
+                <CustomMenuItem hideOnClick="false" mnemonicParsing="false" text="Unspecified Action">
+                    <content>
+                        <fx:include source="/layout/spectrogram/spectrogramChartSettings.fxml" fx:id="spectrogramChartSettings"/>
+                    </content>
+                </CustomMenuItem>
+            </items>
+            <graphic>
+                <FontIcon iconLiteral="mdmz-settings" iconSize="20" text="" />
+            </graphic>
+        </MenuButton>
+    </children>
+</HBox>
