@@ -46,7 +46,7 @@ class StageSizingService(
         stage.showingProperty().addListener(listener)
     }
 
-    fun registerAndBindProperty(
+    private fun registerAndBindProperty(
         stage: Stage,
         propertyName: String,
         id: String,
@@ -91,7 +91,7 @@ class StageSizingService(
         }
     }
 
-    fun getStageHome(stage: Stage, id: String? = null) {
+    private fun getStageHome(stage: Stage, id: String? = null) {
         val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
         val sd = ge.screenDevices
 
@@ -103,7 +103,7 @@ class StageSizingService(
             if (bounds.intersects(rect)) return
         }
 
-        // stage out of screen bounds, return it home (and resize it just incase)
+        // stage out of screen bounds, return it home (and resize it just in case)
 
         stage.x = 0.0
         stage.y = 0.0
