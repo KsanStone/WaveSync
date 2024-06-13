@@ -209,6 +209,7 @@ class MainController : Initializable {
         }.thenRun { refreshDeviceList().thenRun { selectDefaultDevice() } }
 
         audioCaptureService.registerFFTObserver(barVisualizer::handleFFT)
+        audioCaptureService.registerFFTObserver(spectrogramVisualizer::handleFFT)
         audioCaptureService.registerSampleObserver(waveformVisualizer::handleSamples)
         audioCaptureService.registerSampleObserver(extendedWaveformVisualizer::handleSamples)
 
@@ -236,7 +237,14 @@ class MainController : Initializable {
         spectrogramVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-        layoutService.createDefaultNodeFactory(waveformVisualizer, barVisualizer, fftInfo, runtimeInfo, extendedWaveformVisualizer)
+        layoutService.createDefaultNodeFactory(
+            waveformVisualizer,
+            barVisualizer,
+            fftInfo,
+            runtimeInfo,
+            extendedWaveformVisualizer,
+            spectrogramVisualizer
+        )
         layoutService.loadLayouts()
         val layout = layoutService.getMainLayout()
         initializeWindowControls(layout)

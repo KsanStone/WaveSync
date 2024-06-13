@@ -35,6 +35,14 @@ class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Ite
         written++
     }
 
+    /**
+     * Useful when u are only mutating stored elements
+     */
+    fun incrementPosition() {
+        currentHeadPosition = (currentHeadPosition + 1) % size
+        written++
+    }
+
     @Suppress("UNCHECKED_CAST")
     operator fun get(index: Int): T {
         if (index !in 0 until size) throw ArrayIndexOutOfBoundsException("index $index is out of bounds 0 - $size")

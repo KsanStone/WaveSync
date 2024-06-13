@@ -14,6 +14,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutL
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.ExtendedWaveformVisualizer
+import me.ksanstone.wavesync.wavesync.gui.component.visualizer.SpectrogramVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -41,7 +42,8 @@ class LayoutStorageService(
         bVis: BarVisualizer,
         fftInfo: FFTInfo,
         runtimeInfo: RuntimeInfo,
-        ewVis: ExtendedWaveformVisualizer
+        ewVis: ExtendedWaveformVisualizer,
+        spectrogram: SpectrogramVisualizer
     ) {
         this.nodeFactory =
             DragLayoutSerializerService.NodeFactory {
@@ -50,7 +52,8 @@ class LayoutStorageService(
                     MAIN_BAR_VISUALIZER_ID to bVis,
                     MAIN_FFT_INFO_ID to fftInfo,
                     MAIN_RUNTIME_INFO_ID to runtimeInfo,
-                    MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID to ewVis
+                    MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID to ewVis,
+                    MAIN_SPECTROGRAM_ID to spectrogram,
                 )[it]
             }
     }
