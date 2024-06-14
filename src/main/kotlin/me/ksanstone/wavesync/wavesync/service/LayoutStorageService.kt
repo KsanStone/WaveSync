@@ -28,7 +28,8 @@ class LayoutStorageService(
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
     private val layoutStorageProperty: StringProperty = SimpleStringProperty("")
-    private lateinit var nodeFactory: DragLayoutSerializerService.NodeFactory
+
+    lateinit var nodeFactory: DragLayoutSerializerService.NodeFactory
 
     val layouts: MutableList<AppLayout> = mutableListOf()
 

@@ -120,7 +120,7 @@ class MainController : Initializable {
                 deviceInfoLabel.text = source.getPropertyDescriptor(
                     audioCaptureService.fftSize.get(),
                     barVisualizer.lowPass.get(),
-                    barVisualizer.cutoff.get(),
+                    barVisualizer.highPass.get(),
                     localizationService.numberFormat
                 )
             }
@@ -214,7 +214,7 @@ class MainController : Initializable {
         audioCaptureService.registerSampleObserver(extendedWaveformVisualizer::handleSamples)
 
         audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
-        barVisualizer.cutoff.addListener { _ -> refreshInfoLabel() }
+        barVisualizer.highPass.addListener { _ -> refreshInfoLabel() }
         barVisualizer.lowPass.addListener { _ -> refreshInfoLabel() }
         barVisualizer.framerate.set(
             WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)

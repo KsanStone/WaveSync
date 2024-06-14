@@ -1,8 +1,97 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.layout.GridPane?>
+<?import atlantafx.base.layout.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<?import atlantafx.base.controls.ToggleSwitch?>
 <GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10"
           xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
           fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.spectrogram.SpectrogramChartSettingsController">
-
+    <Label text="%visualizer.spectrogram.settings.frequencyRange" GridPane.rowIndex="0">
+        <graphic>
+            <FontIcon iconLiteral="mdal-graphic_eq"/>
+        </graphic>
+    </Label>
+    <GridPane hgap="5.0" GridPane.columnIndex="1" GridPane.rowIndex="0">
+        <columnConstraints>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
+            <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0"/>
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints minHeight="40.0" vgrow="NEVER"/>
+            <RowConstraints minHeight="20.0" vgrow="NEVER"/>
+            <RowConstraints/>
+        </rowConstraints>
+        <HBox alignment="CENTER_LEFT" GridPane.hgrow="ALWAYS">
+            <children>
+                <Spinner fx:id="minFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS"/>
+                <Label layoutX="194.0" layoutY="22.0" minWidth="30.0" text="Hz">
+                    <padding>
+                        <Insets left="5.0"/>
+                    </padding>
+                </Label>
+            </children>
+        </HBox>
+        <HBox alignment="CENTER_LEFT" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS">
+            <children>
+                <Spinner fx:id="maxFreqSpinner" editable="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS"/>
+                <Label minWidth="30.0" text="Hz">
+                    <padding>
+                        <Insets left="5.0"/>
+                    </padding>
+                </Label>
+            </children>
+        </HBox>
+        <HBox alignment="CENTER" spacing="5.0" GridPane.columnIndex="1" GridPane.halignment="CENTER"
+              GridPane.rowIndex="1">
+            <Hyperlink alignment="CENTER" onAction="#setMaxFreqOnVisualizer"
+                       text="%visualizer.spectrogram.settings.max"/>
+            <Label text="•"/>
+            <Hyperlink alignment="CENTER" onAction="#set20khzFreqOnVisualizer"
+                       text="%visualizer.spectrogram.settings.20khz"/>
+        </HBox>
+        <Hyperlink onAction="#setMinFreqOnVisualizer" text="%visualizer.spectrogram.settings.min"
+                   GridPane.halignment="CENTER" GridPane.rowIndex="1"/>
+    </GridPane>
+    <Label text="%visualizer.spectrogram.settings.bufferLength" GridPane.rowIndex="2">
+        <graphic>
+            <FontIcon iconLiteral="mdal-av_timer"/>
+        </graphic>
+    </Label>
+    <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
+        <Spinner fx:id="bufferLengthSpinner" editable="true"/>
+        <Label text="Seconds"/>
+    </HBox>
+    <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="3">
+        <graphic>
+            <FontIcon iconLiteral="mdal-border_outer"/>
+        </graphic>
+    </Label>
+    <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="3">
+                <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
+        <InputGroup>
+            <ToggleButton fx:id="renderHorizontalButton" onAction="#renderHorizontal" prefHeight="30.0"
+                          text="%visualizer.spectrogram.settings.render.horizontal"/>
+            <ToggleButton fx:id="renderVerticalButton" onAction="#renderVertical" prefHeight="30.0"
+                          text="%visualizer.spectrogram.settings.render.vertical"/>
+        </InputGroup>
+    </HBox>
+    <Label text="%visualizer.spectrogram.settings.bindToBar" GridPane.rowIndex="1"/>
+    <HBox GridPane.rowIndex="1" GridPane.columnIndex="1" spacing="5">
+        <ToggleSwitch fx:id="bindToggle" />
+        <Label text="%visualizer.spectrogram.settings.bindToBarDescription"/>
+    </HBox>
+    <columnConstraints>
+        <ColumnConstraints/>
+        <ColumnConstraints/>
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints/>
+        <RowConstraints/>
+        <RowConstraints/>
+        <RowConstraints/>
+    </rowConstraints>
 </GridPane>

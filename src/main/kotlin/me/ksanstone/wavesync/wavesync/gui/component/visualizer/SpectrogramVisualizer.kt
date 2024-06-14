@@ -1,10 +1,8 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
 import javafx.beans.binding.IntegerBinding
-import javafx.beans.property.BooleanProperty
 import javafx.beans.property.IntegerProperty
 import javafx.beans.property.ObjectProperty
-import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.fxml.FXMLLoader
@@ -35,10 +33,12 @@ class SpectrogramVisualizer : AutoCanvas() {
 
     val bufferDuration: ObjectProperty<Duration> = SimpleObjectProperty(Duration.seconds(20.0))
     val orientation = SimpleObjectProperty(Orientation.VERTICAL)
-    val gradient = SimpleObjectProperty<SGradient>(DEFAULT_SPECTROGRAM_GRADIENT)
-    val cutoff: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
+    val gradient = SimpleObjectProperty<SGradient>(DEFAULT_SPECTROGRAM_GRADIENT) // TODO ui for this
+    val effectiveHighPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
+    val effectiveLowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
+
+    val highPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
-    val bindToBar: BooleanProperty = SimpleBooleanProperty(false)
 
     private var buffer: RollingBuffer<FloatArray> = RollingBuffer(100, FloatArray(0))
     private var stripeBuffer: FloatArray = FloatArray(0)
@@ -97,9 +97,19 @@ class SpectrogramVisualizer : AutoCanvas() {
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
-        preferenceService.registerProperty(cutoff, "cutoff", this.javaClass, id)
+        preferenceService.registerProperty(highPass, "cutoff", this.javaClass, id)
         preferenceService.registerProperty(lowPass, "lowPass", this.javaClass, id)
         preferenceService.registerSGradientProperty(gradient, "gradient", this.javaClass, id)
+    }
+
+    fun setBindEffective(v: Boolean) {
+        effectiveLowPass.unbind()
+        effectiveHighPass.unbind()
+
+        if (v) {
+            effectiveLowPass.bind(lowPass)
+            effectiveHighPass.bind(highPass)
+        }
     }
 
     private fun changeBufferDuration(time: Duration, rate: Int) {
@@ -203,8 +213,8 @@ class SpectrogramVisualizer : AutoCanvas() {
             Orientation.VERTICAL -> canvasHeight
         }
 
-        var effectiveStripeLength = source!!.trimResultTo(stripe.size * 2, cutoff.get())
-        val frequencyBinSkip = source!!.bufferBeginningSkipFor(lowPass.get(), stripe.size * 2)
+        var effectiveStripeLength = source!!.trimResultTo(stripe.size * 2, effectiveHighPass.get())
+        val frequencyBinSkip = source!!.bufferBeginningSkipFor(effectiveLowPass.get(), stripe.size * 2)
         effectiveStripeLength -= frequencyBinSkip
 
         val step = effectiveStripeLength.toDouble() / stripePixelLength

@@ -25,6 +25,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_INFO_SHOWN
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController
+import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.RecordingModeService
@@ -214,6 +215,17 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
         setLeftAnchor(infoPane, 5.0)
 
         children.add(infoPane)
+    }
+
+    fun registerGraphSettings(graphStyleController: GraphStyleController) {
+        graphStyleController.yAxisToggle.isSelected = this.canvasContainer.yAxisShown.get()
+        graphStyleController.xAxisToggle.isSelected = this.canvasContainer.xAxisShown.get()
+        graphStyleController.gridToggle.isSelected = this.canvasContainer.horizontalLinesVisible.get()
+
+        this.canvasContainer.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
+        this.canvasContainer.xAxisShown.bind(graphStyleController.xAxisToggle.selectedProperty())
+        this.canvasContainer.horizontalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
+        this.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
     }
 
     private val isDrawing = AtomicBoolean(false)

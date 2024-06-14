@@ -23,14 +23,7 @@ class ExtendedWaveformChartSettingsController {
             1.0
         )
 
-        graphStyleController.yAxisToggle.isSelected = visualizer.canvasContainer.yAxisShown.get()
-        graphStyleController.xAxisToggle.isSelected = visualizer.canvasContainer.xAxisShown.get()
-        graphStyleController.gridToggle.isSelected = visualizer.canvasContainer.horizontalLinesVisible.get()
-
-        visualizer.canvasContainer.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
-        visualizer.canvasContainer.xAxisShown.bind(graphStyleController.xAxisToggle.selectedProperty())
-        visualizer.canvasContainer.horizontalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
-        visualizer.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
+        visualizer.registerGraphSettings(graphStyleController)
         visualizer.bufferDuration.bind(bufferLengthSpinner.valueFactory.valueProperty().map { Duration.seconds(it)})
     }
 

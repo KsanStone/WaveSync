@@ -129,7 +129,7 @@ class BarChartSettingsController : Initializable {
         maxFreqSpinner.valueFactory = SpinnerValueFactory.IntegerSpinnerValueFactory(
             ApplicationSettingDefaults.DEFAULT_MIN_UI_VISUALIZER_WINDOW,
             maxFreq,
-            visualizer.cutoff.get()
+            visualizer.highPass.get()
         )
         minFreqSpinner.valueFactory = SpinnerValueFactory.IntegerSpinnerValueFactory(
             0,
@@ -175,19 +175,13 @@ class BarChartSettingsController : Initializable {
                 else -> 0
             }
         )
-        graphStyleController.yAxisToggle.isSelected = visualizer.canvasContainer.yAxisShown.get()
-        graphStyleController.xAxisToggle.isSelected = visualizer.canvasContainer.xAxisShown.get()
-        graphStyleController.gridToggle.isSelected = visualizer.canvasContainer.horizontalLinesVisible.get()
 
-        visualizer.canvasContainer.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
-        visualizer.canvasContainer.xAxisShown.bind(graphStyleController.xAxisToggle.selectedProperty())
-        visualizer.canvasContainer.horizontalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
-        visualizer.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
+        visualizer.registerGraphSettings(graphStyleController)
         visualizer.exaggeratedScalar.bind(scalingSlider.valueProperty())
         visualizer.linearScalar.bind(linearScalingSlider.valueProperty())
         visualizer.smoothing.bind(dropRateSlider.valueProperty())
         visualizer.targetBarWidth.bind(barWidthSlider.valueProperty())
-        visualizer.cutoff.bind(maxFreqSpinner.valueProperty())
+        visualizer.highPass.bind(maxFreqSpinner.valueProperty())
         visualizer.lowPass.bind(minFreqSpinner.valueProperty())
         visualizer.gap.bind(gapSlider.valueProperty())
         visualizer.peakLineVisible.bind(peakToggleSwitch.selectedProperty())

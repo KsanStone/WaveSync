@@ -52,7 +52,7 @@ class BarVisualizer : AutoCanvas() {
     private val setStartColor: ObjectProperty<Color> = SimpleObjectProperty(Color.rgb(255, 120, 246))
     private val setEndColor: ObjectProperty<Color> = SimpleObjectProperty(Color.AQUA)
     val smoothing: FloatProperty = SimpleFloatProperty(DEFAULT_BAR_SMOOTHING)
-    val cutoff: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
+    val highPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(DEFAULT_TARGET_BAR_WIDTH)
     val gap: IntegerProperty = SimpleIntegerProperty(DEFAULT_GAP)
@@ -123,7 +123,7 @@ class BarVisualizer : AutoCanvas() {
         smoothing.addListener { _ ->
             smoother.factor = smoothing.get().toDouble()
         }
-        cutoff.addListener { _ -> sizeFrequencyAxis() }
+        highPass.addListener { _ -> sizeFrequencyAxis() }
         lowPass.addListener { _ -> sizeFrequencyAxis() }
 
         changeScalar()
@@ -180,7 +180,7 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(smoothing, "smoothing", this.javaClass, id)
         preferenceService.registerProperty(exaggeratedScalar, "exaggeratedScaling", this.javaClass, id)
         preferenceService.registerProperty(linearScalar, "linearScaling", this.javaClass, id)
-        preferenceService.registerProperty(cutoff, "cutoff", this.javaClass, id)
+        preferenceService.registerProperty(highPass, "cutoff", this.javaClass, id)
         preferenceService.registerProperty(lowPass, "lowPass", this.javaClass, id)
         preferenceService.registerProperty(targetBarWidth, "targetBarWidth", this.javaClass, id)
         preferenceService.registerProperty(gap, "gap", this.javaClass, id)
@@ -291,7 +291,7 @@ class BarVisualizer : AutoCanvas() {
 
     private fun sizeFrequencyAxis() {
         if (source == null) return
-        val upper = source!!.trimResultTo(fftSize, cutoff.get())
+        val upper = source!!.trimResultTo(fftSize, highPass.get())
         val lower = source!!.bufferBeginningSkipFor(lowPass.get(), fftSize)
         xAxis.lowerBound = FourierMath.frequencyOfBin(lower, rate, fftSize).toDouble()
         xAxis.upperBound = FourierMath.frequencyOfBin(upper, rate, fftSize).toDouble()
@@ -308,7 +308,7 @@ class BarVisualizer : AutoCanvas() {
             this.source = source
             sizeFrequencyAxis()
         }
-        var size = source.trimResultTo(this.fftSize, cutoff.get())
+        var size = source.trimResultTo(this.fftSize, highPass.get())
         frequencyBinSkip = source.bufferBeginningSkipFor(lowPass.get(), this.fftSize)
         size = (size - frequencyBinSkip).coerceAtLeast(10)
         if (smoother.dataSize != size) {
