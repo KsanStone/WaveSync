@@ -7,6 +7,7 @@
 <?import org.kordamp.ikonli.javafx.*?>
 
 <?import atlantafx.base.controls.ToggleSwitch?>
+<?import me.ksanstone.wavesync.wavesync.gui.component.util.GradientPicker?>
 <GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10"
           xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
           fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.spectrogram.SpectrogramChartSettingsController">
@@ -65,12 +66,25 @@
         <Spinner fx:id="bufferLengthSpinner" editable="true"/>
         <Label text="Seconds"/>
     </HBox>
-    <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="3">
+
+    <Label text="%visualizer.spectrogram.settings.gradient" GridPane.rowIndex="3">
         <graphic>
             <FontIcon iconLiteral="mdal-border_outer"/>
         </graphic>
     </Label>
-    <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="3">
+    <GradientPicker GridPane.rowIndex="3" GridPane.columnIndex="1" fx:id="gradientPicker"/>
+
+    <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="4">
+        <graphic>
+            <FontIcon iconLiteral="mdal-border_outer"/>
+        </graphic>
+    </Label>
+    <Label text="%visualizer.spectrogram.settings.bindToBar" GridPane.rowIndex="1"/>
+    <HBox GridPane.rowIndex="1" GridPane.columnIndex="1" spacing="5">
+        <ToggleSwitch fx:id="bindToggle" />
+        <Label text="%visualizer.spectrogram.settings.bindToBarDescription"/>
+    </HBox>
+    <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="4">
                 <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
         <InputGroup>
             <ToggleButton fx:id="renderHorizontalButton" onAction="#renderHorizontal" prefHeight="30.0"
@@ -79,16 +93,12 @@
                           text="%visualizer.spectrogram.settings.render.vertical"/>
         </InputGroup>
     </HBox>
-    <Label text="%visualizer.spectrogram.settings.bindToBar" GridPane.rowIndex="1"/>
-    <HBox GridPane.rowIndex="1" GridPane.columnIndex="1" spacing="5">
-        <ToggleSwitch fx:id="bindToggle" />
-        <Label text="%visualizer.spectrogram.settings.bindToBarDescription"/>
-    </HBox>
     <columnConstraints>
         <ColumnConstraints/>
         <ColumnConstraints/>
     </columnConstraints>
     <rowConstraints>
+        <RowConstraints/>
         <RowConstraints/>
         <RowConstraints/>
         <RowConstraints/>

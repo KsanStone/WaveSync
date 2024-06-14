@@ -11,6 +11,7 @@ import javafx.scene.control.ToggleButton
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.component.util.GradientPicker
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.SpectrogramVisualizer
 import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
@@ -41,6 +42,9 @@ class SpectrogramChartSettingsController {
 
     @FXML
     lateinit var graphStyleController: GraphStyleController
+
+    @FXML
+    lateinit var gradientPicker: GradientPicker
 
     @FXML
     fun setMinFreqOnVisualizer() {
@@ -80,8 +84,11 @@ class SpectrogramChartSettingsController {
             1.0
         )
 
+        gradientPicker.sGradient.value = visualizer.gradient.value
+
         visualizer.registerGraphSettings(graphStyleController)
         visualizer.bufferDuration.bind(bufferLengthSpinner.valueFactory.valueProperty().map { Duration.seconds(it) })
+        visualizer.gradient.bind(gradientPicker.sGradient)
 
         bindToggle.isSelected = propsDelegated.value
         propsDelegated.bind(bindToggle.selectedProperty())

@@ -24,6 +24,7 @@ import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalar
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalarParameters
+import me.ksanstone.wavesync.wavesync.utility.FreeRangeMapper
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -217,45 +218,18 @@ class SpectrogramVisualizer : AutoCanvas() {
         val frequencyBinSkip = source!!.bufferBeginningSkipFor(effectiveLowPass.get(), stripe.size * 2)
         effectiveStripeLength -= frequencyBinSkip
 
-        val step = effectiveStripeLength.toDouble() / stripePixelLength
         val processedStripe = FloatArray(stripePixelLength)
-        var accumulator = 0.0
-        var pos = 0
-        var y = 0.0F
-        var added = false
+        val mapper = FreeRangeMapper(0 .. processedStripe.size, frequencyBinSkip until frequencyBinSkip + effectiveStripeLength)
 
-        if (step >= 1) {
-            for (i in frequencyBinSkip until frequencyBinSkip + effectiveStripeLength) {
-                val element = stripe[i]
-                y = max(element, y); added = false
-                if (++accumulator < step) continue
-                accumulator -= step
-
-                processedStripe[pos.coerceIn(0, processedStripe.size)] = scalar.scale(y)
-
-                y = 0.0F
-                pos++
-                added = true
+        for (i in processedStripe.indices) {
+            val rMin = mapper.forwards(i)
+            val rMax = (mapper.forwards(i + 1) - 1).coerceAtLeast(rMin)
+            var value = 0.0F
+            for (j in rMin .. rMax) {
+                value = max(value, stripe[j])
             }
-        } else {
-            var i = 0
-            for (j in 0 until stripePixelLength) {
-                val element = stripe[i]
-                y = element
-                if (accumulator >= step) {
-                    accumulator -= step
-                } else {
-                    accumulator++
-                    i++
-                }
-                processedStripe[pos.coerceIn(0, processedStripe.size)] = scalar.scale(y)
-                added = true
-                pos++
-            }
+            processedStripe[i] = scalar.scale(value)
         }
-
-        if (!added)
-            processedStripe[pos.coerceIn(0, processedStripe.size)] = scalar.scale(y)
 
         val writer = imageTop.pixelWriter
         val effectiveGradient = gradient.value
@@ -264,7 +238,7 @@ class SpectrogramVisualizer : AutoCanvas() {
             when (orientation.value!!) {
                 Orientation.HORIZONTAL -> {
                     for (i in 0 until stripePixelLength) {
-                        writer.setColor(imageOffset - offset, i, effectiveGradient[processedStripe[i]])
+                        writer.setColor(imageOffset - offset, stripePixelLength - i - 1, effectiveGradient[processedStripe[i]])
                     }
                 }
 

@@ -12,7 +12,7 @@ import me.ksanstone.wavesync.wavesync.gui.gradient.pure.GradientSerializer
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SGradient
 import kotlin.jvm.optionals.getOrNull
 
-class GradientPicker : AnchorPane() {
+class Temp : AnchorPane() {
 
     private val gradientSerializer = WaveSyncBootApplication.applicationContext.getBean(GradientSerializer::class.java)
     private val stops: ObservableList<Stop> = FXCollections.observableArrayList()
@@ -38,7 +38,7 @@ class GradientPicker : AnchorPane() {
             }
         }
 
-        override fun getBean() = this@GradientPicker
+        override fun getBean() = this@Temp
         override fun getName() = "GradientPickerGradient"
     }
 

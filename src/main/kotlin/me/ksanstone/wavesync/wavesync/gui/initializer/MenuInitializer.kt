@@ -21,28 +21,38 @@ class MenuInitializer(
     private var dialogWindows: MutableMap<String, Stage> = mutableMapOf()
 
     @Synchronized
+    fun <T> showPopupMenuWithController(fxml: String, title: String = "Dialog"): T {
+        val stage = createDialogStage(fxml, title)
+        waveSyncStageInitializer.customize(stage.first)
+        stage.first.show()
+        return stage.second.getController()
+    }
+
+    @Synchronized
     fun showPopupMenu(fxml: String, title: String = "Dialog") {
         if (dialogWindows.containsKey(fxml)) {
             dialogWindows[fxml]!!.show()
         } else {
-            val stage = createDialogStage(fxml, title)
+            val stage = createDialogStage(fxml, title).first
             dialogWindows[fxml] = stage
             waveSyncStageInitializer.customize(stage)
             stage.show()
         }
     }
 
-    fun createDialogStage(fxml: String, title: String = "Dialog"): Stage {
+    private fun createDialogStage(fxml: String, title: String = "Dialog"): Pair<Stage, FXMLLoader> {
         val dialog = createEmptyStage(title)
         dialog.initModality(Modality.APPLICATION_MODAL)
         dialog.initOwner(WaveSyncApplication.primaryStage)
-        val root: Parent = FXMLLoader.load(javaClass.classLoader.getResource(fxml), localizationService.getDefault())
+        val loader = FXMLLoader(javaClass.classLoader.getResource(fxml))
+        loader.resources = localizationService.getDefault()
+        val root: Parent = loader.load()
         val dialogScene = Scene(root, root.prefWidth(-1.0), root.prefHeight(-1.0))
 
         dialog.minWidth = root.prefWidth(-1.0)
         dialog.minHeight = root.prefHeight(-1.0)
         dialog.scene = dialogScene
-        return dialog
+        return dialog to loader
     }
 
     fun createEmptyStage(title: String? = null, node: Node? = null): Stage {
