@@ -40,7 +40,7 @@ class GradientSerializer {
 }
 
 fun Color.toHexString(): String {
-    return "#" + Integer.toHexString(this.hashCode()).substring(0, 6).uppercase(Locale.getDefault())
+    return "#" + Integer.toHexString(this.hashCode()).padStart(8,'0').substring(0, 6).uppercase(Locale.getDefault())
 }
 
 fun Stop.serialize(): String {

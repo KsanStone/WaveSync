@@ -1,8 +1,10 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
 import javafx.beans.binding.IntegerBinding
+import javafx.beans.property.BooleanProperty
 import javafx.beans.property.IntegerProperty
 import javafx.beans.property.ObjectProperty
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.fxml.FXMLLoader
@@ -10,14 +12,13 @@ import javafx.geometry.Orientation
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.image.WritableImage
 import javafx.scene.layout.HBox
-import javafx.scene.paint.Color
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SPECTROGRAM_GRADIENT
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.spectrogram.SpectrogramSettingsController
-import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SStartEndGradient
+import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SGradient
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -33,10 +34,11 @@ import kotlin.math.max
 class SpectrogramVisualizer : AutoCanvas() {
 
     val bufferDuration: ObjectProperty<Duration> = SimpleObjectProperty(Duration.seconds(20.0))
-    val orientation = SimpleObjectProperty(Orientation.HORIZONTAL)
-    val gradient = SimpleObjectProperty(DEFAULT_SPECTROGRAM_GRADIENT)
+    val orientation = SimpleObjectProperty(Orientation.VERTICAL)
+    val gradient = SimpleObjectProperty<SGradient>(DEFAULT_SPECTROGRAM_GRADIENT)
     val cutoff: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
+    val bindToBar: BooleanProperty = SimpleBooleanProperty(false)
 
     private var buffer: RollingBuffer<FloatArray> = RollingBuffer(100, FloatArray(0))
     private var stripeBuffer: FloatArray = FloatArray(0)
@@ -95,6 +97,9 @@ class SpectrogramVisualizer : AutoCanvas() {
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(cutoff, "cutoff", this.javaClass, id)
+        preferenceService.registerProperty(lowPass, "lowPass", this.javaClass, id)
+        preferenceService.registerSGradientProperty(gradient, "gradient", this.javaClass, id)
     }
 
     private fun changeBufferDuration(time: Duration, rate: Int) {
@@ -244,7 +249,8 @@ class SpectrogramVisualizer : AutoCanvas() {
 
         val writer = imageTop.pixelWriter
         val effectiveGradient = gradient.value
-        for (offset in 0 until ceil(width).toInt()) {
+        val realOffset = ceil(width).toInt().coerceIn(1, imageOffset + 1)
+        for (offset in 0 until realOffset) {
             when (orientation.value!!) {
                 Orientation.HORIZONTAL -> {
                     for (i in 0 until stripePixelLength) {
@@ -264,7 +270,7 @@ class SpectrogramVisualizer : AutoCanvas() {
             }
         }
 
-        imageOffset += ceil(width).toInt()
+        imageOffset += realOffset
         if (imageOffset >= size) {
             imageOffset = 0
             flipImageBuffers()

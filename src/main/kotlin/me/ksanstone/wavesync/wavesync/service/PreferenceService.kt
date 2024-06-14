@@ -4,12 +4,17 @@ import jakarta.annotation.PostConstruct
 import javafx.beans.property.*
 import javafx.scene.paint.Color
 import javafx.util.Duration
+import me.ksanstone.wavesync.wavesync.gui.gradient.pure.GradientSerializer
+import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SGradient
 import org.springframework.stereotype.Service
 import java.util.prefs.Preferences
+import kotlin.jvm.optionals.getOrElse
 
 @Suppress("UNCHECKED_CAST")
 @Service
-class PreferenceService {
+class PreferenceService(
+    private val gradientSerializer: GradientSerializer
+) {
 
     private val properties = mutableListOf<Property<*>>()
     private lateinit var rootPreferences: Preferences
@@ -104,6 +109,14 @@ class PreferenceService {
         doRegister(property as Property<Any?>,
             { intToColor(preferences.getInt(name, colorToInt(property.get()))) },
             { v -> preferences.putInt(name, colorToInt(v as Color)) })
+    }
+
+    fun registerSGradientProperty(property: ObjectProperty<SGradient>, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
+        val preferences = getPreferences(clazz, id)
+        doRegister(property as Property<Any?>,
+            { gradientSerializer.deserialize(preferences.get(name, gradientSerializer.serialize(property.get())))
+                .getOrElse { gradientSerializer.serialize(property.get()) } },
+            { v -> preferences.put(name, gradientSerializer.serialize(v as SGradient)) })
     }
 
     private fun colorToInt(c: Color): Int {
