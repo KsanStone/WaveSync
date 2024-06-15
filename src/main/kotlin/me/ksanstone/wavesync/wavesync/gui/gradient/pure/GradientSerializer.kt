@@ -43,6 +43,10 @@ fun Color.toHexString(): String {
     return "#" + Integer.toHexString(this.hashCode()).padStart(8,'0').substring(0, 6).uppercase(Locale.getDefault())
 }
 
+fun Color.toAHexString(): String {
+    return "#" + toString().substring(2)
+}
+
 fun Stop.serialize(): String {
     return this.offset.toString() + " " + this.color.toHexString()
 }

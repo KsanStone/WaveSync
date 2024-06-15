@@ -49,8 +49,8 @@ class MenuInitializer(
         val root: Parent = loader.load()
         val dialogScene = Scene(root, root.prefWidth(-1.0), root.prefHeight(-1.0))
 
-        dialog.minWidth = root.prefWidth(-1.0)
-        dialog.minHeight = root.prefHeight(-1.0)
+        dialog.minWidth = dialogScene.width + 15
+        dialog.minHeight = dialogScene.height + 15
         dialog.scene = dialogScene
         return dialog to loader
     }
