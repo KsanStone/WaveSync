@@ -79,6 +79,7 @@ class SpectrogramVisualizer : AutoCanvas() {
 
         listOf(orientation, highPass, lowPass).forEach { it.addListener { _ ->
             resetBuffer()
+            sizeTimeAxis()
         } }
 
         sizeTimeAxis()
@@ -243,31 +244,38 @@ class SpectrogramVisualizer : AutoCanvas() {
         val writer = imageTop.pixelWriter
         val effectiveGradient = gradient.value
         val realOffset = ceil(width).toInt().coerceIn(1, imageOffset + 1)
-        for (offset in 0 until realOffset) {
-            when (orientation.value!!) {
-                Orientation.HORIZONTAL -> {
-                    for (i in 0 until stripePixelLength) {
-                        writer.setColor(imageOffset - offset, stripePixelLength - i - 1, effectiveGradient[processedStripe[i]])
-                    }
-                }
-
-                Orientation.VERTICAL -> {
-                    for (i in 0 until stripePixelLength) {
-                        writer.setColor(
-                            i,
-                            (imageTop.height - imageOffset - 1 - offset).toInt(),
-                            effectiveGradient[processedStripe[i]]
-                        )
-                    }
-                }
-            }
-        }
 
         imageOffset += realOffset
         if (imageOffset >= size) {
-            imageOffset = 0
+            imageOffset %= size
             flipImageBuffers()
         }
+
+        try {
+            for (offset in 0 until realOffset) {
+                when (orientation.value!!) {
+                    Orientation.HORIZONTAL -> {
+                        for (i in 0 until stripePixelLength) {
+                            writer.setColor(
+                                imageOffset - offset,
+                                stripePixelLength - i - 1,
+                                effectiveGradient[processedStripe[i]]
+                            )
+                        }
+                    }
+
+                    Orientation.VERTICAL -> {
+                        for (i in 0 until stripePixelLength) {
+                            writer.setColor(
+                                i,
+                                (imageTop.height - imageOffset - 1 - offset).toInt(),
+                                effectiveGradient[processedStripe[i]]
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (ignored: IndexOutOfBoundsException) {}
     }
 
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
@@ -284,8 +292,8 @@ class SpectrogramVisualizer : AutoCanvas() {
 
         if (orientation.value == Orientation.HORIZONTAL) {
             val rOffset = imageOffset.toDouble()
-            gc.drawImage(imageBottom, -rOffset, 0.0)
-            gc.drawImage(imageTop, width - rOffset, 0.0)
+            gc.drawImage(imageBottom, -rOffset + 1, 0.0)
+            gc.drawImage(imageTop, width -rOffset - 1, 0.0)
         } else {
             val rOffset = height - imageOffset
             gc.drawImage(imageTop, 0.0, -rOffset)
