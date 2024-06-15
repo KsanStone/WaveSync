@@ -260,7 +260,7 @@ class AudioCaptureService(
 
     private fun setScanWindowSize(size: Int) {
         logger.info("Using window size $size")
-        fftSampleBuffer = RollingBuffer(size, 0.0f)
+        fftSampleBuffer = RollingBuffer(size) { 0.0f }
         fftResult.resize(1, size / 2).label(CommonChannel.MASTER)
         if(this::fftwSignal.isInitialized) {
             this.fftwSignal.deallocate()

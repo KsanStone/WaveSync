@@ -173,12 +173,37 @@ class MainController : Initializable {
 
     private fun initializeWindowControls(layout: DragLayout) {
         val list = listOf(
-            CompComponentToggle(waveformOnOff, WaveformVisualizer::class.java, waveformVisualizer, LayoutStorageService.MAIN_WAVEFORM_VISUALIZER_ID),
-            CompComponentToggle(barOnOff, BarVisualizer::class.java, barVisualizer, LayoutStorageService.MAIN_BAR_VISUALIZER_ID),
+            CompComponentToggle(
+                waveformOnOff,
+                WaveformVisualizer::class.java,
+                waveformVisualizer,
+                LayoutStorageService.MAIN_WAVEFORM_VISUALIZER_ID
+            ),
+            CompComponentToggle(
+                barOnOff,
+                BarVisualizer::class.java,
+                barVisualizer,
+                LayoutStorageService.MAIN_BAR_VISUALIZER_ID
+            ),
             CompComponentToggle(fftInfoOnOff, FFTInfo::class.java, fftInfo, LayoutStorageService.MAIN_FFT_INFO_ID),
-            CompComponentToggle(runtimeInfoOnOff, RuntimeInfo::class.java, runtimeInfo, LayoutStorageService.MAIN_RUNTIME_INFO_ID),
-            CompComponentToggle(extendedWaveformVisualizerOnOff, ExtendedWaveformVisualizer::class.java, extendedWaveformVisualizer, LayoutStorageService.MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID),
-            CompComponentToggle(spectrogramVisualizerOnOff, SpectrogramVisualizer::class.java, spectrogramVisualizer, LayoutStorageService.MAIN_SPECTROGRAM_ID),
+            CompComponentToggle(
+                runtimeInfoOnOff,
+                RuntimeInfo::class.java,
+                runtimeInfo,
+                LayoutStorageService.MAIN_RUNTIME_INFO_ID
+            ),
+            CompComponentToggle(
+                extendedWaveformVisualizerOnOff,
+                ExtendedWaveformVisualizer::class.java,
+                extendedWaveformVisualizer,
+                LayoutStorageService.MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID
+            ),
+            CompComponentToggle(
+                spectrogramVisualizerOnOff,
+                SpectrogramVisualizer::class.java,
+                spectrogramVisualizer,
+                LayoutStorageService.MAIN_SPECTROGRAM_ID
+            ),
         )
 
         list.forEach {
@@ -195,7 +220,9 @@ class MainController : Initializable {
 
         globalLayoutService.layoutRemovalListeners.add(Consumer {
             it.layoutRoot.iterateComponents {
-                list.forEach { predefined -> if (predefined.node == it.node) predefined.check.selectedProperty().set(false) }
+                list.forEach { predefined ->
+                    if (predefined.node == it.node) predefined.check.selectedProperty().set(false)
+                }
             }
         })
     }
@@ -227,6 +254,15 @@ class MainController : Initializable {
         )
         waveformVisualizer.info.bind(infoShown)
 
+        layoutService.createDefaultNodeFactory(
+            waveformVisualizer,
+            barVisualizer,
+            fftInfo,
+            runtimeInfo,
+            extendedWaveformVisualizer,
+            spectrogramVisualizer
+        )
+
         barVisualizer.registerPreferences("main", preferenceService)
         barVisualizer.initializeSettingMenu()
         waveformVisualizer.registerPreferences("main", preferenceService)
@@ -237,14 +273,6 @@ class MainController : Initializable {
         spectrogramVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-        layoutService.createDefaultNodeFactory(
-            waveformVisualizer,
-            barVisualizer,
-            fftInfo,
-            runtimeInfo,
-            extendedWaveformVisualizer,
-            spectrogramVisualizer
-        )
         layoutService.loadLayouts()
         val layout = layoutService.getMainLayout()
         initializeWindowControls(layout)

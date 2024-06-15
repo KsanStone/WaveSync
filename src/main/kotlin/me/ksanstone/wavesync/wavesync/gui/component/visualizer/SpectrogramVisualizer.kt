@@ -41,7 +41,7 @@ class SpectrogramVisualizer : AutoCanvas() {
     val highPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
 
-    private var buffer: RollingBuffer<FloatArray> = RollingBuffer(100, FloatArray(0))
+    private var buffer: RollingBuffer<FloatArray> = RollingBuffer(100) { FloatArray(0) }
     private var stripeBuffer: FloatArray = FloatArray(0)
     private val fftArraySize: IntegerBinding = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftSize.divide(2)
     private val fftRate: IntegerProperty = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftRate
@@ -77,7 +77,15 @@ class SpectrogramVisualizer : AutoCanvas() {
             sizeTimeAxis()
         }
 
+        listOf(orientation, highPass, lowPass).forEach { it.addListener { _ ->
+            resetBuffer()
+        } }
+
         sizeTimeAxis()
+
+        setOnKeyPressed {
+            resetBuffer()
+        }
     }
 
     fun initializeSettingMenu() {
@@ -101,6 +109,7 @@ class SpectrogramVisualizer : AutoCanvas() {
         preferenceService.registerProperty(highPass, "cutoff", this.javaClass, id)
         preferenceService.registerProperty(lowPass, "lowPass", this.javaClass, id)
         preferenceService.registerSGradientProperty(gradient, "gradient", this.javaClass, id)
+        preferenceService.registerProperty(orientation, "orientation", Orientation::class.java, this.javaClass, id)
     }
 
     fun setBindEffective(v: Boolean) {
@@ -115,7 +124,7 @@ class SpectrogramVisualizer : AutoCanvas() {
 
     private fun changeBufferDuration(time: Duration, rate: Int) {
         val newSize = rate * time.toSeconds()
-        this.buffer = RollingBuffer(newSize.toInt(), FloatArray(fftArraySize.value))
+        this.buffer = RollingBuffer(newSize.toInt()) { FloatArray(fftArraySize.value) }
     }
 
     private fun changeBufferWidth() {
@@ -124,14 +133,14 @@ class SpectrogramVisualizer : AutoCanvas() {
     }
 
     fun handleFFT(res: FloatArray, source: SupportedCaptureSource) {
-        if (isPaused) return
+        if (isPaused || buffer.size == 2) return
         this.source = source
         buffer.incrementPosition()
         System.arraycopy(res, 0, buffer.last(), 0, res.size)
     }
 
     private fun resetBuffer() {
-        lastWritten = 0L
+        lastWritten = buffer.written - (canvasWidth + canvasHeight).toLong()
         imageOffset = 0
         stripeStepAccumulator = 0.0
         bufferPos = 0
@@ -268,6 +277,7 @@ class SpectrogramVisualizer : AutoCanvas() {
             resetBuffer()
             createImageBuffers()
         }
+
         gc.isImageSmoothing = false
         gc.clearRect(0.0, 0.0, width, height)
         drawChunk()
@@ -280,6 +290,18 @@ class SpectrogramVisualizer : AutoCanvas() {
             val rOffset = height - imageOffset
             gc.drawImage(imageTop, 0.0, -rOffset)
             gc.drawImage(imageBottom, 0.0, height - rOffset)
+        }
+    }
+
+    override fun usedState(state: Boolean) {
+        if (state) {
+            resetBuffer()
+            createImageBuffers()
+            changeBufferWidth()
+        } else {
+            this.buffer = RollingBuffer(2) { FloatArray(0) }
+            this.imageTop = WritableImage(1, 1)
+            this.imageBottom = WritableImage(1, 1)
         }
     }
 }

@@ -143,7 +143,7 @@ class WaveformVisualizer : AutoCanvas() {
 
     private fun resizeBuffer(time: Duration, rate: Int) {
         val newSize = rate * time.toSeconds()
-        this.buffer = RollingBuffer(newSize.toInt(), 0.0f)
+        this.buffer = RollingBuffer(newSize.toInt()) { 0.0f }
         xAxis.upperBound = newSize
         canvasContainer.highlightedVerticalLines.setAll(xAxis.upperBound - acs.fftSize.value.toDouble())
     }

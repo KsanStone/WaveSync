@@ -56,7 +56,8 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     private val frameTime = SimpleDoubleProperty(0.0)
     private val fpsCounter = FPSCounter()
     private val detachedProperty = SimpleBooleanProperty(false)
-    private var recordingModeService: RecordingModeService = WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class)
+    private var recordingModeService: RecordingModeService =
+        WaveSyncBootApplication.applicationContext.getBean(RecordingModeService::class)
     private lateinit var drawLoop: Timeline
 
     internal val isPaused: Boolean
@@ -100,7 +101,8 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
         )
 
         drawLoop.cycleCount = Timeline.INDEFINITE
-        drawLoop.play()
+        if (parent != null)
+            drawLoop.play()
 
         parentProperty().addListener { _, _, newValue ->
             if (newValue != null && drawLoop.status != Animation.Status.RUNNING) {
@@ -108,6 +110,11 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
             } else if (newValue == null && drawLoop.status == Animation.Status.RUNNING) {
                 drawLoop.pause()
             }
+        }
+
+        drawLoop.statusProperty().addListener { _ ->
+            if (isPaused) usedState(false)
+            else usedState(true)
         }
 
         framerate.addListener { _ ->
@@ -123,7 +130,8 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
                 if (detachedStage == null) {
                     detachedStage = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
                         .createEmptyStage("", Label())
-                    detachedStage!!.titleProperty().bind(detachedWindowNameProperty.map { if (it.isNotEmpty()) "WaveSync • $it" else "WaveSync" })
+                    detachedStage!!.titleProperty()
+                        .bind(detachedWindowNameProperty.map { if (it.isNotEmpty()) "WaveSync • $it" else "WaveSync" })
                     detachedStage!!.showingProperty()
                         .addListener { _, _, showing -> if (!showing) detachedProperty.set(false) }
                 }
@@ -170,7 +178,7 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
         setTopAnchor(controlPane, 5.0)
         setRightAnchor(controlPane, 5.0)
 
-        if(detachable) {
+        if (detachable) {
             val detachButton = Button()
             detachButton.styleClass.add("button-icon")
             detachButton.graphic = FontIcon(if (detachedProperty.get()) "mdmz-south_west" else "mdmz-open_in_new")
@@ -245,6 +253,8 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     }
 
     protected abstract fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double)
+
+    protected open fun usedState(state: Boolean) {}
 }
 
 fun Double.roundTo(precision: Int): Double {

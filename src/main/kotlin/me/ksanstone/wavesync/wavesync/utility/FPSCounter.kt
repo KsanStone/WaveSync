@@ -12,7 +12,7 @@ class FPSCounter {
     val averagedFrameTimeProperty = SimpleDoubleProperty(0.0)
     private val counter = AtomicInteger(0)
     private var lastCount = System.nanoTime()
-    private val frameTimeBuffer: RollingBuffer<Double> = RollingBuffer(30, -1.0)
+    private val frameTimeBuffer: RollingBuffer<Double> = RollingBuffer(30) { -1.0 }
 
     fun tick(frameTime: Double = -1.0) {
         frameTimeBuffer.insert(frameTime)

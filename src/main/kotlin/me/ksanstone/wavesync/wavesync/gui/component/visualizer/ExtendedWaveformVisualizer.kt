@@ -33,8 +33,8 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
 
     private var effectiveBufferSampleRate = 48000
     private var sourceRate = SimpleIntegerProperty(48000)
-    private var buffer: RollingBuffer<Float> = RollingBuffer(100, 0.0F)
-    private var computedBuffer: RollingBuffer<Float> = RollingBuffer(1, 0.0F)
+    private var buffer: RollingBuffer<Float> = RollingBuffer(100) { 0.0F }
+    private var computedBuffer: RollingBuffer<Float> = RollingBuffer(1) { 0.0F }
     private var lastWritten = 0L
     private var bufferPos = 0
     private var accumulator = 0.0
@@ -116,7 +116,7 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
 
     private fun resizeBuffer(time: Duration, rate: Int) {
         val newSize = rate * time.toSeconds()
-        this.buffer = RollingBuffer(newSize.toInt(), 0.0f)
+        this.buffer = RollingBuffer(newSize.toInt()) { 0.0f }
     }
 
     private fun calculateDiffPoints() {
@@ -165,7 +165,7 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         val px = width.toInt()
         if (px <= 0) return
         if (computedBuffer.size != px * 3) {
-            computedBuffer = RollingBuffer(px * 3, 0F)
+            computedBuffer = RollingBuffer(px * 3) { 0F }
             resetBuffer()
             calculateDiffPoints()
         } else {

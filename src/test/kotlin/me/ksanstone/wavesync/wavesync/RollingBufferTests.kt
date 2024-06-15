@@ -12,8 +12,8 @@ class RollingBufferTests {
         val testCases =
             listOf(50 to IntRange(0, 50), 50 to IntRange(0, 10), 50 to IntRange(0, 100), 50 to IntRange(0, -1), 50 to IntRange(0, 49))
         testCases.forEach { testCase ->
-            val buffer = RollingBuffer(testCase.first, 0)
-            val floatBuffer = RollingBuffer(testCase.first, 0.0f)
+            val buffer = RollingBuffer(testCase.first) { 0 }
+            val floatBuffer = RollingBuffer(testCase.first) { 0.0f }
             testCase.second.toList().forEach { buffer.insert(it); floatBuffer.insert(it.toFloat()) }
 
             val arr = Array(testCase.first) { 0 }
@@ -41,10 +41,10 @@ class RollingBufferTests {
         val testCases =
             listOf(50 to IntRange(0, 50), 50 to IntRange(0, 10), 50 to IntRange(0, 100), 50 to IntRange(0, -1), 50 to IntRange(0, 49))
         testCases.forEach { testCase ->
-            val referenceBuffer = RollingBuffer(testCase.first, 0)
+            val referenceBuffer = RollingBuffer(testCase.first) { 0 }
             testCase.second.toList().forEach { referenceBuffer.insert(it) }
 
-            val arrayInsertBuffer = RollingBuffer(testCase.first, 0)
+            val arrayInsertBuffer = RollingBuffer(testCase.first) { 0 }
             arrayInsertBuffer.insert(testCase.second.toList().toTypedArray())
 
             assertArrayEquals(referenceBuffer.toArray(), arrayInsertBuffer.toArray())

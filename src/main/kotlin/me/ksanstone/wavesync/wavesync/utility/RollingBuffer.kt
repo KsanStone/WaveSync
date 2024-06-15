@@ -1,8 +1,9 @@
 package me.ksanstone.wavesync.wavesync.utility
 
 import java.lang.Integer.max
+import java.util.function.Supplier
 
-class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Iterable<T> {
+class RollingBuffer<T : Any>(val size: Int = 1024, private val default: (i: Int) -> T) : Iterable<T> {
 
     val tail: Long
         get() { return written - size }
@@ -10,7 +11,7 @@ class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Ite
     var written: Long = 0L
         private set
 
-    var data: Array<Any> = Array(size) { default }
+    var data: Array<Any> = Array(size, default)
         private set
 
     var currentHeadPosition = 0
@@ -36,7 +37,7 @@ class RollingBuffer<T : Any>(val size: Int = 1024, private val default: T) : Ite
     }
 
     /**
-     * Useful when u are only mutating stored elements
+     * Useful when you're only mutating stored elements
      */
     fun incrementPosition() {
         currentHeadPosition = (currentHeadPosition + 1) % size
