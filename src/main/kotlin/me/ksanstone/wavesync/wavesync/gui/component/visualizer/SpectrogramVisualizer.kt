@@ -83,8 +83,7 @@ class SpectrogramVisualizer : AutoCanvas() {
         } }
 
         sizeTimeAxis()
-
-        setOnKeyPressed {
+        gradient.addListener { _ ->
             resetBuffer()
         }
     }

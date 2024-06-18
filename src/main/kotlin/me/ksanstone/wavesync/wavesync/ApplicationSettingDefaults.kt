@@ -3,7 +3,7 @@ package me.ksanstone.wavesync.wavesync
 import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
-import me.ksanstone.wavesync.wavesync.gui.gradient.pure.DefaultGradients
+import me.ksanstone.wavesync.wavesync.gui.gradient.pure.DefaultGradient
 import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalarType
 import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
 
@@ -38,5 +38,5 @@ object ApplicationSettingDefaults {
     val DEFAULT_WAVEFORM_RENDER_MODE = WaveformVisualizer.RenderMode.LINE
     val DEFAULT_START_COLOR: Color = Color.rgb(255, 120, 246)
     val DEFAULT_END_COLOR: Color = Color.AQUA
-    val DEFAULT_SPECTROGRAM_GRADIENT = DefaultGradients.SPECTROGRAM
+    val DEFAULT_SPECTROGRAM_GRADIENT = DefaultGradient.SPECTROGRAM.gradient
 }

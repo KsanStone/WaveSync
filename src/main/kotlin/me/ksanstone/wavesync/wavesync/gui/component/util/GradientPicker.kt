@@ -9,6 +9,7 @@ import javafx.scene.paint.CycleMethod
 import javafx.scene.paint.LinearGradient
 import javafx.scene.paint.Stop
 import javafx.scene.shape.Rectangle
+import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.GradientEditorController
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.GradientSerializer
@@ -21,8 +22,8 @@ class GradientPicker : HBox() {
 
     val sGradient: ObjectProperty<SGradient?> = SimpleObjectProperty(SStartEndGradient(Color.RED, Color.BLUE))
 
-    val openButton = Button()
-    val previewRect = Rectangle()
+    private val openButton = Button()
+    private val previewRect = Rectangle()
 
     private val menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
     private val gradientSerializer = WaveSyncBootApplication.applicationContext.getBean(GradientSerializer::class.java)
@@ -43,8 +44,17 @@ class GradientPicker : HBox() {
     }
 
     private fun openDialog() {
-        val controller: GradientEditorController = menuInitializer.showPopupMenuWithController("layout/gradientEditor.fxml", title="Gradient")
-        controller.gradient.value = sGradient.value
+        val stageController: Pair<Stage, GradientEditorController> =
+            menuInitializer.showPopupMenuWithController("layout/gradientEditor.fxml", title = "Gradient")
+
+        stageController.second.gradient.value = sGradient.value
+        stageController.second.readyGradient.addListener { _, _, v ->
+            stageController.first.close()
+            sGradient.value = v
+        }
+        stageController.second.shouldClose.addListener { _, _, v ->
+            if(v) stageController.first.close()
+        }
     }
 
     private fun invalidateGradient() {

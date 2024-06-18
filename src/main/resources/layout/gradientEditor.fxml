@@ -8,7 +8,7 @@
 
 <AnchorPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.GradientEditorController">
    <children>
-      <VBox fx:id="container" alignment="TOP_CENTER" prefHeight="643.0" prefWidth="400.0" spacing="15.0" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="15.0" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0">
+      <VBox fx:id="container" alignment="TOP_CENTER" prefHeight="670.0" prefWidth="400.0" spacing="15.0" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="15.0" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0">
          <children>
             <Rectangle fx:id="gradientPreview" arcHeight="5.0" arcWidth="5.0" height="50.0" stroke="TRANSPARENT" strokeType="INSIDE" width="400.0">
                <fill>
@@ -28,7 +28,7 @@
                   </LinearGradient>
                </fill>
             </Rectangle>
-            <Pane fx:id="stopContainer" prefHeight="50.0" prefWidth="200.0" />
+            <Pane fx:id="stopContainer" prefHeight="40.0" prefWidth="200.0" style="-fx-border-color: -color-border-default; -fx-border-width: 1; -fx-border-style: solid;" />
             <HBox fx:id="colorSelectContainer" alignment="CENTER_LEFT" fillHeight="false" prefHeight="400.0" prefWidth="370.0" VBox.vgrow="ALWAYS">
                <children>
                   <StackPane fx:id="colorSelectStackPane" minWidth="0.0" pickOnBounds="false" prefHeight="150.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
@@ -97,15 +97,14 @@
                   <Slider fx:id="alphaSlider" maxHeight="1.7976931348623157E308" minHeight="0.0" orientation="VERTICAL" prefWidth="20.0" style="-fx-background-color: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%);" value="100.0" HBox.hgrow="NEVER" />
                </children></HBox>
             <HBox alignment="CENTER_LEFT" spacing="5.0">
-               <children>
-                  <Rectangle fx:id="colorPreviewRect" arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="25.0" stroke="BLACK" strokeType="INSIDE" width="25.0" />
-                  <TextField fx:id="hexInput" HBox.hgrow="ALWAYS" />
-               </children>
+               <Rectangle fx:id="colorPreviewRect" arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="25.0" stroke="BLACK" strokeType="INSIDE" width="25.0" />
+               <TextField fx:id="hexInput" HBox.hgrow="ALWAYS" />
             </HBox>
+            <ComboBox fx:id="premadeGradientBox" />
             <ButtonBar prefHeight="40.0" prefWidth="200.0">
               <buttons>
-                <Button cancelButton="true" mnemonicParsing="false" text="Button" />
-                  <Button defaultButton="true" mnemonicParsing="false" text="Button" />
+                <Button cancelButton="true" mnemonicParsing="false" onAction="#cancelGradient" text="%dialog.gradientEditor.cancel" />
+                  <Button defaultButton="true" mnemonicParsing="false" onAction="#applyGradient" text="%dialog.gradientEditor.ok" />
               </buttons>
             </ButtonBar>
          </children>

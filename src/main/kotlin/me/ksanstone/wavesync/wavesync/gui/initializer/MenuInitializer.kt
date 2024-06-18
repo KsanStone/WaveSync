@@ -21,11 +21,11 @@ class MenuInitializer(
     private var dialogWindows: MutableMap<String, Stage> = mutableMapOf()
 
     @Synchronized
-    fun <T> showPopupMenuWithController(fxml: String, title: String = "Dialog"): T {
+    fun <T> showPopupMenuWithController(fxml: String, title: String = "Dialog"): Pair<Stage, T> {
         val stage = createDialogStage(fxml, title)
         waveSyncStageInitializer.customize(stage.first)
         stage.first.show()
-        return stage.second.getController()
+        return stage.first to stage.second.getController()
     }
 
     @Synchronized
