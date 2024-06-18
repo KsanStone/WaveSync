@@ -1,20 +1,16 @@
 package me.ksanstone.wavesync.wavesync.gui.controller
 
-import javafx.beans.property.ObjectProperty
-import javafx.beans.property.ObjectPropertyBase
-import javafx.beans.property.SimpleDoubleProperty
-import javafx.beans.property.SimpleObjectProperty
+import javafx.beans.property.*
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
 import javafx.fxml.Initializable
 import javafx.geometry.Point2D
+import javafx.scene.control.Button
 import javafx.scene.control.Slider
 import javafx.scene.control.TextField
-import javafx.scene.layout.HBox
-import javafx.scene.layout.Pane
-import javafx.scene.layout.StackPane
-import javafx.scene.layout.VBox
+import javafx.scene.input.KeyCode
+import javafx.scene.layout.*
 import javafx.scene.paint.Color
 import javafx.scene.paint.CycleMethod
 import javafx.scene.paint.LinearGradient
@@ -28,10 +24,12 @@ import me.ksanstone.wavesync.wavesync.gui.gradient.pure.toAHexString
 import java.net.URL
 import java.util.*
 import kotlin.jvm.optionals.getOrNull
+import kotlin.math.abs
 import kotlin.math.min
 
 class GradientEditorController : Initializable {
 
+    lateinit var colorPreviewRect: Rectangle
     lateinit var colorPointer: Circle
     lateinit var colorSelectContainer: HBox
     lateinit var container: VBox
@@ -53,8 +51,11 @@ class GradientEditorController : Initializable {
 
         init {
             stops.addListener(ListChangeListener {
-                while (it.next()) { /* ff updates */ }
-                set(gradientSerializer.fromStops(stops).getOrNull())
+                while (it.next()) { /* ff updates */
+                }
+                try {
+                    set(gradientSerializer.fromStops(stops).getOrNull())
+                } catch (ignored: Exception) {}
             })
         }
 
@@ -79,19 +80,58 @@ class GradientEditorController : Initializable {
     private val currentBrightness = SimpleDoubleProperty(0.0)
     private val currentAlpha = SimpleDoubleProperty(1.0)
 
+    private var activeButton = SimpleIntegerProperty(-1)
+
     override fun initialize(p0: URL?, p1: ResourceBundle?) {
         shadeRect.widthProperty().bind(shadeRect.heightProperty())
         colorRect.widthProperty().bind(colorRect.heightProperty())
         colorRect.heightProperty().bind(shadeRect.heightProperty())
 
         colorSelectStackPane.prefWidthProperty().bind(container.widthProperty().subtract(40))
+        stopContainer.prefWidthProperty().bind(container.widthProperty())
         colorSelectStackPane.prefHeightProperty().bind(colorSelectContainer.heightProperty())
 
-        gradientPreview.widthProperty().bind(container.widthProperty())
-        stops.addListener(ListChangeListener { updateGuiTickMarks(it) })
+        stopContainer.setOnMousePressed {
+            for (i in stopContainer.children.indices) {
+                val child = stopContainer.children[i]
+                if (child.boundsInParent.contains(it.x, it.y)) {
+                    setActive((child as StopButton).index)
+                    return@setOnMousePressed
+                }
+            }
+            val newLoc = ((it.x - STOP_GRAB_WIDTH / 2) / gradientPreview.width).coerceIn(0.0, 1.0)
+            addStop(newLoc)
+        }
+
+        stopContainer.setOnMouseDragged { event ->
+            val newLoc = ((event.x - STOP_GRAB_WIDTH / 2) / gradientPreview.width).coerceIn(0.0, 1.0)
+
+            val activeIndex = activeButton.value
+            val activeStop = stops[activeIndex]
+            val newStop = Stop(newLoc, activeStop.color)
+
+            val temp = stops[activeIndex]
+
+            stops.removeAt(activeIndex)
+            val newIndex = findInsertIndex(newLoc)
+            if (newIndex == -1 || stops[newIndex.coerceAtMost(stops.size - 1)].offset == newLoc) {
+                stops.add(activeIndex, temp)
+                return@setOnMouseDragged
+            }
+
+            stops.add(newIndex, newStop)
+
+            val updatedIndex = stops.indexOf(newStop)
+            setActive(updatedIndex)
+        }
+
+        gradientPreview.widthProperty().bind(container.widthProperty().subtract(STOP_GRAB_WIDTH))
+        stops.addListener(ListChangeListener { it.next(); updateGuiTickMarks(); colorRect() })
 
         alphaSlider.prefHeightProperty().bind(colorRect.heightProperty())
         hueSLider.prefHeightProperty().bind(colorRect.heightProperty())
+
+        container.widthProperty().addListener { _, _, _ -> updateGuiTickMarks() }
 
         listOf(colorSelectStackPane.widthProperty(), colorSelectStackPane.heightProperty()).forEach {
             it.addListener { _ ->
@@ -131,10 +171,58 @@ class GradientEditorController : Initializable {
                 moveCursor()
             }
         }
+
+        colorUpdate()
+        updateGuiTickMarks()
+        colorRect()
+        if(stops.size > 0)
+            setActive(0)
     }
 
-    private fun updateGuiTickMarks(it: ListChangeListener.Change<out Stop>?) {
+    private fun updateGuiTickMarks() {
+        val diff = stops.size - stopContainer.children.size
+        if (diff > 0)
+            for (i in 0 until diff) stopContainer.children.add(StopButton(this))
+        else if (diff < 0)
+            for (i in 0 until abs(diff)) stopContainer.children.removeLast()
 
+        for (i in stops.indices) {
+            val loc = Point2D(
+                gradientPreview.widthProperty().value * stops[i].offset,
+                0.0
+            )
+
+            stopContainer.children[i].relocate(loc.x, loc.y)
+            (stopContainer.children[i] as StopButton).update(i, stops[i].color)
+        }
+    }
+
+    private fun findInsertIndex(offset: Double): Int {
+        if (stops.any { it.offset == offset }) return -1
+        var insertIndex = stops.indexOfFirst { it.offset > offset }
+        if (insertIndex == -1) insertIndex = stops.size
+        return insertIndex
+    }
+
+    private fun addStop(offset: Double) {
+        if (offset < 0 || offset > 1) return
+        val insertIndex = findInsertIndex(offset)
+        if(insertIndex == -1) return
+        stops.add(insertIndex, Stop(offset, gradient.value!![offset.toFloat()]))
+        setActive(insertIndex)
+    }
+
+    private fun deleteStop(index: Int) {
+        if (!stops.indices.contains(index) || stops.size <= 2) return
+        stops.removeAt(index)
+    }
+
+    private fun setActive(index: Int) {
+        if (!stops.indices.contains(index)) return
+        activeButton.set(index)
+        stopContainer.children[index].requestFocus()
+        stopContainer.children[index].toFront()
+        setColor(stops[index].color)
     }
 
     private fun moveCursor() {
@@ -149,13 +237,67 @@ class GradientEditorController : Initializable {
     private fun setColor(color: Color) {
         hueSLider.value = color.hue
         alphaSlider.value = color.opacity * 100
+        currentBrightness.value = color.brightness
+        currentSaturation.value = color.saturation
+        colorPreviewRect.fill = color
         moveCursor()
     }
 
     private fun colorUpdate() {
         val newColor = Color.hsb(currentHue.value, currentSaturation.value, currentBrightness.value, currentAlpha.value)
         hexInput.text = newColor.toAHexString()
+        colorPreviewRect.fill = newColor
+        if (stops.indices.contains(activeButton.value)) {
+            stops[activeButton.value] = Stop(stops[activeButton.value].offset, newColor)
+        }
     }
 
+    private fun colorRect() {
+        gradientPreview.fill = LinearGradient(0.0, 0.0, 1.0, 0.0, true, CycleMethod.NO_CYCLE, stops)
+    }
 
+    class StopButton(private val controller: GradientEditorController) : Button() {
+
+        var index = 0
+
+        init {
+            this.minWidth = STOP_GRAB_WIDTH
+            this.maxWidth = STOP_GRAB_WIDTH
+            this.prefWidth = STOP_GRAB_WIDTH
+            controller.activeButton.addListener { _ -> updateBorder() }
+            this.setOnAction {
+                controller.setActive(index)
+            }
+            this.setOnKeyPressed {
+                if (it.code == KeyCode.DELETE)
+                    controller.deleteStop(index)
+            }
+            this.isMouseTransparent = true
+        }
+
+        fun update(index: Int, color: Color) {
+            this.index = index
+            updateBorder()
+            this.style = "-fx-background-color: ${color.toAHexString()}"
+        }
+
+        private fun updateBorder() {
+            if (controller.activeButton.value == index)
+                this.border = Border(
+                    BorderStroke(
+                        controller.stops[index].color.invert(),
+                        BorderStrokeStyle.SOLID,
+                        CornerRadii(5.0),
+                        null
+                    )
+                )
+            else
+                this.border =  Border(BorderStroke(Color.TRANSPARENT, BorderStrokeStyle.SOLID, CornerRadii(5.0), null))
+        }
+
+    }
+
+    companion object {
+        const val STOP_GRAB_WIDTH: Double = 20.0
+    }
 }

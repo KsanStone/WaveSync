@@ -13,12 +13,13 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.GradientEditorController
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.GradientSerializer
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SGradient
+import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SStartEndGradient
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import org.kordamp.ikonli.javafx.FontIcon
 
 class GradientPicker : HBox() {
 
-    val sGradient: ObjectProperty<SGradient?> = SimpleObjectProperty()
+    val sGradient: ObjectProperty<SGradient?> = SimpleObjectProperty(SStartEndGradient(Color.RED, Color.BLUE))
 
     val openButton = Button()
     val previewRect = Rectangle()
@@ -43,7 +44,7 @@ class GradientPicker : HBox() {
 
     private fun openDialog() {
         val controller: GradientEditorController = menuInitializer.showPopupMenuWithController("layout/gradientEditor.fxml", title="Gradient")
-
+        controller.gradient.value = sGradient.value
     }
 
     private fun invalidateGradient() {

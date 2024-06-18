@@ -8,7 +8,7 @@
 
 <AnchorPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.GradientEditorController">
    <children>
-      <VBox fx:id="container" prefHeight="643.0" prefWidth="400.0" spacing="15.0" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="15.0" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0">
+      <VBox fx:id="container" alignment="TOP_CENTER" prefHeight="643.0" prefWidth="400.0" spacing="15.0" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="15.0" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0">
          <children>
             <Rectangle fx:id="gradientPreview" arcHeight="5.0" arcWidth="5.0" height="50.0" stroke="TRANSPARENT" strokeType="INSIDE" width="400.0">
                <fill>
@@ -96,7 +96,12 @@
                   <Slider fx:id="hueSLider" max="360.0" maxHeight="1.7976931348623157E308" minHeight="0.0" orientation="VERTICAL" prefWidth="20.0" style="-fx-background-color: linear-gradient(to top, rgba(255,0,0,1) 0%, rgba(255,255,0,1) 16.7%, rgba(0,255,0,1) 33.3%, rgba(0,255,255,1) 50%, rgba(0,0,255,1) 66.6%, rgba(255,0,255,1) 83.3%, rgba(255,0,0,1) 100%);" HBox.hgrow="NEVER" />
                   <Slider fx:id="alphaSlider" maxHeight="1.7976931348623157E308" minHeight="0.0" orientation="VERTICAL" prefWidth="20.0" style="-fx-background-color: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%);" value="100.0" HBox.hgrow="NEVER" />
                </children></HBox>
-            <TextField fx:id="hexInput" />
+            <HBox alignment="CENTER_LEFT" spacing="5.0">
+               <children>
+                  <Rectangle fx:id="colorPreviewRect" arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="25.0" stroke="BLACK" strokeType="INSIDE" width="25.0" />
+                  <TextField fx:id="hexInput" HBox.hgrow="ALWAYS" />
+               </children>
+            </HBox>
             <ButtonBar prefHeight="40.0" prefWidth="200.0">
               <buttons>
                 <Button cancelButton="true" mnemonicParsing="false" text="Button" />
