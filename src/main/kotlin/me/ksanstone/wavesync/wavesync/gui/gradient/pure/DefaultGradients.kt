@@ -15,5 +15,22 @@ enum class DefaultGradient(val gradient: SGradient) {
                 Stop(1.0, Color.WHITE)
             )
         )
+    ),
+    NEON_SPECTROGRAM(
+        SLinearGradient(
+            listOf(
+                Stop(0.0, Color.BLACK),
+                Stop(0.142, Color.web("#300B93")),
+                Stop(0.513, Color.web("#DB41E4")),
+                Stop(0.773, Color.web("#00DFFF")),
+                Stop(1.0, Color.web("#CDFFFF"))
+            )
+        )
+    ),
+    BLACK_AND_WHITE(
+        SStartEndGradient(
+            Color.BLACK,
+            Color.WHITE
+        )
     )
 }

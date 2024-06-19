@@ -8,14 +8,20 @@ import javafx.beans.property.SimpleObjectProperty
 import javafx.fxml.FXMLLoader
 import javafx.geometry.Orientation
 import javafx.scene.canvas.GraphicsContext
+import javafx.scene.chart.NumberAxis
+import javafx.scene.chart.ValueAxis
 import javafx.scene.image.WritableImage
+import javafx.scene.layout.Background
 import javafx.scene.layout.HBox
+import javafx.scene.paint.CycleMethod
+import javafx.scene.paint.LinearGradient
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SPECTROGRAM_GRADIENT
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.spectrogram.SpectrogramSettingsController
+import me.ksanstone.wavesync.wavesync.gui.gradient.pure.GradientSerializer
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SGradient
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
@@ -45,6 +51,7 @@ class SpectrogramVisualizer : AutoCanvas() {
     private var stripeBuffer: FloatArray = FloatArray(0)
     private val fftArraySize: IntegerBinding = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftSize.divide(2)
     private val fftRate: IntegerProperty = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftRate
+    private val gradientSerializer: GradientSerializer = WaveSyncBootApplication.applicationContext.getBean(GradientSerializer::class.java)
 
     private var imageTop = WritableImage(1,1)
     private var imageBottom = WritableImage(1,1)
@@ -74,17 +81,18 @@ class SpectrogramVisualizer : AutoCanvas() {
         bufferDuration.addListener { _, _, _ ->
             changeBufferDuration(bufferDuration.get(), fftRate.get())
             resetBuffer()
-            sizeTimeAxis()
+            sizeAxis()
         }
 
         listOf(orientation, highPass, lowPass).forEach { it.addListener { _ ->
             resetBuffer()
-            sizeTimeAxis()
+            sizeAxis()
         } }
 
-        sizeTimeAxis()
+        sizeAxis()
         gradient.addListener { _ ->
             resetBuffer()
+            sizeAxis()
         }
     }
 
@@ -157,14 +165,38 @@ class SpectrogramVisualizer : AutoCanvas() {
         imageBottom = temp
     }
 
-    private fun sizeTimeAxis() {
+    private fun sizeAxis() {
         if (orientation.value == Orientation.HORIZONTAL) {
-            xAxis.lowerBound = -bufferDuration.get().toSeconds()
-            xAxis.upperBound = 0.0
+            timeAxis(xAxis)
+            valAxis(yAxis)
         } else {
-            yAxis.lowerBound = -bufferDuration.get().toSeconds()
-            yAxis.upperBound = 0.0
+            timeAxis(yAxis)
+            valAxis(xAxis)
         }
+    }
+
+    private fun timeAxis(axis: ValueAxis<Number>) {
+        axis.lowerBound = -bufferDuration.get().toSeconds()
+        axis.upperBound = 0.0
+        (axis as NumberAxis).tickUnit = 1.0
+        axis.background = null
+    }
+
+    private fun valAxis(axis: ValueAxis<Number>) {
+        axis.lowerBound = -90.0
+        axis.upperBound = 0.0
+        (axis as NumberAxis).tickUnit = 10.0
+        axis.background = Background.fill(
+            LinearGradient(
+                0.0,
+                if (orientation.value == Orientation.HORIZONTAL) 1.0 else 0.0,
+                if (orientation.value == Orientation.HORIZONTAL) 0.0 else 1.0,
+                if (orientation.value == Orientation.HORIZONTAL) 0.0 else 0.0,
+                true,
+                CycleMethod.NO_CYCLE,
+                gradientSerializer.toStops(gradient.value)
+            )
+        )
     }
 
     private fun drawChunk() {
