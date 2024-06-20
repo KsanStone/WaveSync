@@ -32,5 +32,11 @@ enum class DefaultGradient(val gradient: SGradient) {
             Color.BLACK,
             Color.WHITE
         )
+    ),
+    TRANSPARENT_WHITE(
+        SStartEndGradient(
+            Color.TRANSPARENT,
+            Color.WHITE
+        )
     )
 }
