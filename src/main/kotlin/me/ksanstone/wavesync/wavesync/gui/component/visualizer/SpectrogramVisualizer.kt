@@ -1,10 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
 import javafx.beans.binding.IntegerBinding
-import javafx.beans.property.IntegerProperty
-import javafx.beans.property.ObjectProperty
-import javafx.beans.property.SimpleIntegerProperty
-import javafx.beans.property.SimpleObjectProperty
+import javafx.beans.property.*
 import javafx.fxml.FXMLLoader
 import javafx.geometry.Orientation
 import javafx.scene.canvas.GraphicsContext
@@ -18,11 +15,12 @@ import javafx.scene.paint.LinearGradient
 import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_CUTOFF
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_LOW_PASS
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_DB_MAX
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_DB_MIN
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SPECTROGRAM_GRADIENT
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.spectrogram.SpectrogramSettingsController
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.GradientSerializer
-import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SGradient
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -40,12 +38,15 @@ class SpectrogramVisualizer : AutoCanvas() {
 
     val bufferDuration: ObjectProperty<Duration> = SimpleObjectProperty(Duration.seconds(20.0))
     val orientation = SimpleObjectProperty(Orientation.VERTICAL)
-    val gradient = SimpleObjectProperty<SGradient>(DEFAULT_SPECTROGRAM_GRADIENT) // TODO ui for this
+    val gradient = SimpleObjectProperty(DEFAULT_SPECTROGRAM_GRADIENT)
     val effectiveHighPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
     val effectiveLowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
 
     val highPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
+
+    val rangeMin = SimpleFloatProperty(DEFAULT_DB_MIN)
+    val rangeMax = SimpleFloatProperty(DEFAULT_DB_MAX)
 
     private var buffer: RollingBuffer<FloatArray> = RollingBuffer(100) { FloatArray(0) }
     private var stripeBuffer: FloatArray = FloatArray(0)
@@ -67,7 +68,7 @@ class SpectrogramVisualizer : AutoCanvas() {
     private var source: SupportedCaptureSource? = null
 
     init {
-        scalar.update(DeciBelFFTScalarParameters(-90F, 0.0F))
+        scalar.update(DeciBelFFTScalarParameters(rangeMin.value, rangeMax.value))
         changeBufferWidth()
         fftArraySize.addListener { _, _, _ ->
             changeBufferWidth()
