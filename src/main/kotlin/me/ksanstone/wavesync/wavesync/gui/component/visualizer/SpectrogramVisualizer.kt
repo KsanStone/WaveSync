@@ -41,12 +41,14 @@ class SpectrogramVisualizer : AutoCanvas() {
     val gradient = SimpleObjectProperty(DEFAULT_SPECTROGRAM_GRADIENT)
     val effectiveHighPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
     val effectiveLowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
+    val effectiveRangeMin: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MIN)
+    val effectiveRangeMax: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MAX)
+
 
     val highPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
-
-    val rangeMin = SimpleFloatProperty(DEFAULT_DB_MIN)
-    val rangeMax = SimpleFloatProperty(DEFAULT_DB_MAX)
+    val rangeMin: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MIN)
+    val rangeMax: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MAX)
 
     private var buffer: RollingBuffer<FloatArray> = RollingBuffer(100) { FloatArray(0) }
     private var stripeBuffer: FloatArray = FloatArray(0)
@@ -90,6 +92,12 @@ class SpectrogramVisualizer : AutoCanvas() {
             sizeAxis()
         } }
 
+        listOf(effectiveRangeMax, effectiveRangeMin).forEach { it.addListener { _ ->
+            scalar.update(DeciBelFFTScalarParameters(effectiveRangeMin.value, effectiveRangeMax.value))
+            resetBuffer()
+            sizeAxis()
+        } }
+
         sizeAxis()
         gradient.addListener { _ ->
             resetBuffer()
@@ -119,15 +127,21 @@ class SpectrogramVisualizer : AutoCanvas() {
         preferenceService.registerProperty(lowPass, "lowPass", this.javaClass, id)
         preferenceService.registerSGradientProperty(gradient, "gradient", this.javaClass, id)
         preferenceService.registerProperty(orientation, "orientation", Orientation::class.java, this.javaClass, id)
+        preferenceService.registerProperty(rangeMax, "rangeMax", this.javaClass, id)
+        preferenceService.registerProperty(rangeMin, "rangeMin", this.javaClass, id)
     }
 
     fun setBindEffective(v: Boolean) {
         effectiveLowPass.unbind()
         effectiveHighPass.unbind()
+        effectiveRangeMax.unbind()
+        effectiveRangeMin.unbind()
 
         if (v) {
             effectiveLowPass.bind(lowPass)
             effectiveHighPass.bind(highPass)
+            effectiveRangeMin.bind(rangeMin)
+            effectiveRangeMax.bind(rangeMax)
         }
     }
 
@@ -184,8 +198,8 @@ class SpectrogramVisualizer : AutoCanvas() {
     }
 
     private fun valAxis(axis: ValueAxis<Number>) {
-        axis.lowerBound = -90.0
-        axis.upperBound = 0.0
+        axis.lowerBound = effectiveRangeMin.value.toDouble()
+        axis.upperBound = effectiveRangeMax.value.toDouble()
         (axis as NumberAxis).tickUnit = 10.0
         axis.background = Background.fill(
             LinearGradient(

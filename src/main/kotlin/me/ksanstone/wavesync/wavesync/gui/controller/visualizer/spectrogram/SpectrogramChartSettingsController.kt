@@ -22,6 +22,9 @@ import me.ksanstone.wavesync.wavesync.service.PreferenceService
 
 class SpectrogramChartSettingsController {
 
+    lateinit var dbMaxSpinner: Spinner<Double>
+    lateinit var dbMinSpinner: Spinner<Double>
+
     @FXML
     lateinit var bindToggle: ToggleSwitch
 
@@ -114,6 +117,20 @@ class SpectrogramChartSettingsController {
                 visualizer.lowPass.get()
             )
             visualizer.lowPass.bind(minFreqSpinner.valueProperty())
+
+            dbMinSpinner.valueFactory = DoubleSpinnerValueFactory(
+                -150.0,
+                -40.0,
+                visualizer.rangeMin.get().toDouble()
+            )
+            visualizer.rangeMin.bind(dbMinSpinner.valueProperty().map { it.toFloat() })
+
+            dbMaxSpinner.valueFactory = DoubleSpinnerValueFactory(
+                -30.0,
+                20.0,
+                visualizer.rangeMax.get().toDouble()
+            )
+            visualizer.rangeMax.bind(dbMaxSpinner.valueProperty().map { it.toFloat() })
         } else {
             visualizer.setBindEffective(false)
             val bars = layoutStorageService.nodeFactory.createNode(MAIN_BAR_VISUALIZER_ID)?.let {
@@ -122,6 +139,8 @@ class SpectrogramChartSettingsController {
 
             visualizer.effectiveLowPass.bind(bars.lowPass)
             visualizer.effectiveHighPass.bind(bars.highPass)
+            visualizer.effectiveRangeMin.bind(bars.dbMin)
+            visualizer.effectiveRangeMax.bind(bars.dbMax)
         }
     }
 
