@@ -31,6 +31,7 @@ import kotlin.math.min
 
 class GradientEditorController : Initializable {
 
+    lateinit var stopPercentageField: TextField
     lateinit var premadeGradientBox: ComboBox<SGradient>
     lateinit var colorPreviewRect: Rectangle
     lateinit var colorPointer: Circle
@@ -151,8 +152,16 @@ class GradientEditorController : Initializable {
                 k.consume()
                 try {
                     setColor(Color.web(hexInput.text))
-                } catch (ignored: Exception) {
-                }
+                } catch (ignored: Exception) { }
+            }
+        }
+
+        stopPercentageField.setOnKeyPressed { k ->
+            if (k.code == KeyCode.ENTER) {
+                k.consume()
+                try {
+                    moveStop((stopPercentageField.text.toDoubleOrNull() ?: return@setOnKeyPressed) / 100)
+                } catch (ignored: Exception) { }
             }
         }
 
@@ -238,8 +247,12 @@ class GradientEditorController : Initializable {
         }
 
         stopContainer.setOnMouseDragged { event ->
-            val newLoc = ((event.x - STOP_GRAB_WIDTH / 2) / gradientPreview.width).coerceIn(0.0, 1.0)
+            val moveStop = ((event.x - STOP_GRAB_WIDTH / 2) / gradientPreview.width).coerceIn(0.0, 1.0)
+            moveStop(moveStop)
+        }
+    }
 
+    private fun moveStop(newLoc: Double) {
             val activeIndex = activeButton.value
             val activeStop = stops[activeIndex]
             val newStop = Stop(newLoc, activeStop.color)
@@ -250,14 +263,13 @@ class GradientEditorController : Initializable {
             val newIndex = findInsertIndex(newLoc)
             if (newIndex == -1 || stops[newIndex.coerceAtMost(stops.size - 1)].offset == newLoc) {
                 stops.add(activeIndex, temp)
-                return@setOnMouseDragged
+                return
             }
 
             stops.add(newIndex, newStop)
 
             val updatedIndex = stops.indexOf(newStop)
             setActive(updatedIndex)
-        }
     }
 
     private fun updateGuiTickMarks() {
@@ -276,6 +288,9 @@ class GradientEditorController : Initializable {
             stopContainer.children[i].relocate(loc.x, loc.y)
             (stopContainer.children[i] as StopButton).update(i, stops[i].color)
         }
+
+        if(stops.indices.contains(activeButton.value))
+        stopPercentageField.text = (stops[activeButton.value].offset * 100).toString()
     }
 
     private fun findInsertIndex(offset: Double): Int {
