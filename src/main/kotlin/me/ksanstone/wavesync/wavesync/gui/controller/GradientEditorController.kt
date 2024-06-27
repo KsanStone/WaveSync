@@ -31,6 +31,8 @@ import kotlin.math.min
 
 class GradientEditorController : Initializable {
 
+    lateinit var removeStopButton: Button
+    lateinit var addStopButton: Button
     lateinit var stopPercentageField: TextField
     lateinit var premadeGradientBox: ComboBox<SGradient>
     lateinit var colorPreviewRect: Rectangle
@@ -163,6 +165,15 @@ class GradientEditorController : Initializable {
                     moveStop((stopPercentageField.text.toDoubleOrNull() ?: return@setOnKeyPressed) / 100)
                 } catch (ignored: Exception) { }
             }
+        }
+
+        removeStopButton.setOnAction {
+            if (stops.indices.contains(activeButton.value))
+                deleteStop(activeButton.value)
+        }
+
+        addStopButton.setOnAction {
+            addStop((stops[0].offset + stops[1].offset) / 2)
         }
 
         colorUpdate()
@@ -311,6 +322,8 @@ class GradientEditorController : Initializable {
     private fun deleteStop(index: Int) {
         if (!stops.indices.contains(index) || stops.size <= 2) return
         stops.removeAt(index)
+        if (!stops.indices.contains(activeButton.value))
+            activeButton.value = 0
     }
 
     private fun setActive(index: Int) {

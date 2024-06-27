@@ -6,6 +6,7 @@
 <?import javafx.scene.paint.*?>
 <?import javafx.scene.shape.*?>
 
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 <AnchorPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.GradientEditorController">
    <children>
       <VBox fx:id="container" alignment="TOP_CENTER" prefHeight="720.0" prefWidth="400.0" spacing="15.0" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="15.0" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0">
@@ -29,7 +30,23 @@
                </fill>
             </Rectangle>
             <Pane fx:id="stopContainer" prefHeight="40.0" prefWidth="200.0" style="-fx-border-color: -color-border-default; -fx-border-width: 1; -fx-border-style: solid;" />
-            <TextField fx:id="stopPercentageField" />
+            <HBox alignment="CENTER_LEFT" spacing="5.0">
+               <children>
+                  <TextField fx:id="stopPercentageField" />
+                  <Label text="\%" />
+                  <Pane prefHeight="2.0" HBox.hgrow="ALWAYS" />
+                  <Button fx:id="addStopButton" mnemonicParsing="false" >
+                     <graphic>
+                        <FontIcon iconLiteral="mdmz-plus"/>
+                     </graphic>
+                  </Button>
+                  <Button fx:id="removeStopButton" mnemonicParsing="false" >
+                     <graphic>
+                        <FontIcon iconLiteral="mdomz-minus"/>
+                     </graphic>
+                  </Button>
+               </children>
+            </HBox>
             <HBox fx:id="colorSelectContainer" alignment="CENTER_LEFT" fillHeight="false" prefHeight="400.0" prefWidth="370.0" VBox.vgrow="ALWAYS">
                <children>
                   <StackPane fx:id="colorSelectStackPane" minWidth="0.0" pickOnBounds="false" prefHeight="150.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
