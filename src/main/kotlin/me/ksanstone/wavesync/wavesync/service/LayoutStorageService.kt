@@ -129,6 +129,11 @@ class LayoutStorageService(
         }
     }
 
+    fun getLayout(stage: Stage): DragLayout? {
+        val id = stageSizingService.findId(stage) ?: return null
+        return layouts.find { it.id == id }?.layout
+    }
+
     fun destructLayout(windowId: String): DragLayout? {
         var ret: DragLayout? = null
         layouts.removeIf {

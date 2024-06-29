@@ -115,6 +115,10 @@ class DragLayout : Pane() {
         }
     }
 
+    fun justify() {
+        layoutRoot.justify(true)
+    }
+
     private fun swapNodes(sourceLayout: DragLayoutNode, target: String, dest: String) {
         val targetNode = layoutRoot.findComponentLeaf(target) ?: return
         val destNode = sourceLayout.findComponentLeaf(dest) ?: return

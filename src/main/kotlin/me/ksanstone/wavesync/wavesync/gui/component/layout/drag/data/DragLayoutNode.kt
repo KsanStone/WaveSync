@@ -525,6 +525,34 @@ data class DragLayoutNode(
         return this.parent!!.parent!!.getEffectiveLayout()
     }
 
+    /**
+     * Evenly space all the drag bars
+     */
+    fun justify(recurse: Boolean = false) {
+        doJustify()
+        if (recurse) this.iterateNodes { it.node.doJustify() }
+        this.fireChange()
+    }
+
+    private fun doJustify() {
+        val newSize = this.dividerLocations.size
+        this.dividerLocations.clear()
+        this.dividerLocations.addAll(generateDividerPositions(newSize))
+    }
+
+    companion object {
+        fun generateDividerPositions(size: Int): List<Double> {
+            if (size < 1) return mutableListOf()
+            val dividers = mutableListOf<Double>()
+            val step = 1.0 / (size + 1)
+            for (i in 1..size) {
+                dividers.add(i * step)
+            }
+            return dividers
+        }
+    }
+
+
 }
 
 data class ComponentCallbackResult(

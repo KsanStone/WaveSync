@@ -29,7 +29,8 @@ class WaveSyncStageInitializer(
     private val localizationService: LocalizationService,
     private val stageSizingService: StageSizingService,
     private val audioCaptureService: AudioCaptureService,
-    private val stageManager: StageManager
+    private val stageManager: StageManager,
+    private val layoutStorageService: LayoutStorageService
 ) : ApplicationListener<StageReadyEvent> {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
@@ -116,6 +117,8 @@ class WaveSyncStageInitializer(
                 audioCaptureService.paused.value = !audioCaptureService.paused.value
             } else if (KeyCode.L == keyEvent.code) {
                 audioCaptureService.paused.value = true
+            } else if (KeyCode.J == keyEvent.code) {
+                layoutStorageService.getLayout(stage)?.justify()
             }
         }
         stage.addEventHandler(KeyEvent.KEY_RELEASED) { keyEvent ->

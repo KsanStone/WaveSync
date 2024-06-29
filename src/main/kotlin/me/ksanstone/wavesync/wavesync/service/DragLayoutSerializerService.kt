@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service
 @Service
 class DragLayoutSerializerService {
 
-    val gson = Gson()
+    private val gson = Gson()
 
     fun serializeFull(full: List<AppLayout>): String {
         val elems = JsonArray()

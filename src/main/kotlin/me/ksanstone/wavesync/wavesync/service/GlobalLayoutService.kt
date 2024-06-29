@@ -17,7 +17,6 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.gui.initializer.AutoDisposalMode
 import me.ksanstone.wavesync.wavesync.gui.initializer.WaveSyncStageInitializer
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.*
 import java.util.function.Consumer
@@ -34,8 +33,6 @@ open class GlobalLayoutService(
     var noAutoRemove = mutableSetOf<DragLayout>()
     private val stageMap = mutableMapOf<DragLayout, Stage>()
     val layoutRemovalListeners = mutableListOf<Consumer<DragLayout>>()
-
-    val logger = LoggerFactory.getLogger("Niger")
 
     @PostConstruct
     fun initialize() {
