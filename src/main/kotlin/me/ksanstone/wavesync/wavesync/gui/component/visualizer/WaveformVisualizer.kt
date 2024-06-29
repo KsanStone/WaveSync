@@ -171,9 +171,10 @@ class WaveformVisualizer : AutoCanvas() {
         var takeAdjust = 0
 
         if (align.get()) {
+            val maxWaves = (width / PIXELS_PER_WAVE).toInt().coerceIn(2, 50)
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate.get())
             drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - 50)
-            take = (buffer.size - waveSize).coerceIn(10.0, waveSize * 15).roundToInt().coerceAtMost(buffer.size - drop)
+            take = (buffer.size - waveSize).coerceIn(10.0, waveSize * maxWaves).roundToInt().coerceAtMost(buffer.size - drop)
         } else if (bufferDuration.get().greaterThan(Duration.millis(100.0)).and(renderMode.get() == RenderMode.LINE)) {
             // make the line graph less jumpy
             val waveSize = take.toDouble() / width.roundToInt()
@@ -238,6 +239,8 @@ class WaveformVisualizer : AutoCanvas() {
             StyleablePropertyFactory<WaveformVisualizer>(
                 Pane.getClassCssMetaData()
             )
+
+        private const val PIXELS_PER_WAVE = 300
 
         @Suppress("unused")
         fun getClassCssMetaData(): List<CssMetaData<out Styleable?, *>> {
