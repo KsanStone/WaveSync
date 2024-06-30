@@ -6,7 +6,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import me.ksanstone.wavesync.wavesync.gui.component.util.GradientPicker?>
-<?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import org.kordamp.ikonli.javafx.*?>
 <GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10"
           xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
           fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.spectrogram.SpectrogramChartSettingsController">
@@ -69,7 +69,7 @@
     </Label>
     <GradientPicker GridPane.rowIndex="4" GridPane.columnIndex="1" fx:id="gradientPicker"/>
 
-    <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="5">
+    <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="6">
         <graphic>
             <FontIcon iconLiteral="mdal-border_outer"/>
         </graphic>
@@ -79,7 +79,7 @@
         <ToggleSwitch fx:id="bindToggle"/>
         <Label text="%visualizer.spectrogram.settings.bindToBarDescription"/>
     </HBox>
-    <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="5">
+    <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="6">
         <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
         <InputGroup>
             <ToggleButton fx:id="renderHorizontalButton" onAction="#renderHorizontal" prefHeight="30.0"
@@ -88,6 +88,19 @@
                           text="%visualizer.spectrogram.settings.render.vertical"/>
         </InputGroup>
     </HBox>
+    <Label layoutX="10.0" layoutY="400.0" text="%visualizer.bar.settings.xAxis" GridPane.rowIndex="5">
+        <graphic>
+            <FontIcon iconLiteral="mdal-border_outer"/>
+        </graphic>
+    </Label>
+    <InputGroup GridPane.columnIndex="1" GridPane.rowIndex="5">
+        <children>
+            <ToggleButton fx:id="axisLinearToggle" onAction="#axisLinear" prefHeight="30.0"
+                          text="%visualizer.bar.settings.render.linear"/>
+            <ToggleButton fx:id="axisLogarithmicToggle" onAction="#axisLogarithmic" prefHeight="30.0"
+                          text="%visualizer.bar.settings.render.logarithmic"/>
+        </children>
+    </InputGroup>
     <Label GridPane.rowIndex="1" text="%visualizer.spectrogram.settings.dbRange"/>
     <GridPane hgap="5.0" GridPane.rowIndex="1" GridPane.columnIndex="1">
         <columnConstraints>

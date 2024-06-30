@@ -17,6 +17,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_CUT
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_DB_MAX
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_DB_MIN
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_LOGARITHMIC_MODE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_SPECTROGRAM_GRADIENT
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.spectrogram.SpectrogramSettingsController
@@ -29,6 +30,8 @@ import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalar
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalarParameters
 import me.ksanstone.wavesync.wavesync.utility.FreeRangeMapper
+import me.ksanstone.wavesync.wavesync.utility.LogRangeMapper
+import me.ksanstone.wavesync.wavesync.utility.RangeMapper
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -43,12 +46,13 @@ class SpectrogramVisualizer : AutoCanvas() {
     val effectiveLowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
     val effectiveRangeMin: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MIN)
     val effectiveRangeMax: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MAX)
-
+    val effectiveLogarithmic: BooleanProperty = SimpleBooleanProperty(DEFAULT_LOGARITHMIC_MODE)
 
     val highPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_CUTOFF)
     val lowPass: IntegerProperty = SimpleIntegerProperty(DEFAULT_BAR_LOW_PASS)
     val rangeMin: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MIN)
     val rangeMax: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MAX)
+    val logarithmic: BooleanProperty = SimpleBooleanProperty(DEFAULT_LOGARITHMIC_MODE)
 
     private var buffer: RollingBuffer<FloatArray> = RollingBuffer(100) { FloatArray(0) }
     private var stripeBuffer: FloatArray = FloatArray(0)
@@ -87,7 +91,7 @@ class SpectrogramVisualizer : AutoCanvas() {
             sizeAxis()
         }
 
-        listOf(orientation, highPass, lowPass).forEach { it.addListener { _ ->
+        listOf(orientation, highPass, lowPass, effectiveLogarithmic).forEach { it.addListener { _ ->
             resetBuffer()
             sizeAxis()
         } }
@@ -129,6 +133,7 @@ class SpectrogramVisualizer : AutoCanvas() {
         preferenceService.registerProperty(orientation, "orientation", Orientation::class.java, this.javaClass, id)
         preferenceService.registerProperty(rangeMax, "rangeMax", this.javaClass, id)
         preferenceService.registerProperty(rangeMin, "rangeMin", this.javaClass, id)
+        preferenceService.registerProperty(logarithmic, "logarithmic", this.javaClass, id)
     }
 
     fun setBindEffective(v: Boolean) {
@@ -136,12 +141,14 @@ class SpectrogramVisualizer : AutoCanvas() {
         effectiveHighPass.unbind()
         effectiveRangeMax.unbind()
         effectiveRangeMin.unbind()
+        effectiveLogarithmic.unbind()
 
         if (v) {
             effectiveLowPass.bind(lowPass)
             effectiveHighPass.bind(highPass)
             effectiveRangeMin.bind(rangeMin)
             effectiveRangeMax.bind(rangeMax)
+            effectiveLogarithmic.bind(logarithmic)
         }
     }
 
@@ -275,7 +282,11 @@ class SpectrogramVisualizer : AutoCanvas() {
         effectiveStripeLength -= frequencyBinSkip
 
         val processedStripe = FloatArray(stripePixelLength)
-        val mapper = FreeRangeMapper(0 .. processedStripe.size, frequencyBinSkip until frequencyBinSkip + effectiveStripeLength)
+        val mapper: RangeMapper = if (effectiveLogarithmic.value) {
+            LogRangeMapper(0 .. processedStripe.size, frequencyBinSkip until frequencyBinSkip + effectiveStripeLength)
+        } else {
+            FreeRangeMapper(0 .. processedStripe.size, frequencyBinSkip until frequencyBinSkip + effectiveStripeLength)
+        }
 
         for (i in processedStripe.indices) {
             val rMin = mapper.forwards(i)

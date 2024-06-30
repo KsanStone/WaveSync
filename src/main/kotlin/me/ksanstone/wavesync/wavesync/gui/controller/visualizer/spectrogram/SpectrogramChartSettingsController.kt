@@ -22,6 +22,8 @@ import me.ksanstone.wavesync.wavesync.service.PreferenceService
 
 class SpectrogramChartSettingsController {
 
+    lateinit var axisLogarithmicToggle: ToggleButton
+    lateinit var axisLinearToggle: ToggleButton
     lateinit var dbMaxSpinner: Spinner<Double>
     lateinit var dbMinSpinner: Spinner<Double>
 
@@ -96,6 +98,14 @@ class SpectrogramChartSettingsController {
         bindToggle.isSelected = propsDelegated.value
         propsDelegated.bind(bindToggle.selectedProperty())
         propsDelegated.addListener { _ -> handleBindings() }
+
+        updateToggles()
+        axisLogarithmicToggle.disableProperty().bind(propsDelegated)
+        axisLinearToggle.disableProperty().bind(propsDelegated)
+        maxFreqSpinner.disableProperty().bind(propsDelegated)
+        minFreqSpinner.disableProperty().bind(propsDelegated)
+        dbMaxSpinner.disableProperty().bind(propsDelegated)
+        dbMinSpinner.disableProperty().bind(propsDelegated)
         handleBindings()
     }
 
@@ -141,6 +151,7 @@ class SpectrogramChartSettingsController {
             visualizer.effectiveHighPass.bind(bars.highPass)
             visualizer.effectiveRangeMin.bind(bars.dbMin)
             visualizer.effectiveRangeMax.bind(bars.dbMax)
+            visualizer.effectiveLogarithmic.bind(bars.logarithmic)
         }
     }
 
@@ -156,5 +167,20 @@ class SpectrogramChartSettingsController {
         this.visualizer.orientation.value = Orientation.VERTICAL
     }
 
+    fun axisLinear() {
+        if (propsDelegated.value) {updateToggles(); return}
+        visualizer.logarithmic.value = false
+        updateToggles()
+    }
 
+    fun axisLogarithmic() {
+        if (propsDelegated.value) {updateToggles(); return}
+        visualizer.logarithmic.value = true
+        updateToggles()
+    }
+
+    private fun updateToggles() {
+        axisLinearToggle.isSelected = !visualizer.logarithmic.value
+        axisLogarithmicToggle.isSelected = visualizer.logarithmic.value
+    }
 }
