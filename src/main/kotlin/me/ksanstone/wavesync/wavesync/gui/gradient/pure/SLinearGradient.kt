@@ -2,11 +2,14 @@ package me.ksanstone.wavesync.wavesync.gui.gradient.pure
 
 import javafx.scene.paint.Color
 import javafx.scene.paint.Stop
+import me.ksanstone.wavesync.wavesync.service.ProcessUtil.interpolateArgb
 import java.util.*
 
 class SLinearGradient(
-    var stops: List<Stop>
+    val stops: List<Stop>
 ) : SGradient {
+
+    private val stopCache = FloatArray(stops.size * STOP_FACTOR)
 
     init {
         if (stops.size < 2)
@@ -20,19 +23,20 @@ class SLinearGradient(
             last = stop.offset
             if (last.coerceIn(0.0, 1.0) != last) throw IllegalArgumentException("Stop offset out of range")
         }
+
+        for (i in stops.indices) {
+            stopCache[i * STOP_FACTOR] = stops[i].offset.toFloat()
+            stopCache[i * STOP_FACTOR + A] = stops[i].color.opacity.toFloat()
+            stopCache[i * STOP_FACTOR + R] = stops[i].color.red.toFloat()
+            stopCache[i * STOP_FACTOR + G] = stops[i].color.green.toFloat()
+            stopCache[i * STOP_FACTOR + B] = stops[i].color.blue.toFloat()
+        }
     }
 
     override fun get(v: Float): Color {
         val value = v.coerceIn(0f, 1f)
-        val (startStop, endStop) = findSurroundingStops(value)
-
-        val ratio = (value - startStop.offset) / (endStop.offset - startStop.offset)
-        return startStop.color.interpolate(endStop.color, ratio)
-    }
-
-    private fun findSurroundingStops(value: Float): Pair<Stop, Stop> {
-        var startStop = stops.first()
-        var endStop = stops.last()
+        var startStop = stops[0]
+        var endStop = stops[stops.size - 1]
 
         for (i in 1 until stops.size) {
             if (stops[i].offset >= value) {
@@ -42,9 +46,27 @@ class SLinearGradient(
             }
         }
 
-        return Pair(startStop, endStop)
+        val ratio = (value - startStop.offset) / (endStop.offset - startStop.offset)
+        return startStop.color.interpolate(endStop.color, ratio)
     }
 
+    override fun argb(v: Float): Int {
+        val value = v.coerceIn(0f, 1f)
+        var startStop = 0
+        var endStop = (stops.size - 1) * STOP_FACTOR
+
+        for (i in 1 until stops.size) {
+            if (stopCache[i * STOP_FACTOR] >= value) {
+                startStop = (i - 1) * STOP_FACTOR
+                endStop = i * STOP_FACTOR
+                break
+            }
+        }
+
+        val ratio = (value - stopCache[startStop]) / (stopCache[endStop] - stopCache[startStop])
+        return interpolateArgb(stopCache[startStop + A], stopCache[startStop + R], stopCache[startStop + G], stopCache[startStop + B],
+            stopCache[endStop + A], stopCache[endStop + R], stopCache[endStop + G], stopCache[endStop + B], ratio)
+    }
 
     override fun serialize(): String {
         return "$TAG," + stops.joinToString(",") { it.serialize() }
@@ -65,12 +87,17 @@ class SLinearGradient(
 
     companion object : SGradientDeserializer {
         override val TAG = "L"
+        const val A = 1
+        const val R = 2
+        const val G = 3
+        const val B = 4
+        const val STOP_FACTOR = 5
 
         override fun deserialize(from: String): Optional<SGradient> {
             if (from.matches(Regex("$TAG,-?\\d+(\\.\\d+)? #[0-9A-F]{6}(,-?\\d+(\\.\\d+)? #[0-9A-F]{6})+"))) {
                 val split = from.split(',')
                 return try {
-                    Optional.of(SLinearGradient(split.stream().skip(1).map { deserializeStop(it) }.toList()))
+                    Optional.of(SLinearGradient(ArrayList(split.stream().skip(1).map { deserializeStop(it) }.toList())))
                 } catch (e: IllegalArgumentException) {
                     Optional.empty()
                 }

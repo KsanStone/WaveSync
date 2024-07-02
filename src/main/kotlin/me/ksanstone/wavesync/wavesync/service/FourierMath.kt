@@ -25,8 +25,8 @@ object FourierMath {
     }
 
     fun trimResultBufferTo(fftSize: Int, rate: Int, frequency: Int): Int {
-        val factor = rate.toDouble() / fftSize.toDouble()
-        return ceil(frequency.toDouble() / factor).toInt().coerceAtMost(fftSize / 2)
+        val factor = rate.toDouble() / fftSize
+        return min(ceil(frequency.toDouble() / factor).toInt(), fftSize / 2)
     }
 
     fun frequencySamplesAtRate(frequency: Double, rate: Int): Double {

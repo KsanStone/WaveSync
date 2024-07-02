@@ -44,8 +44,10 @@ data class SupportedCaptureSource(
         return round(1.0 / sampleT).toInt()
     }
 
+    private val rateCache: Int = rate
+
     fun bufferBeginningSkipFor(freq: Int, bufferSize: Int): Int {
-        return trimResultBufferTo(bufferSize, this.rate, freq)
+        return trimResultBufferTo(bufferSize, rateCache, freq)
     }
 
     fun getUpdateInterval(samples: Int): Duration {

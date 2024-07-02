@@ -119,7 +119,9 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
 
         framerate.addListener { _ ->
             drawLoop.pause()
-            drawLoop.keyFrames[0] = KeyFrame(Duration.seconds(1.0 / framerate.get()), { drawCall() })
+            drawLoop.keyFrames[0] = KeyFrame(Duration.seconds(1.0 / framerate.get()), {
+                drawCall()
+            })
             drawLoop.playFromStart()
         }
     }

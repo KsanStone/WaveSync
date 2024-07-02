@@ -71,5 +71,24 @@ class LogRangeMapper(
 }
 
 fun IntRange.size(): Int {
-    return this.last - this.first
+    return this.last - this.first + 1
+}
+
+class CachingRangeMapper(
+    backingMapper: RangeMapper,
+) : RangeMapper by backingMapper {
+
+    private val cache = IntArray(backingMapper.from.size())
+
+    init {
+        val offset = from.first
+        for (i in cache.indices) {
+            cache[i] = backingMapper.forwards(i + offset)
+        }
+    }
+
+    override fun forwards(index: Int): Int {
+        return cache[index - from.first]
+    }
+
 }

@@ -29,9 +29,9 @@ import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalar
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalarParameters
+import me.ksanstone.wavesync.wavesync.utility.CachingRangeMapper
 import me.ksanstone.wavesync.wavesync.utility.FreeRangeMapper
 import me.ksanstone.wavesync.wavesync.utility.LogRangeMapper
-import me.ksanstone.wavesync.wavesync.utility.RangeMapper
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -56,16 +56,22 @@ class SpectrogramVisualizer : AutoCanvas() {
 
     private var buffer: RollingBuffer<FloatArray> = RollingBuffer(100) { FloatArray(0) }
     private var stripeBuffer: FloatArray = FloatArray(0)
-    private val fftArraySize: IntegerBinding = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftSize.divide(2)
-    private val fftRate: IntegerProperty = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftRate
-    private val gradientSerializer: GradientSerializer = WaveSyncBootApplication.applicationContext.getBean(GradientSerializer::class.java)
+    private val fftArraySize: IntegerBinding =
+        WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftSize.divide(2)
+    private val fftRate: IntegerProperty =
+        WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftRate
+    private val gradientSerializer: GradientSerializer =
+        WaveSyncBootApplication.applicationContext.getBean(GradientSerializer::class.java)
 
-    private var imageTop = WritableImage(1,1)
-    private var imageBottom = WritableImage(1,1)
+    private var imageTop = WritableImage(1, 1)
+    private var imageBottom = WritableImage(1, 1)
     private var imageOffset = 0
     private var lastWritten = 0L
     private var bufferPos = 0
     private var stripeStepAccumulator = 0.0
+    private var processedStripe = FloatArray(1)
+    private var stripeMapper: CachingRangeMapper = CachingRangeMapper(FreeRangeMapper(0..1, 2..4))
+    private var mapperLog: Boolean = false
 
     private var canvasWidth = 0
     private var canvasHeight = 0
@@ -91,16 +97,20 @@ class SpectrogramVisualizer : AutoCanvas() {
             sizeAxis()
         }
 
-        listOf(orientation, highPass, lowPass, effectiveLogarithmic).forEach { it.addListener { _ ->
-            resetBuffer()
-            sizeAxis()
-        } }
+        listOf(orientation, highPass, lowPass, effectiveLogarithmic).forEach {
+            it.addListener { _ ->
+                resetBuffer()
+                sizeAxis()
+            }
+        }
 
-        listOf(effectiveRangeMax, effectiveRangeMin).forEach { it.addListener { _ ->
-            scalar.update(DeciBelFFTScalarParameters(effectiveRangeMin.value, effectiveRangeMax.value))
-            resetBuffer()
-            sizeAxis()
-        } }
+        listOf(effectiveRangeMax, effectiveRangeMin).forEach {
+            it.addListener { _ ->
+                scalar.update(DeciBelFFTScalarParameters(effectiveRangeMin.value, effectiveRangeMax.value))
+                resetBuffer()
+                sizeAxis()
+            }
+        }
 
         sizeAxis()
         gradient.addListener { _ ->
@@ -125,8 +135,18 @@ class SpectrogramVisualizer : AutoCanvas() {
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(
+            canvasContainer.horizontalLinesVisible,
+            "horizontalLinesVisible",
+            this.javaClass,
+            id
+        )
+        preferenceService.registerProperty(
+            canvasContainer.verticalLinesVisible,
+            "verticalLinesVisible",
+            this.javaClass,
+            id
+        )
         preferenceService.registerProperty(highPass, "cutoff", this.javaClass, id)
         preferenceService.registerProperty(lowPass, "lowPass", this.javaClass, id)
         preferenceService.registerSGradientProperty(gradient, "gradient", this.javaClass, id)
@@ -221,11 +241,8 @@ class SpectrogramVisualizer : AutoCanvas() {
         )
     }
 
-    private fun drawChunk() {
-        val size = when(orientation.value!!) {
-            Orientation.HORIZONTAL -> canvasWidth
-            Orientation.VERTICAL -> canvasHeight
-        }
+    private fun drawChunk(isHorizontal: Boolean) {
+        val size = if (isHorizontal) canvasWidth else canvasHeight
 
         val chunkStep = buffer.size.toDouble() / size
         val chunksWritten = (buffer.written - lastWritten).coerceIn(0, buffer.size.toLong()).toInt()
@@ -237,10 +254,18 @@ class SpectrogramVisualizer : AutoCanvas() {
         val stripesToDraw = floor(chunksLeft / chunkStep).toInt()
 
         for (i in 0 until stripesToDraw) {
-            stripeBuffer.fill(0.0f)
             var iterationsDone = 0
 
-            while(stripeStepAccumulator < chunkStep) {
+            // First iteration done separately to fill the buffer.
+            if (bufferPos >= buffer.size && stripeStepAccumulator < chunkStep) {
+                val currentRes = buffer[bufferPos]
+                System.arraycopy(currentRes, 0, stripeBuffer, 0, stripeBuffer.size)
+                stripeStepAccumulator++
+                iterationsDone++
+                bufferPos++
+            }
+
+            while (stripeStepAccumulator < chunkStep) {
                 if (bufferPos >= buffer.size) break
                 val currentRes = buffer[bufferPos]
                 for (j in stripeBuffer.indices) {
@@ -254,7 +279,7 @@ class SpectrogramVisualizer : AutoCanvas() {
 
             stripeStepAccumulator -= chunkStep
 
-            if(iterationsDone == 0) continue
+            if (iterationsDone == 0) continue
 
             val avgFactor = 1.0F / iterationsDone.coerceAtLeast(1)
             for (j in stripeBuffer.indices) {
@@ -262,37 +287,51 @@ class SpectrogramVisualizer : AutoCanvas() {
             }
 
             val stripeWidth = 1.0 / chunkStep
-            drawStripe(stripeBuffer, stripeWidth)
+            drawStripe(stripeBuffer, stripeWidth, isHorizontal, effectiveLogarithmic.value)
         }
     }
 
-    private fun drawStripe(stripe: FloatArray, width: Double) {
+    private fun drawStripe(stripe: FloatArray, width: Double, isHorizontal: Boolean, isLog: Boolean) {
         if (source == null) return
-        val stripePixelLength = when (orientation.value!!) {
-            Orientation.HORIZONTAL -> canvasHeight
-            Orientation.VERTICAL -> canvasWidth
-        }
-        val size = when (orientation.value!!) {
-            Orientation.HORIZONTAL -> canvasWidth
-            Orientation.VERTICAL -> canvasHeight
+        val stripePixelLength: Int
+        val size: Int
+        if (isHorizontal) {
+            stripePixelLength = canvasHeight
+            size = canvasWidth
+        } else {
+            stripePixelLength = canvasWidth
+            size = canvasHeight
         }
 
         var effectiveStripeLength = source!!.trimResultTo(stripe.size * 2, effectiveHighPass.get())
         val frequencyBinSkip = source!!.bufferBeginningSkipFor(effectiveLowPass.get(), stripe.size * 2)
         effectiveStripeLength -= frequencyBinSkip
 
-        val processedStripe = FloatArray(stripePixelLength)
-        val mapper: RangeMapper = if (effectiveLogarithmic.value) {
-            LogRangeMapper(0 .. processedStripe.size, frequencyBinSkip until frequencyBinSkip + effectiveStripeLength)
-        } else {
-            FreeRangeMapper(0 .. processedStripe.size, frequencyBinSkip until frequencyBinSkip + effectiveStripeLength)
+
+        val resizeStripe = processedStripe.size != stripePixelLength
+        if (resizeStripe)
+            processedStripe = FloatArray(stripePixelLength)
+
+        val secRangeEqual =
+            stripeMapper.to.first == frequencyBinSkip && stripeMapper.to.last == frequencyBinSkip + effectiveStripeLength - 1
+        if (resizeStripe || !secRangeEqual || isLog != mapperLog) {
+            val newToRange = frequencyBinSkip until frequencyBinSkip + effectiveStripeLength
+            stripeMapper = CachingRangeMapper(
+                if (isLog) {
+                    LogRangeMapper(0..processedStripe.size, newToRange)
+                } else {
+                    FreeRangeMapper(0..processedStripe.size, newToRange)
+                }
+            )
+            mapperLog = isLog
         }
 
         for (i in processedStripe.indices) {
-            val rMin = mapper.forwards(i)
-            val rMax = (mapper.forwards(i + 1) - 1).coerceAtLeast(rMin)
+            val rMin = stripeMapper.forwards(i)
+            val rMax = (stripeMapper.forwards(i + 1) - 1).coerceAtLeast(rMin)
+
             var value = 0.0F
-            for (j in rMin .. rMax) {
+            for (j in rMin..rMax) {
                 value = max(value, stripe[j])
             }
             processedStripe[i] = scalar.scale(value)
@@ -310,29 +349,26 @@ class SpectrogramVisualizer : AutoCanvas() {
 
         try {
             for (offset in 0 until realOffset) {
-                when (orientation.value!!) {
-                    Orientation.HORIZONTAL -> {
-                        for (i in 0 until stripePixelLength) {
-                            writer.setColor(
-                                imageOffset - offset,
-                                stripePixelLength - i - 1,
-                                effectiveGradient[processedStripe[i]]
-                            )
-                        }
+                if (isHorizontal) {
+                    for (i in 0 until stripePixelLength) {
+                        writer.setArgb(
+                            imageOffset - offset,
+                            stripePixelLength - i - 1,
+                            effectiveGradient.argb(processedStripe[i])
+                        )
                     }
-
-                    Orientation.VERTICAL -> {
-                        for (i in 0 until stripePixelLength) {
-                            writer.setColor(
-                                i,
-                                (imageTop.height - imageOffset - 1 - offset).toInt(),
-                                effectiveGradient[processedStripe[i]]
-                            )
-                        }
+                } else {
+                    for (i in 0 until stripePixelLength) {
+                        writer.setArgb(
+                            i,
+                            (imageTop.height - imageOffset - 1 - offset).toInt(),
+                            effectiveGradient.argb(processedStripe[i])
+                        )
                     }
                 }
             }
-        } catch (ignored: IndexOutOfBoundsException) {}
+        } catch (ignored: IndexOutOfBoundsException) {
+        }
     }
 
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
@@ -345,12 +381,13 @@ class SpectrogramVisualizer : AutoCanvas() {
 
         gc.isImageSmoothing = false
         gc.clearRect(0.0, 0.0, width, height)
-        drawChunk()
+        val isHorizontal = orientation.value == Orientation.HORIZONTAL
+        drawChunk(isHorizontal)
 
-        if (orientation.value == Orientation.HORIZONTAL) {
+        if (isHorizontal) {
             val rOffset = imageOffset.toDouble()
             gc.drawImage(imageBottom, -rOffset + 1, 0.0)
-            gc.drawImage(imageTop, width -rOffset - 1, 0.0)
+            gc.drawImage(imageTop, width - rOffset - 1, 0.0)
         } else {
             val rOffset = height - imageOffset
             gc.drawImage(imageTop, 0.0, -rOffset)

@@ -16,6 +16,10 @@ class SStartEndGradient(
         return start.interpolate(end, v.toDouble())
     }
 
+    override fun argb(v: Float): Int {
+        return interpolateArgb(start, end, v)
+    }
+
     override fun serialize(): String {
         return "$TAG,${start.toHexString()},${end.toHexString()}"
     }
