@@ -18,8 +18,8 @@ import javafx.scene.shape.LineTo
 import javafx.scene.shape.MoveTo
 import javafx.scene.shape.Path
 import javafx.scene.text.Text
+import javafx.util.StringConverter
 import java.lang.Double.isNaN
-import java.text.DecimalFormat
 
 class GraphCanvas(
     private var xAxis: ValueAxis<Number>,
@@ -162,23 +162,42 @@ class GraphCanvas(
         children.remove(axis)
     }
 
-    private fun registerXAxis(axis: ValueAxis<Number>) {
-        xAxisChildListener = ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
+    private fun createChildListener(axis: ValueAxis<Number>): ListChangeListener<Node?> {
+        val format = AbbreviatedFormatter()
+        axis.tickLabelFormatter = object : StringConverter<Number>() {
+            override fun toString(`object`: Number?): String {
+                if (`object` != null) {
+                    return format.format(`object`.toDouble())
+                }
+                return "0"
+            }
+
+            override fun fromString(string: String?): Number {
+                return format.parse(string)
+            }
+
+        }
+
+        return ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
             while (c.next()) {
                 if (!c.wasAdded()) continue
                 for (mark in c.addedSubList) {
                     if (mark !is Text) continue
-                    val parsed = DecimalFormat("###,###.###").parse(mark.text.trim()).toDouble()
-                    if (parsed == xAxis.lowerBound && !yAxisShown.get()) {
+                    val parsed = format.parse(mark.text.trim()).toDouble()
+                    if (parsed == axis.lowerBound && !yAxisShown.get()) {
                         mark.text =
                             if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
-                    } else if (parsed == xAxis.upperBound) {
+                    } else if (parsed == axis.upperBound) {
                         mark.text =
                             if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
                     }
                 }
             }
         }
+    }
+
+    private fun registerXAxis(axis: ValueAxis<Number>) {
+        xAxisChildListener = createChildListener(axis)
         axis.childrenUnmodifiable.addListener(xAxisChildListener)
         axis.side = Side.BOTTOM
         axis.managedProperty().bind(xAxis.visibleProperty())
@@ -187,21 +206,7 @@ class GraphCanvas(
     }
 
     private fun registerYAxis(axis: ValueAxis<Number>) {
-        yAxisChildListener = ListChangeListener<Node?> { c: ListChangeListener.Change<out Node?> ->
-                while (c.next()) {
-                    if (!c.wasAdded()) continue
-                    for (mark in c.addedSubList) {
-                        if (mark !is Text) continue
-                        val parsed = DecimalFormat("###,###.###").parse(mark.text.trim()).toDouble()
-                        if (parsed == yAxis.lowerBound && !xAxisShown.get()) {
-                            mark.text =
-                                if (mark.text.contains("\n")) mark.text else mark.text + "\n"
-                        } else if (parsed == yAxis.upperBound) {
-                            mark.text = if (mark.text.contains("\n")) mark.text else "\n" + mark.text
-                        }
-                    }
-                }
-            }
+        yAxisChildListener = createChildListener(axis)
         axis.childrenUnmodifiable.addListener(yAxisChildListener)
         axis.side = Side.LEFT
         axis.managedProperty().bind(yAxis.visibleProperty())

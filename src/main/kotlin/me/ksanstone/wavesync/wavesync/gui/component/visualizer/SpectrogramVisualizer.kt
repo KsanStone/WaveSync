@@ -318,9 +318,9 @@ class SpectrogramVisualizer : AutoCanvas() {
             val newToRange = frequencyBinSkip until frequencyBinSkip + effectiveStripeLength
             stripeMapper = CachingRangeMapper(
                 if (isLog) {
-                    LogRangeMapper(0..processedStripe.size, newToRange)
+                    LogRangeMapper(processedStripe.indices, newToRange)
                 } else {
-                    FreeRangeMapper(0..processedStripe.size, newToRange)
+                    FreeRangeMapper(processedStripe.indices, newToRange)
                 }
             )
             mapperLog = isLog
@@ -328,7 +328,9 @@ class SpectrogramVisualizer : AutoCanvas() {
 
         for (i in processedStripe.indices) {
             val rMin = stripeMapper.forwards(i)
-            val rMax = (stripeMapper.forwards(i + 1) - 1).coerceAtLeast(rMin)
+            val rMax =
+                if (i + 1 == processedStripe.size) processedStripe.size - 1
+                else (stripeMapper.forwards(i + 1) - 1).coerceAtLeast(rMin)
 
             var value = 0.0F
             for (j in rMin..rMax) {

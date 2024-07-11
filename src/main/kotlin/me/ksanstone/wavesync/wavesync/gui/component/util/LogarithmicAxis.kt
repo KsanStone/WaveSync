@@ -7,7 +7,6 @@ import javafx.beans.property.DoubleProperty
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.scene.chart.ValueAxis
 import javafx.util.Duration
-import java.text.NumberFormat
 import kotlin.math.log10
 import kotlin.math.pow
 
@@ -91,15 +90,12 @@ class LogarithmicAxis(lowerBound: Double, upperBound: Double) : ValueAxis<Number
         return tickPositions
     }
 
-    override fun getRange(): Array<Number> {
-        return arrayOf(lowerBoundProperty().get(), upperBoundProperty().get())
+    override fun getTickMarkLabel(value: Number?): String {
+        return tickLabelFormatter.toString(value)
     }
 
-    override fun getTickMarkLabel(value: Number): String {
-        val formatter = NumberFormat.getInstance()
-        formatter.maximumIntegerDigits = 6
-        formatter.minimumIntegerDigits = 1
-        return formatter.format(value)
+    override fun getRange(): Array<Number> {
+        return arrayOf(lowerBoundProperty().get(), upperBoundProperty().get())
     }
 
     /**
