@@ -12,12 +12,21 @@ object FourierMath {
         return floor(freq / freqPerBin).toInt().coerceIn(0, fftSize)
     }
 
+    fun binOfFrequency(rate: Int, fftSize: Int, freq: Int): Int {
+        val freqPerBin = rate.toDouble() / fftSize
+        return floor(freq.toDouble() / freqPerBin).toInt().coerceIn(0, fftSize)
+    }
+
     fun frequencyOfBin(rate: Int, fftSize: Int): Int {
         return frequencyOfBin(1, rate, fftSize)
     }
 
     fun frequencyOfBin(bin: Int, rate: Int, fftSize: Int): Int {
         return (bin * (rate.toDouble() / fftSize)).roundToInt()
+    }
+
+    fun frequencyOfBinD(bin: Int, rate: Int, fftSize: Int): Double {
+        return bin * (rate.toDouble() / fftSize)
     }
 
     fun maxFrequencyForRate(rate: Int): Int {

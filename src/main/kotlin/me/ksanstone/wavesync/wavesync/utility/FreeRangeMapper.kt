@@ -55,12 +55,13 @@ class LogRangeMapper(
     private val deltaBackwards = log(to.last().toDouble()) - log(to.first().toDouble())
 
     override fun forwards(index: Int): Int {
-        return (10.0.pow(((((index.toDouble() - from.first) / sizeFrom) * deltaForwards) + logLowerBoundForwards))).toInt()
-            .coerceIn(to)
+        val posAbsolute = (index.toDouble() - from.first) / sizeFrom
+        val exponent = posAbsolute * deltaForwards + logLowerBoundForwards
+        return (10.0.pow(exponent)).toInt().coerceIn(to)
     }
 
     override fun backwards(index: Int): Int {
-        return (10.0.pow(((((index.toDouble() - to.first) / sizeTo) * deltaBackwards) + logLowerBoundBackwards))).toInt()
+        return (10.0.pow((((index.toDouble() - to.first) / sizeTo) * deltaBackwards) + logLowerBoundBackwards)).toInt()
             .coerceIn(from)
     }
 

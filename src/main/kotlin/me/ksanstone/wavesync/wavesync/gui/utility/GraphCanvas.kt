@@ -184,12 +184,21 @@ class GraphCanvas(
                 for (mark in c.addedSubList) {
                     if (mark !is Text) continue
                     val parsed = format.parse(mark.text.trim()).toDouble()
-                    if (parsed == axis.lowerBound && !yAxisShown.get()) {
-                        mark.text =
-                            if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
-                    } else if (parsed == axis.upperBound) {
-                        mark.text =
-                            if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
+                    if (axis.side.isHorizontal) {
+                        if (parsed == axis.lowerBound && !yAxisShown.get()) {
+                            mark.text =
+                                if (mark.text.contains(" ")) mark.text else " ".repeat(mark.text.length * 2) + mark.text
+                        } else if (parsed == axis.upperBound) {
+                            mark.text =
+                                if (mark.text.contains(" ")) mark.text else mark.text + " ".repeat(mark.text.length * 2)
+                        }
+                    } else {
+                        if (parsed == yAxis.lowerBound && !xAxisShown.get()) {
+                            mark.text =
+                                if (mark.text.contains("\n")) mark.text else mark.text + "\n"
+                        } else if (parsed == yAxis.upperBound) {
+                            mark.text = if (mark.text.contains("\n")) mark.text else "\n" + mark.text
+                        }
                     }
                 }
             }

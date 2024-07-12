@@ -23,19 +23,11 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.spectrogram.SpectrogramSettingsController
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.GradientSerializer
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
-import me.ksanstone.wavesync.wavesync.service.LocalizationService
-import me.ksanstone.wavesync.wavesync.service.PreferenceService
-import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
+import me.ksanstone.wavesync.wavesync.service.*
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalar
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalarParameters
-import me.ksanstone.wavesync.wavesync.utility.CachingRangeMapper
-import me.ksanstone.wavesync.wavesync.utility.FreeRangeMapper
-import me.ksanstone.wavesync.wavesync.utility.LogRangeMapper
-import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
-import kotlin.math.ceil
-import kotlin.math.floor
-import kotlin.math.max
+import me.ksanstone.wavesync.wavesync.utility.*
+import kotlin.math.*
 
 class SpectrogramVisualizer : AutoCanvas() {
 
@@ -308,14 +300,18 @@ class SpectrogramVisualizer : AutoCanvas() {
         effectiveStripeLength -= frequencyBinSkip
 
 
+        val rate = source!!.rate
+        val fftSize = stripe.size * 2
+        val startFreq = FourierMath.frequencyOfBin(frequencyBinSkip, rate, fftSize)
+        val endFreq = FourierMath.frequencyOfBin(frequencyBinSkip + effectiveStripeLength, rate, fftSize)
+
         val resizeStripe = processedStripe.size != stripePixelLength
         if (resizeStripe)
             processedStripe = FloatArray(stripePixelLength)
 
-        val secRangeEqual =
-            stripeMapper.to.first == frequencyBinSkip && stripeMapper.to.last == frequencyBinSkip + effectiveStripeLength - 1
+        val secRangeEqual = stripeMapper.to.first == startFreq && stripeMapper.to.last == endFreq
         if (resizeStripe || !secRangeEqual || isLog != mapperLog) {
-            val newToRange = frequencyBinSkip until frequencyBinSkip + effectiveStripeLength
+            val newToRange = startFreq .. endFreq
             stripeMapper = CachingRangeMapper(
                 if (isLog) {
                     LogRangeMapper(processedStripe.indices, newToRange)
@@ -327,17 +323,30 @@ class SpectrogramVisualizer : AutoCanvas() {
         }
 
         for (i in processedStripe.indices) {
-            val rMin = stripeMapper.forwards(i)
-            val rMax =
-                if (i + 1 == processedStripe.size) processedStripe.size - 1
-                else (stripeMapper.forwards(i + 1) - 1).coerceAtLeast(rMin)
+            val rMin = FourierMath.binOfFrequency(rate, fftSize, stripeMapper.forwards(i))
+            val rMax = FourierMath.binOfFrequency(rate, fftSize,
+                if (i + 1 == processedStripe.size) endFreq
+                else (stripeMapper.forwards(i + 1))) - 1
 
             var value = 0.0F
-            for (j in rMin..rMax) {
+            for (j in rMin..rMax.coerceAtLeast(rMin)) {
                 value = max(value, stripe[j])
             }
             processedStripe[i] = scalar.scale(value)
         }
+
+//        for (i in processedStripe.indices) {
+//            val rMin = stripeMapper.forwards(i).toFloat()
+////            val rMax = FourierMath.binOfFrequency(rate, fftSize,
+////                if (i + 1 == processedStripe.size) endFreq
+////                else (stripeMapper.forwards(i + 1))) - 1
+//
+////            var value = 0.0F
+////            for (j in rMin..rMax.coerceAtLeast(rMin)) {
+////                value = max(value, stripe[j])
+////            }
+//            processedStripe[i] = scalar.scale((rMin / endFreq).coerceIn(0F .. 1F))
+//        }
 
         val writer = imageTop.pixelWriter
         val effectiveGradient = gradient.value

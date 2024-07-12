@@ -13,7 +13,7 @@ class AbbreviatedFormatter : NumberFormat() {
         val formattedNumber = if (number < 1000) {
             numFormat.format(number)
         } else {
-            "${numFormat.format(number / 1000).toInt()}k"
+            "${numFormat.format(number / 1000)}k"
         }
         return toAppendTo?.append(formattedNumber) ?: StringBuffer(formattedNumber)
     }
@@ -29,7 +29,7 @@ class AbbreviatedFormatter : NumberFormat() {
 
     override fun parse(source: String?, parsePosition: ParsePosition?): Number {
         source?.let {
-            val processed = source.replace(Regex("[.]"), "")
+            val processed = source.replace(Regex(","), "")
             if (processed.endsWith("k")) {
                 val numPart = processed.substring(0, processed.length - 1)
                 try {

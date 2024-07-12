@@ -391,10 +391,11 @@ class BarVisualizer : AutoCanvas() {
         var num = 0
         var added = false
         if (logarithmic) {
+            val binOffset = if(renderMode.get()!! == RenderMode.LINE) 0 else 1
             var lastX = 0.0
             for (i in buffer.indices) {
                 y = max(buffer[i].toDouble(), y); added = false
-                x = xAxis.getDisplayPosition(FourierMath.frequencyOfBin(i + frequencyBinSkip, rate, fftSize))
+                x = xAxis.getDisplayPosition(FourierMath.frequencyOfBinD(i + frequencyBinSkip + binOffset, rate, fftSize))
                 if (x - lastX < barWidth) continue
 
                 fftLocBuffer.data[num].x = x
