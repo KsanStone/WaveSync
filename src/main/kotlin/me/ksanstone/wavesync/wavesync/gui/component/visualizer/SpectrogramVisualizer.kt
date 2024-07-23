@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
+import javafx.application.Platform
 import javafx.beans.binding.IntegerBinding
 import javafx.beans.property.*
 import javafx.fxml.FXMLLoader
@@ -180,7 +181,7 @@ class SpectrogramVisualizer : AutoCanvas() {
     }
 
     fun handleFFT(res: FloatArray, source: SupportedCaptureSource) {
-        if (isPaused || buffer.size == 2) return
+        if (!canDraw || buffer.size == 2) return
         this.source = source
         buffer.incrementPosition()
         System.arraycopy(res, 0, buffer.last(), 0, res.size)
@@ -333,18 +334,15 @@ class SpectrogramVisualizer : AutoCanvas() {
                     LogRangeMapper(processedStripe.indices, newToRange)
                 } else {
                     FreeRangeMapper(processedStripe.indices, newToRange)
-                }
-            )
+                },
+            ) { FourierMath.binOfFrequency(rate, fftSize, it) }
             mapperLog = isLog
         }
 
         for (i in processedStripe.indices) {
-            val rMin = FourierMath.binOfFrequency(rate, fftSize, stripeMapper.forwards(i))
-            val rMax = FourierMath.binOfFrequency(
-                rate, fftSize,
-                if (i + 1 == processedStripe.size) endFreq
-                else (stripeMapper.forwards(i + 1))
-            ) - 1
+            val rMin = stripeMapper.forwards(i)
+            val rMax = if (i + 1 == processedStripe.size) processedStripe.size
+            else (stripeMapper.forwards(i + 1)) - 1
 
             var value = 0.0F
             for (j in rMin..rMax.coerceAtLeast(rMin)) {

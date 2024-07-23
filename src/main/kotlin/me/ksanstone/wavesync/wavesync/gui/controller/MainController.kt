@@ -243,16 +243,19 @@ class MainController : Initializable {
         audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
         barVisualizer.highPass.addListener { _ -> refreshInfoLabel() }
         barVisualizer.lowPass.addListener { _ -> refreshInfoLabel() }
-        barVisualizer.framerate.set(
-            WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
+
+        val framerate = WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
                 .findHighestRefreshRate()
-        )
+
         barVisualizer.info.bind(infoShown)
-        waveformVisualizer.framerate.set(
-            WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
-                .findHighestRefreshRate()
-        )
         waveformVisualizer.info.bind(infoShown)
+        spectrogramVisualizer.info.bind(infoShown)
+        extendedWaveformVisualizer.info.bind(infoShown)
+
+        barVisualizer.framerate.set(framerate)
+        waveformVisualizer.framerate.set(framerate)
+        spectrogramVisualizer.framerate.set(framerate)
+        extendedWaveformVisualizer.framerate.set(framerate)
 
         layoutService.createDefaultNodeFactory(
             waveformVisualizer,

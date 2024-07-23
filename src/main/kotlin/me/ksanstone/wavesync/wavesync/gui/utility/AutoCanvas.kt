@@ -37,7 +37,7 @@ import kotlin.math.pow
 import kotlin.math.roundToLong
 
 
-abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane() {
+abstract class AutoCanvas(selfDraw: Boolean = false, private val detachable: Boolean = false) : AnchorPane() {
 
     protected var canvas: Canvas = Canvas()
     protected lateinit var infoPane: GridPane
@@ -61,7 +61,13 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     private lateinit var drawLoop: Timeline
 
     internal val isPaused: Boolean
-        get() = drawLoop.status !== Animation.Status.RUNNING
+        get() = if (this::drawLoop.isInitialized) drawLoop.status !== Animation.Status.RUNNING else false
+
+    protected val canDraw: Boolean
+        get() = isVisible && parent != null && !isPaused
+
+    protected val shouldDraw: Boolean
+        get() = !isDrawing.get() && canDraw
 
     init {
         heightProperty().addListener { _: ObservableValue<out Number?>?, _: Number?, _: Number? -> drawCall() }
@@ -74,9 +80,10 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
         maxWidth = Double.MAX_VALUE
         maxHeight = Double.MAX_VALUE
 
+        if (!selfDraw)
+            initializeDrawLoop()
         initializeInfoPane()
         initializeControlPane()
-        initializeDrawLoop()
         initializeDetacherProperty()
     }
 
@@ -113,8 +120,8 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
         }
 
         drawLoop.statusProperty().addListener { _ ->
-            if (isPaused) usedState(false)
-            else usedState(true)
+            if (isPaused) setUsedState(false)
+            else setUsedState(true)
         }
 
         framerate.addListener { _ ->
@@ -203,11 +210,11 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
 
         controller.targetFpsLabel.textProperty().bind(framerate.asString())
         controller.frameTimeLabel.textProperty().bind(frameTime.map {
-            "${
+            "${Duration.millis(fpsCounter.averagedFrameTimeProperty.value.times(1000).roundTo(1))} ${
                 Duration.millis(
-                    fpsCounter.averagedFrameTimeProperty.value.times(1000).roundTo(3)
+                    fpsCounter.maxFrameTimeProperty.value.times(1000).roundTo(1)
                 )
-            }"
+            } ${Duration.millis(fpsCounter.minFrameTimeProperty.value.times(1000).roundTo(1))}"
         })
         controller.realTimeFrameTimeLabel.textProperty()
             .bind(frameTime.map { "${Duration.millis(it.toDouble().times(1000))}" })
@@ -241,7 +248,7 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     private val isDrawing = AtomicBoolean(false)
 
     private fun drawCall() {
-        if (isDrawing.get() || !isVisible || parent == null) return
+        if (!shouldDraw) return
 
         val now = System.nanoTime()
         val deltaT = (now - lastDraw).toDouble() / 1_000_000_000.0
@@ -255,6 +262,15 @@ abstract class AutoCanvas(private val detachable: Boolean = false) : AnchorPane(
     }
 
     protected abstract fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double)
+
+    private var state: Boolean = false
+
+    private fun setUsedState(state: Boolean) {
+        if (this.state != state) {
+            this.state = state
+            usedState(state)
+        }
+    }
 
     protected open fun usedState(state: Boolean) {}
 }

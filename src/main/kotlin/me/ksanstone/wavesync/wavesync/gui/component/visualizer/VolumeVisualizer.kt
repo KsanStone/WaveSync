@@ -26,7 +26,7 @@ import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import me.ksanstone.wavesync.wavesync.utility.ChannelLabel
 import java.text.DecimalFormat
 
-class VolumeVisualizer : AutoCanvas(false) {
+class VolumeVisualizer : AutoCanvas() {
 
     override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {
         return FACTORY.cssMetaData

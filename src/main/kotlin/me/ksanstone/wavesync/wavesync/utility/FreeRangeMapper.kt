@@ -77,6 +77,7 @@ fun IntRange.size(): Int {
 
 class CachingRangeMapper(
     backingMapper: RangeMapper,
+    transformer: (Int) -> Int = { it }
 ) : RangeMapper by backingMapper {
 
     private val cache = IntArray(backingMapper.from.size())
@@ -84,7 +85,7 @@ class CachingRangeMapper(
     init {
         val offset = from.first
         for (i in cache.indices) {
-            cache[i] = backingMapper.forwards(i + offset)
+            cache[i] = transformer(backingMapper.forwards(i + offset))
         }
     }
 
