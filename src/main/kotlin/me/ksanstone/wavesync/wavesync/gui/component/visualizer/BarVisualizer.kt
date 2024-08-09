@@ -17,6 +17,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_CUT
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_LOW_PASS
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_RENDER_MODE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_SCALING
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_SMOOTHER_TYPE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_BAR_SMOOTHING
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_DB_MAX
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_DB_MIN
@@ -36,6 +37,7 @@ import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarSettingsC
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.*
 import me.ksanstone.wavesync.wavesync.service.fftScaling.*
+import me.ksanstone.wavesync.wavesync.service.smoothing.ExponentialFalloffSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import me.ksanstone.wavesync.wavesync.utility.MaxTracker
@@ -65,6 +67,7 @@ class BarVisualizer : AutoCanvas() {
     val dbMax: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MAX)
     val logarithmic: BooleanProperty = SimpleBooleanProperty(DEFAULT_LOGARITHMIC_MODE)
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_BAR_RENDER_MODE)
+    val smootherType: ObjectProperty<SmootherType> = SimpleObjectProperty(DEFAULT_BAR_SMOOTHER_TYPE)
     val fillCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_FILL_UNDER_CURVE)
     val smoothCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_SMOOTH_CURVE)
     val showPeak: BooleanProperty = SimpleBooleanProperty(DEFAULT_SHOW_PEAK)
@@ -101,6 +104,8 @@ class BarVisualizer : AutoCanvas() {
     init {
         if (xAxis is NumberAxis)
             (xAxis as NumberAxis).tickUnit = 1000.0
+        changeSmoother()
+        this.smootherType.addListener { _ ->  changeSmoother() }
         canvasContainer.dependOnXAxis.set(true)
         canvasContainer.highlightedVerticalLines.add(20000.0)
         detachedWindowNameProperty.set("Bar")
@@ -115,7 +120,7 @@ class BarVisualizer : AutoCanvas() {
         this.setEndColor.bind(globalColorService.endColor)
         this.useCssColor.bind(globalColorService.barUseCssColor)
 
-        smoother = MultiplicativeSmoother()
+        smoother = ExponentialFalloffSmoother()
         smoother.dataSize = 512
         rawMaxTracker = MaxTracker()
         rawMaxTracker.dataSize = smoother.dataSize
@@ -177,6 +182,7 @@ class BarVisualizer : AutoCanvas() {
 
     fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerProperty(renderMode, "renderMode", RenderMode::class.java, this.javaClass, id)
+        preferenceService.registerProperty(smootherType, "smootherType", SmootherType::class.java, this.javaClass, id)
         preferenceService.registerProperty(smoothing, "smoothing", this.javaClass, id)
         preferenceService.registerProperty(exaggeratedScalar, "exaggeratedScaling", this.javaClass, id)
         preferenceService.registerProperty(linearScalar, "linearScaling", this.javaClass, id)
@@ -259,6 +265,17 @@ class BarVisualizer : AutoCanvas() {
         refreshScalar()
     }
 
+    private fun changeSmoother() {
+        val oldSize = smoother?.dataSize ?: 500
+        val new = when (smootherType.get()) {
+            SmootherType.MULTIPLICATIVE -> MultiplicativeSmoother()
+            SmootherType.FALLOFF -> ExponentialFalloffSmoother()
+        }
+        new.dataSize = oldSize
+        this.smoother = new
+    }
+
+
     private fun refreshScalar() {
         when (fftScalar) {
             is LinearFFTScalar -> {
@@ -318,9 +335,8 @@ class BarVisualizer : AutoCanvas() {
             }
         }
 
-        for (i in frequencyBinSkip until size) {
-            smoother.dataTarget[i - frequencyBinSkip] = fftScalar.scale(array[i])
-        }
+        smoother.setData(array, frequencyBinSkip, size) { fftScalar.scale(it) }
+
         if (peakLineVisible.get()) {
             rawMaxTracker.applyData(array, frequencyBinSkip, size)
         }
@@ -575,6 +591,11 @@ class BarVisualizer : AutoCanvas() {
     enum class RenderMode {
         LINE,
         BAR
+    }
+
+    enum class SmootherType {
+        MULTIPLICATIVE,
+        FALLOFF
     }
 
     data class FftLoc(var x: Double, var y: Double, var raw: Double)

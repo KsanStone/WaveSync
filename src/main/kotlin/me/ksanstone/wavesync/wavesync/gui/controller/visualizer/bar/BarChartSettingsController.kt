@@ -1,6 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar
 
 import atlantafx.base.controls.ToggleSwitch
+import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
@@ -15,6 +16,12 @@ import java.net.URL
 import java.util.*
 
 class BarChartSettingsController : Initializable {
+
+    @FXML
+    lateinit var multiplicative: ToggleButton
+
+    @FXML
+    lateinit var falloff: ToggleButton
 
     @FXML
     lateinit var peakPointToggleSwitch: ToggleSwitch
@@ -115,6 +122,8 @@ class BarChartSettingsController : Initializable {
 
         line.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.LINE)
         bar.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.BAR)
+        falloff.selectedProperty().set(visualizer.smootherType.get() == BarVisualizer.SmootherType.FALLOFF)
+        multiplicative.selectedProperty().set(visualizer.smootherType.get() == BarVisualizer.SmootherType.MULTIPLICATIVE)
         axisLogarithmicToggle.selectedProperty().set(visualizer.logarithmic.get())
         peakPointToggleSwitch.selectedProperty().set(visualizer.showPeak.value)
         axisLinearToggle.selectedProperty().set(!visualizer.logarithmic.get())
@@ -213,5 +222,17 @@ class BarChartSettingsController : Initializable {
         visualizer.logarithmic.set(true)
         axisLinearToggle.isSelected = false
         axisLogarithmicToggle.isSelected = true
+    }
+
+    fun smootherFalloff() {
+        visualizer.smootherType.value = BarVisualizer.SmootherType.FALLOFF
+        falloff.isSelected = true
+        multiplicative.isSelected = false
+    }
+
+    fun smootherMultiplicative() {
+        visualizer.smootherType.value = BarVisualizer.SmootherType.MULTIPLICATIVE
+        falloff.isSelected = false
+        multiplicative.isSelected = true
     }
 }

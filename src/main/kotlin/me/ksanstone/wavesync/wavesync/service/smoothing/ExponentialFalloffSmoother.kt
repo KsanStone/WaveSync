@@ -1,11 +1,10 @@
 package me.ksanstone.wavesync.wavesync.service.smoothing
 
-class MultiplicativeSmoother : MagnitudeSmoother {
-
+class ExponentialFalloffSmoother : MagnitudeSmoother {
     override lateinit var dataTarget: FloatArray
     private lateinit var dataArray: FloatArray
 
-    override var factor: Double = 0.91
+    override var factor: Double = 1.0
     var boundMin = 0.0f
     var boundMax = 1.0f
 
@@ -19,21 +18,27 @@ class MultiplicativeSmoother : MagnitudeSmoother {
     override var data: FloatArray
         get() = dataArray
         set(value) {
-            value.copyInto(dataTarget)
+            setData(value, 0, value.size) { it }
         }
 
     override fun applySmoothing(deltaT: Double) {
-        val f = (1 - factor.coerceIn(0.0, 1.0)).toFloat()
-        val dt = (deltaT * 100).toFloat().coerceAtMost(1.0f)
+        val f = factor.toFloat() * 30
+        val dt = deltaT.toFloat().coerceAtMost(1.0f)
 
         for (i in 0 until dataSize) {
-            dataArray[i] = (dataArray[i] + (dataTarget[i] - dataArray[i]) * f * dt).coerceIn(boundMin, boundMax)
+            dataArray[i] = (dataArray[i] - dataTarget[i] * dt).coerceIn(boundMin, boundMax)
+            dataTarget[i] += f * dt
         }
     }
 
     override fun setData(data: FloatArray, offset: Int, len: Int, transformer: (Float) -> Float) {
         for (i in offset until len + offset) {
-            dataTarget[i - offset] = transformer(data[i])
+            val j = i - offset
+            val point = transformer(data[i])
+            if (dataArray[j] < point) {
+                dataArray[j] = point
+                dataTarget[j] = 0.0F
+            }
         }
     }
 }
