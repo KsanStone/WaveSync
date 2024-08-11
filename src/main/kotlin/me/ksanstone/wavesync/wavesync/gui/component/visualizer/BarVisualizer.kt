@@ -359,7 +359,7 @@ class BarVisualizer : AutoCanvas() {
             val totalBars = floor(bufferLength.toDouble() / step)
             var barWidth = (width - (totalBars - 1) * localGap) / totalBars
             val buffer = smoother.data
-            val padding = (barWidth * 0.33).coerceAtMost(1.0)
+            val padding = 1.0
             gc.stroke = effectiveStartColor.get()
 
             calculateLocBuffer(buffer, logarithmic.get(), barWidth, step, height, width)
@@ -564,7 +564,7 @@ class BarVisualizer : AutoCanvas() {
         var lastX = 0.0
         for (i in 0 until fftLocBuffer.size) {
             val color = effectiveStartColor.get().interpolate(effectiveEndColor.get(), fftLocBuffer.data[i].raw)
-            val width = if (logarithmic) fftLocBuffer.data[i].x - lastX else barWidth + padding
+            val width = (if (logarithmic) fftLocBuffer.data[i].x - lastX else barWidth) + padding
 
             gc.fill = color
             gc.fillRect(lastX, fftLocBuffer.data[i].y, width, height - fftLocBuffer.data[i].y)

@@ -7,7 +7,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.FFTInfoController
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 
-class FFTInfo : AnchorPane() {
+class FFTInfo(private val compact: Boolean = false) : AnchorPane() {
 
     private var controller: FFTInfoController
 
@@ -18,6 +18,7 @@ class FFTInfo : AnchorPane() {
         val content: Pane =
             loader.load(javaClass.classLoader.getResourceAsStream("layout/fftInfo.fxml"))
         controller = loader.getController()
+        controller.compact(compact)
 
         setTopAnchor(content, 0.0)
         setBottomAnchor(content, 0.0)

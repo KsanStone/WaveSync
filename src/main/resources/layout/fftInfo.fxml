@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.text.Font?>
-<FlowPane hgap="10.0" minHeight="50.0" minWidth="50.0" vgap="3.0" xmlns="http://javafx.com/javafx/17.0.2-ea"
+<FlowPane hgap="10.0" minHeight="40.0" minWidth="50.0" vgap="1.0" xmlns="http://javafx.com/javafx/17.0.2-ea"
           xmlns:fx="http://javafx.com/fxml/1"
           fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.FFTInfoController">
     <HBox spacing="5">
@@ -15,7 +15,7 @@
         </Label>
         <Label fx:id="peakLabel"/>
     </HBox>
-    <HBox layoutX="10.0" layoutY="10.0" spacing="5">
+    <HBox spacing="5">
         <Label text="%component.fftInfo.peakV">
             <font>
                 <Font name="System Italic" size="12.0"/>
@@ -23,7 +23,7 @@
         </Label>
         <Label fx:id="peakVLabel"/>
     </HBox>
-    <HBox layoutX="10.0" layoutY="10.0" spacing="5">
+    <HBox spacing="5">
         <Label text="%component.fftInfo.status">
             <font>
                 <Font name="System Italic" size="12.0"/>

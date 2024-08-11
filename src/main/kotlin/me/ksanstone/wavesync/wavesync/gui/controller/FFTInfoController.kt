@@ -52,4 +52,11 @@ class FFTInfoController : Initializable {
             statusLabel.text = localizationService.get("component.fftInfo.status.disconnected")
         }
     }
+
+    fun compact(compact: Boolean) {
+        if (compact) {
+            statusLabel.visibleProperty().set(false)
+
+        }
+    }
 }

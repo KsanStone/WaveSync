@@ -9,7 +9,9 @@ import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.ChoiceBox
 import javafx.scene.control.Label
 import javafx.scene.control.SplitPane
+import javafx.scene.layout.Background
 import javafx.scene.layout.HBox
+import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
@@ -288,6 +290,13 @@ class MainController : Initializable {
             masterVolumeVisualizer.values = (1 until store.channels()).map { store[it].data[0].toDouble() }
             masterVolumeVisualizer.labels = (1 until store.channels()).map { store[it].label }
         }
+
+        val quickInfo = FFTInfo(true)
+        quickInfo.visibleProperty().bind(fftInfoOnOff.selectedProperty().not().and(bottomBar.widthProperty().greaterThan(1000.0)))
+        quickInfo.managedProperty().bind(quickInfo.visibleProperty())
+        quickInfo.maxHeight = 20.0
+        quickInfo.maxWidth = 100.0
+        bottomBar.children.add(quickInfo)
         bottomBar.children.add(masterVolumeVisualizer)
         bottomBar.visibleProperty().bind(recordingModeService.recordingMode.not())
         bottomBar.managedProperty().bind(bottomBar.visibleProperty())
