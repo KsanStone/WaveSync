@@ -109,7 +109,7 @@ class VectorScopeVisualizer : AutoCanvas(false) {
         val sY = 1.0 / rangeY.value
 
         for (i in 0 until acs.samples.sizeHint(0)) {
-            val sample = acs.samples[0].data[i]
+            val sample = acs.samples[1].data[i]
             gc.fillRect(
                 (sample.toDouble() * sX + 1.0) * 0.5 * width - 1.0,
                 height - (acs.samples[2].data[i].toDouble() * sY + 1) * height * 0.5,
@@ -144,7 +144,7 @@ class VectorScopeVisualizer : AutoCanvas(false) {
         val yOffset = (ROOT2 - 1) * scaledHeight - (scaledHeight - dividedHeight) * ROOT2
         val xOffset = width / 2
         for (i in 0 until acs.samples.sizeHint(0)) {
-            val sample = acs.samples[0].data[i]
+            val sample = acs.samples[1].data[i]
             val x = sample.toDouble()
             val y = acs.samples[2].data[i].toDouble()
             rotate45(x, y, gc, dividedWidth, scaledHeight, xOffset, yOffset)
