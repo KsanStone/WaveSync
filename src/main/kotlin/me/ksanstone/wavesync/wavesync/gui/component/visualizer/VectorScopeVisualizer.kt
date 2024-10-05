@@ -21,6 +21,8 @@ import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 class VectorScopeVisualizer : AutoCanvas(false) {
@@ -49,12 +51,37 @@ class VectorScopeVisualizer : AutoCanvas(false) {
     val rangeY: DoubleProperty = SimpleDoubleProperty(DEFAULT_VECTOR_Y_RANGE)
     val rangeLink: BooleanProperty = SimpleBooleanProperty(DEFAULT_VECTOR_RANGE_LINK)
 
+    private var edgePoints: List<Pair<Double, Double>> = emptyList()
+
     init {
         updateAxis()
         listOf(rangeX, rangeY, renderMode).forEach { it.addListener { _, _, _ -> updateAxis() } }
 
         styleClass.add("vector-visualizer")
         stylesheets.add("/styles/waveform-visualizer.css")
+
+
+        val num = 24
+        val step = Math.PI / num * 2
+        val nums = mutableListOf<Pair<Double, Double>>()
+
+        for (i in 0 until num) {
+            val a = i * step
+            val cos = cos(a)
+            val sin = sin(a)
+
+            if (a < Math.PI / 4 || a >= Math.PI * 1.75) {
+                nums.add(1.0 to sin * (1 / cos))
+            } else if (a >= Math.PI / 4 && a < Math.PI * 0.75) {
+                nums.add(cos * (1 / sin) to 1.0)
+            } else if (a >= Math.PI * 0.75 && a < Math.PI * 1.25) {
+                nums.add(-1.0 to -sin * (1 / cos))
+            } else if (a >= Math.PI * 1.25 && a < Math.PI * 1.75) {
+                nums.add(-cos * (1 / sin) to -1.0)
+            }
+        }
+
+        edgePoints = nums
     }
 
     private fun updateAxis() {
@@ -105,6 +132,7 @@ class VectorScopeVisualizer : AutoCanvas(false) {
         gc.fillRect(x2 * width + xOffset - 1, height - y2 * height + yOffset - 1.0, 2.0, 2.0)
     }
 
+
     private fun drawVertical(gc: GraphicsContext, width: Double, height: Double) {
         val sX = 1.0 / rangeX.value
         val sY = 1.0 / rangeY.value
@@ -119,8 +147,8 @@ class VectorScopeVisualizer : AutoCanvas(false) {
             rotate45(x, y, gc, dividedWidth, scaledHeight, xOffset, yOffset)
         }
 
-        val edgePoints =
-            listOf(0.0 to 1.0, 1.0 to 0.0, 1.0 to 1.0, 0.0 to -1.0, -1.0 to 0.0, -1.0 to -1.0, -1.0 to 1.0, 1.0 to -1.0)
+//        val edgePoints =
+//            listOf(0.0 to 1.0, 1.0 to 0.0, 1.0 to 1.0, 0.0 to -1.0, -1.0 to 0.0, -1.0 to -1.0, -1.0 to 1.0, 1.0 to -1.0)
         gc.fill = Color.VIOLET
         for (edge in edgePoints) {
             rotate45(edge.first, edge.second, gc, dividedWidth, scaledHeight, xOffset, yOffset)
@@ -134,8 +162,18 @@ class VectorScopeVisualizer : AutoCanvas(false) {
         preferenceService.registerProperty(rangeLink, "rangeLink", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(
+            canvasContainer.horizontalLinesVisible,
+            "horizontalLinesVisible",
+            this.javaClass,
+            id
+        )
+        preferenceService.registerProperty(
+            canvasContainer.verticalLinesVisible,
+            "verticalLinesVisible",
+            this.javaClass,
+            id
+        )
     }
 
     override fun initializeSettingMenu() {
