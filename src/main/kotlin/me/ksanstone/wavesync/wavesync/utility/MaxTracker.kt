@@ -10,7 +10,7 @@ class MaxTracker {
         get() = dataArray
         set(value) {
             if (value.size != dataSize) throw IllegalArgumentException("Size mismatch ${value.size} $dataSize")
-            for(i in value.indices) {
+            for (i in value.indices) {
                 dataArray[i] = max(dataArray[i], value[i])
             }
         }
@@ -26,7 +26,7 @@ class MaxTracker {
 
     fun applyData(data: FloatArray, offset: Int, limit: Int) {
         if (offset + limit > data.size || limit != dataSize) throw IllegalArgumentException("Size mismatch")
-        for(i in 0 until limit) {
+        for (i in 0 until limit) {
             dataArray[i] = max(data[i + offset], dataArray[i])
         }
     }

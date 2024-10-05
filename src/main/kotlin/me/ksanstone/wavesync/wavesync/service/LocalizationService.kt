@@ -26,7 +26,8 @@ class LocalizationService {
 
     @PostConstruct
     fun initialize() {
-        locales = localeResources.map { Locale.forLanguageTag(localeRegex.matchEntire(it.filename!!)!!.groups["code"]!!.value) }
+        locales =
+            localeResources.map { Locale.forLanguageTag(localeRegex.matchEntire(it.filename!!)!!.groups["code"]!!.value) }
         logger.info("Locales detected: $locales")
 
         currentLocaleProperty.set(locales[0])

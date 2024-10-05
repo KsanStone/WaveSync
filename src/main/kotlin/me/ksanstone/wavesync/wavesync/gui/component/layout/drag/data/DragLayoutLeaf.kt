@@ -48,12 +48,14 @@ data class DragLayoutLeaf(
     }
 
     fun insertAtSide(side: Side, node: DragLayoutLeaf) {
-        val parent = findOrientedParent(when(side) {
-            Side.TOP -> Orientation.VERTICAL to 0
-            Side.BOTTOM -> Orientation.VERTICAL to 1
-            Side.LEFT -> Orientation.HORIZONTAL to 0
-            Side.RIGHT -> Orientation.HORIZONTAL to 1
-        })
+        val parent = findOrientedParent(
+            when (side) {
+                Side.TOP -> Orientation.VERTICAL to 0
+                Side.BOTTOM -> Orientation.VERTICAL to 1
+                Side.LEFT -> Orientation.HORIZONTAL to 0
+                Side.RIGHT -> Orientation.HORIZONTAL to 1
+            }
+        )
 
         parent.first.insertNodes(parent.second, listOf(node))
     }

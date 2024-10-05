@@ -1,134 +1,156 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.*?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.paint.*?>
 <?import javafx.scene.shape.*?>
-
 <?import org.kordamp.ikonli.javafx.FontIcon?>
-<AnchorPane xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.GradientEditorController">
-   <children>
-      <VBox fx:id="container" alignment="TOP_CENTER" prefHeight="720.0" prefWidth="400.0" spacing="15.0" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="15.0" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0">
-         <children>
-            <Rectangle fx:id="gradientPreview" arcHeight="5.0" arcWidth="5.0" height="50.0" stroke="TRANSPARENT" strokeType="INSIDE" width="400.0">
-               <fill>
-                  <LinearGradient endX="1.0" endY="1.0">
-                     <stops>
-                        <Stop>
-                           <color>
-                              <Color />
-                           </color>
-                        </Stop>
-                        <Stop offset="1.0">
-                           <color>
-                              <Color red="1.0" green="1.0" blue="1.0" />
-                           </color>
-                        </Stop>
-                     </stops>
-                  </LinearGradient>
-               </fill>
-            </Rectangle>
-            <Pane fx:id="stopContainer" prefHeight="40.0" prefWidth="200.0" style="-fx-border-color: -color-border-default; -fx-border-width: 1; -fx-border-style: solid;" />
-            <HBox alignment="CENTER_LEFT" spacing="5.0">
-               <children>
-                  <TextField fx:id="stopPercentageField" />
-                  <Label text="\%" />
-                  <Pane prefHeight="2.0" HBox.hgrow="ALWAYS" />
-                  <Button fx:id="addStopButton" mnemonicParsing="false" >
-                     <graphic>
-                        <FontIcon iconLiteral="mdmz-plus"/>
-                     </graphic>
-                  </Button>
-                  <Button fx:id="removeStopButton" mnemonicParsing="false" >
-                     <graphic>
-                        <FontIcon iconLiteral="mdomz-minus"/>
-                     </graphic>
-                  </Button>
-               </children>
-            </HBox>
-            <HBox fx:id="colorSelectContainer" alignment="CENTER_LEFT" fillHeight="false" prefHeight="400.0" prefWidth="370.0" VBox.vgrow="ALWAYS">
-               <children>
-                  <StackPane fx:id="colorSelectStackPane" minWidth="0.0" pickOnBounds="false" prefHeight="150.0" prefWidth="200.0" HBox.hgrow="ALWAYS">
-                     <children>
-                        <Rectangle fx:id="colorRect" height="200.0" layoutX="90.0" layoutY="110.0" mouseTransparent="true" pickOnBounds="true" stroke="TRANSPARENT" strokeType="INSIDE" width="200.0">
-                           <fill>
-                              <LinearGradient endY="0.0">
-                                 <stops>
-                                    <Stop>
-                                       <color>
-                                          <Color opacity="0.0" />
-                                       </color>
-                                    </Stop>
-                                    <Stop>
-                                       <color>
-                                          <Color red="1" green="1" blue="1" />
-                                       </color>
-                                    </Stop>
-                                    <Stop offset="1.0">
-                                       <color>
-                                          <Color red="1" />
-                                       </color>
-                                    </Stop>
-                                 </stops>
-                              </LinearGradient>
-                           </fill>
-                        </Rectangle>
-                        <Rectangle fx:id="shadeRect" height="200.0" stroke="TRANSPARENT" strokeType="INSIDE" width="200.0">
-                           <fill>
-                              <LinearGradient endX="0.0" endY="1.0" startX="0.0" startY="0.0">
-                                 <stops>
-                                    <Stop>
-                                       <color>
-                                          <Color opacity="0.0" />
-                                       </color>
-                                    </Stop>
-                                    <Stop offset="1.0">
-                                       <color>
-                                          <Color />
-                                       </color>
-                                    </Stop>
-                                 </stops>
-                              </LinearGradient>
-                           </fill>
-                        </Rectangle>
-                        <Circle fx:id="colorPointer" fill="#1f93ff00" mouseTransparent="true" pickOnBounds="true" radius="5.0" strokeType="INSIDE" StackPane.alignment="CENTER">
-                           <stroke>
-                              <LinearGradient endX="1.0" endY="1.0">
-                                 <stops>
-                                    <Stop>
-                                       <color>
-                                          <Color />
-                                       </color>
-                                    </Stop>
-                                    <Stop offset="1.0">
-                                       <color>
-                                          <Color red="1.0" green="1.0" blue="1.0" />
-                                       </color>
-                                    </Stop>
-                                 </stops>
-                              </LinearGradient>
-                           </stroke>
-                        </Circle>
-                     </children></StackPane>
-                  <Slider fx:id="hueSLider" max="360.0" maxHeight="1.7976931348623157E308" minHeight="0.0" orientation="VERTICAL" prefWidth="20.0" style="-fx-background-color: linear-gradient(to top, rgba(255,0,0,1) 0%, rgba(255,255,0,1) 16.7%, rgba(0,255,0,1) 33.3%, rgba(0,255,255,1) 50%, rgba(0,0,255,1) 66.6%, rgba(255,0,255,1) 83.3%, rgba(255,0,0,1) 100%);" HBox.hgrow="NEVER" />
-                  <Slider fx:id="alphaSlider" maxHeight="1.7976931348623157E308" minHeight="0.0" orientation="VERTICAL" prefWidth="20.0" style="-fx-background-color: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%);" value="100.0" HBox.hgrow="NEVER" />
-               </children></HBox>
-            <HBox alignment="CENTER_LEFT" spacing="5.0">
-               <Rectangle fx:id="colorPreviewRect" arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="25.0" stroke="BLACK" strokeType="INSIDE" width="25.0" />
-               <TextField fx:id="hexInput" HBox.hgrow="ALWAYS" />
-            </HBox>
-            <ComboBox fx:id="premadeGradientBox" />
-            <ButtonBar prefHeight="40.0" prefWidth="200.0">
-              <buttons>
-                <Button cancelButton="true" mnemonicParsing="false" onAction="#cancelGradient" text="%dialog.gradientEditor.cancel" />
-                  <Button defaultButton="true" mnemonicParsing="false" onAction="#applyGradient" text="%dialog.gradientEditor.ok" />
-              </buttons>
-            </ButtonBar>
-         </children>
-         <opaqueInsets>
-            <Insets />
-         </opaqueInsets>
-      </VBox>
-   </children>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17.0.2-ea"
+            fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.GradientEditorController">
+    <children>
+        <VBox fx:id="container" alignment="TOP_CENTER" prefHeight="720.0" prefWidth="400.0" spacing="15.0"
+              AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="15.0" AnchorPane.rightAnchor="15.0"
+              AnchorPane.topAnchor="15.0">
+            <children>
+                <Rectangle fx:id="gradientPreview" arcHeight="5.0" arcWidth="5.0" height="50.0" stroke="TRANSPARENT"
+                           strokeType="INSIDE" width="400.0">
+                    <fill>
+                        <LinearGradient endX="1.0" endY="1.0">
+                            <stops>
+                                <Stop>
+                                    <color>
+                                        <Color/>
+                                    </color>
+                                </Stop>
+                                <Stop offset="1.0">
+                                    <color>
+                                        <Color red="1.0" green="1.0" blue="1.0"/>
+                                    </color>
+                                </Stop>
+                            </stops>
+                        </LinearGradient>
+                    </fill>
+                </Rectangle>
+                <Pane fx:id="stopContainer" prefHeight="40.0" prefWidth="200.0"
+                      style="-fx-border-color: -color-border-default; -fx-border-width: 1; -fx-border-style: solid;"/>
+                <HBox alignment="CENTER_LEFT" spacing="5.0">
+                    <children>
+                        <TextField fx:id="stopPercentageField"/>
+                        <Label text="\%"/>
+                        <Pane prefHeight="2.0" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="addStopButton" mnemonicParsing="false">
+                            <graphic>
+                                <FontIcon iconLiteral="mdmz-plus"/>
+                            </graphic>
+                        </Button>
+                        <Button fx:id="removeStopButton" mnemonicParsing="false">
+                            <graphic>
+                                <FontIcon iconLiteral="mdomz-minus"/>
+                            </graphic>
+                        </Button>
+                    </children>
+                </HBox>
+                <HBox fx:id="colorSelectContainer" alignment="CENTER_LEFT" fillHeight="false" prefHeight="400.0"
+                      prefWidth="370.0" VBox.vgrow="ALWAYS">
+                    <children>
+                        <StackPane fx:id="colorSelectStackPane" minWidth="0.0" pickOnBounds="false" prefHeight="150.0"
+                                   prefWidth="200.0" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Rectangle fx:id="colorRect" height="200.0" layoutX="90.0" layoutY="110.0"
+                                           mouseTransparent="true" pickOnBounds="true" stroke="TRANSPARENT"
+                                           strokeType="INSIDE" width="200.0">
+                                    <fill>
+                                        <LinearGradient endY="0.0">
+                                            <stops>
+                                                <Stop>
+                                                    <color>
+                                                        <Color opacity="0.0"/>
+                                                    </color>
+                                                </Stop>
+                                                <Stop>
+                                                    <color>
+                                                        <Color red="1" green="1" blue="1"/>
+                                                    </color>
+                                                </Stop>
+                                                <Stop offset="1.0">
+                                                    <color>
+                                                        <Color red="1"/>
+                                                    </color>
+                                                </Stop>
+                                            </stops>
+                                        </LinearGradient>
+                                    </fill>
+                                </Rectangle>
+                                <Rectangle fx:id="shadeRect" height="200.0" stroke="TRANSPARENT" strokeType="INSIDE"
+                                           width="200.0">
+                                    <fill>
+                                        <LinearGradient endX="0.0" endY="1.0" startX="0.0" startY="0.0">
+                                            <stops>
+                                                <Stop>
+                                                    <color>
+                                                        <Color opacity="0.0"/>
+                                                    </color>
+                                                </Stop>
+                                                <Stop offset="1.0">
+                                                    <color>
+                                                        <Color/>
+                                                    </color>
+                                                </Stop>
+                                            </stops>
+                                        </LinearGradient>
+                                    </fill>
+                                </Rectangle>
+                                <Circle fx:id="colorPointer" fill="#1f93ff00" mouseTransparent="true"
+                                        pickOnBounds="true" radius="5.0" strokeType="INSIDE"
+                                        StackPane.alignment="CENTER">
+                                    <stroke>
+                                        <LinearGradient endX="1.0" endY="1.0">
+                                            <stops>
+                                                <Stop>
+                                                    <color>
+                                                        <Color/>
+                                                    </color>
+                                                </Stop>
+                                                <Stop offset="1.0">
+                                                    <color>
+                                                        <Color red="1.0" green="1.0" blue="1.0"/>
+                                                    </color>
+                                                </Stop>
+                                            </stops>
+                                        </LinearGradient>
+                                    </stroke>
+                                </Circle>
+                            </children>
+                        </StackPane>
+                        <Slider fx:id="hueSLider" max="360.0" maxHeight="1.7976931348623157E308" minHeight="0.0"
+                                orientation="VERTICAL" prefWidth="20.0"
+                                style="-fx-background-color: linear-gradient(to top, rgba(255,0,0,1) 0%, rgba(255,255,0,1) 16.7%, rgba(0,255,0,1) 33.3%, rgba(0,255,255,1) 50%, rgba(0,0,255,1) 66.6%, rgba(255,0,255,1) 83.3%, rgba(255,0,0,1) 100%);"
+                                HBox.hgrow="NEVER"/>
+                        <Slider fx:id="alphaSlider" maxHeight="1.7976931348623157E308" minHeight="0.0"
+                                orientation="VERTICAL" prefWidth="20.0"
+                                style="-fx-background-color: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(0,0,0,1) 100%);"
+                                value="100.0" HBox.hgrow="NEVER"/>
+                    </children>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" spacing="5.0">
+                    <Rectangle fx:id="colorPreviewRect" arcHeight="5.0" arcWidth="5.0" fill="DODGERBLUE" height="25.0"
+                               stroke="BLACK" strokeType="INSIDE" width="25.0"/>
+                    <TextField fx:id="hexInput" HBox.hgrow="ALWAYS"/>
+                </HBox>
+                <ComboBox fx:id="premadeGradientBox"/>
+                <ButtonBar prefHeight="40.0" prefWidth="200.0">
+                    <buttons>
+                        <Button cancelButton="true" mnemonicParsing="false" onAction="#cancelGradient"
+                                text="%dialog.gradientEditor.cancel"/>
+                        <Button defaultButton="true" mnemonicParsing="false" onAction="#applyGradient"
+                                text="%dialog.gradientEditor.ok"/>
+                    </buttons>
+                </ButtonBar>
+            </children>
+            <opaqueInsets>
+                <Insets/>
+            </opaqueInsets>
+        </VBox>
+    </children>
 </AnchorPane>

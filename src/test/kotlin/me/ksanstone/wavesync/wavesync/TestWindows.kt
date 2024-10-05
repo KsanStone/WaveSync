@@ -29,7 +29,8 @@ class TestWindows {
     @Test
     fun blackmanHarrisWindowTest() {
         val len = 10
-        val result = floatArrayOf(0.0001F, 0.0151F, 0.147F, 0.5206F, 0.9317F, 0.9317F, 0.5206F, 0.147F, 0.0151F, 0.0001F)
+        val result =
+            floatArrayOf(0.0001F, 0.0151F, 0.147F, 0.5206F, 0.9317F, 0.9317F, 0.5206F, 0.147F, 0.0151F, 0.0001F)
         val w1 = BlackmanHarrisWindowFunction(len)
         val out = w1.getWindow()
         assertArrayEquals(result, out, 0.0001f)

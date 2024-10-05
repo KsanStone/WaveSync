@@ -34,7 +34,7 @@ class ControlBar : HBox() {
         minimizeButton.styleClass.remove("hover")
         maximiseButton.styleClass.remove("hover")
         closeButton.styleClass.remove("hover")
-        when(button) {
+        when (button) {
             CaptionButton.CLOSE -> closeButton.styleClass.add("hover")
             CaptionButton.MINIMIZE -> minimizeButton.styleClass.add("hover")
             CaptionButton.MAXIMIZE_RESTORE -> maximiseButton.styleClass.add("hover")
@@ -53,12 +53,12 @@ class ControlBar : HBox() {
             this.children.addAll(icon, titleLabel)
         }
         val caption = HBox().apply {
-            children.addAll( minimizeButton, maximiseButton, closeButton)
+            children.addAll(minimizeButton, maximiseButton, closeButton)
             this.styleClass.add("caption")
         }
         children.addAll(title, drag, caption)
         this.styleClass.add("bar-height main-control-bar")
-        (scene.window as? Stage)?.maximizedProperty()?.addListener { _, _, newValue -> maximizeRestore = !newValue}
+        (scene.window as? Stage)?.maximizedProperty()?.addListener { _, _, newValue -> maximizeRestore = !newValue }
         titleLabel.textProperty().bind((scene.window as Stage).titleProperty())
     }
 

@@ -154,7 +154,8 @@ class GradientEditorController : Initializable {
                 k.consume()
                 try {
                     setColor(Color.web(hexInput.text))
-                } catch (ignored: Exception) { }
+                } catch (ignored: Exception) {
+                }
             }
         }
 
@@ -163,7 +164,8 @@ class GradientEditorController : Initializable {
                 k.consume()
                 try {
                     moveStop((stopPercentageField.text.toDoubleOrNull() ?: return@setOnKeyPressed) / 100)
-                } catch (ignored: Exception) { }
+                } catch (ignored: Exception) {
+                }
             }
         }
 
@@ -191,7 +193,7 @@ class GradientEditorController : Initializable {
                     text = ""
                     val wProp = this.widthProperty()
                     alignment = Pos.CENTER
-                    if(item != null)
+                    if (item != null)
                         graphic = Rectangle().apply {
                             widthProperty().bind(wProp.subtract(30.0))
                             height = 35.0
@@ -212,7 +214,7 @@ class GradientEditorController : Initializable {
         premadeGradientBox.converter = object : StringConverter<SGradient>() {
             override fun toString(`object`: SGradient?): String {
                 DefaultGradient.entries.forEach {
-                    if(it.gradient == `object`) {
+                    if (it.gradient == `object`) {
                         return it.name.lowercase()
                     }
                 }
@@ -221,7 +223,7 @@ class GradientEditorController : Initializable {
 
             override fun fromString(string: String?): SGradient {
                 DefaultGradient.entries.forEach {
-                    if(it.name.lowercase() == string) {
+                    if (it.name.lowercase() == string) {
                         return it.gradient
                     }
                 }
@@ -264,23 +266,23 @@ class GradientEditorController : Initializable {
     }
 
     private fun moveStop(newLoc: Double) {
-            val activeIndex = activeButton.value
-            val activeStop = stops[activeIndex]
-            val newStop = Stop(newLoc, activeStop.color)
+        val activeIndex = activeButton.value
+        val activeStop = stops[activeIndex]
+        val newStop = Stop(newLoc, activeStop.color)
 
-            val temp = stops[activeIndex]
+        val temp = stops[activeIndex]
 
-            stops.removeAt(activeIndex)
-            val newIndex = findInsertIndex(newLoc)
-            if (newIndex == -1 || stops[newIndex.coerceAtMost(stops.size - 1)].offset == newLoc) {
-                stops.add(activeIndex, temp)
-                return
-            }
+        stops.removeAt(activeIndex)
+        val newIndex = findInsertIndex(newLoc)
+        if (newIndex == -1 || stops[newIndex.coerceAtMost(stops.size - 1)].offset == newLoc) {
+            stops.add(activeIndex, temp)
+            return
+        }
 
-            stops.add(newIndex, newStop)
+        stops.add(newIndex, newStop)
 
-            val updatedIndex = stops.indexOf(newStop)
-            setActive(updatedIndex)
+        val updatedIndex = stops.indexOf(newStop)
+        setActive(updatedIndex)
     }
 
     private fun updateGuiTickMarks() {
@@ -300,8 +302,8 @@ class GradientEditorController : Initializable {
             (stopContainer.children[i] as StopButton).update(i, stops[i].color)
         }
 
-        if(stops.indices.contains(activeButton.value))
-        stopPercentageField.text = (stops[activeButton.value].offset * 100).toString()
+        if (stops.indices.contains(activeButton.value))
+            stopPercentageField.text = (stops[activeButton.value].offset * 100).toString()
     }
 
     private fun findInsertIndex(offset: Double): Int {

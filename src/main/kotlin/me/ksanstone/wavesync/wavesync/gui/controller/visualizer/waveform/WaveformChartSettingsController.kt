@@ -111,11 +111,12 @@ class WaveformChartSettingsController {
         visualizer.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
         visualizer.rangeMax.bind(waveformRangeMaxSpinner.valueFactory.valueProperty().map { it.toFloat() })
         visualizer.rangeMin.bind(waveformRangeMinSpinner.valueFactory.valueProperty().map { it.toFloat() })
-        visualizer.bufferDuration.bind(bufferLengthSpinner.valueFactory.valueProperty().map { Duration.millis(it)})
+        visualizer.bufferDuration.bind(bufferLengthSpinner.valueFactory.valueProperty().map { Duration.millis(it) })
         visualizer.targetAlignFrequency.bind(alignFrequency.valueProperty())
         visualizer.rangeLink.bind(linkToggleButton.selectedProperty())
 
-        alignFrequency.disableProperty().bind(autoAlignToggleSwitch.selectedProperty().or(alignFrequencyToggleSwitch.selectedProperty().not()))
+        alignFrequency.disableProperty()
+            .bind(autoAlignToggleSwitch.selectedProperty().or(alignFrequencyToggleSwitch.selectedProperty().not()))
         autoAlignToggleSwitch.disableProperty().bind(alignFrequencyToggleSwitch.selectedProperty().not())
     }
 

@@ -127,10 +127,10 @@ data class DragLayoutNode(
             children.removeAt(i)
             var j = i
             if (i >= dividerLocations.size) j--
-            if(dividerLocations.indices.contains(j))
-            dividerLocations.removeAt(j)
-            if(dividers.indices.contains(j))
-            dividers.removeAt(j)
+            if (dividerLocations.indices.contains(j))
+                dividerLocations.removeAt(j)
+            if (dividers.indices.contains(j))
+                dividers.removeAt(j)
         }
 
         if (children.size == 1 && children[0].isNode) { // We only contain one node, unwrap
@@ -157,7 +157,7 @@ data class DragLayoutNode(
     private fun validateDividers() {
         if (children.size == 0) return this.dividerLocations.clear()
         if (this.dividerLocations.size + 1 != children.size || !rangeValid(this.dividerLocations))
-          this.dividerLocations = MutableList(children.size - 1) { (it + 1) / children.size.toDouble() }
+            this.dividerLocations = MutableList(children.size - 1) { (it + 1) / children.size.toDouble() }
     }
 
     private fun rangeValid(numbers: List<Double>, expectedLength: Int = 0): Boolean {
@@ -193,7 +193,7 @@ data class DragLayoutNode(
             rangeStart = 0.0
             rangeEnd = insertedRangeSize
             rangeMid = (rangeEnd + rangeStart) / 2
-            if(children.size == 0) offset = -1
+            if (children.size == 0) offset = -1
         } else if (pos == children.size) {
             rangeStart = 1.0 - insertedRangeSize
             rangeEnd = 1.0
@@ -203,8 +203,8 @@ data class DragLayoutNode(
         }
 
         spaceOutScalars(rangeMid, rangeStart, rangeEnd, pos)
-        for (i in nodes.indices.first .. nodes.indices.last + offset) {
-            dividerLocations.add(pos + i, insertedRangeSize * ( i + 1 ) + rangeStart)
+        for (i in nodes.indices.first..nodes.indices.last + offset) {
+            dividerLocations.add(pos + i, insertedRangeSize * (i + 1) + rangeStart)
         }
 
         children.addAll(pos, nodes)
@@ -229,7 +229,13 @@ data class DragLayoutNode(
         return child
     }
 
-    private fun spaceOutScalars(rangeMid: Double, rangeStart: Double, rangeEnd: Double, index: Int, inverse: Boolean = false) {
+    private fun spaceOutScalars(
+        rangeMid: Double,
+        rangeStart: Double,
+        rangeEnd: Double,
+        index: Int,
+        inverse: Boolean = false
+    ) {
         var divBeforeScalar = rangeStart / rangeMid
         var divAfterScalar = rangeMid / rangeEnd
 
@@ -260,8 +266,19 @@ data class DragLayoutNode(
         for (i in dividerLocations.indices) {
             rects.add(
                 when (orientation) {
-                    Orientation.HORIZONTAL -> safeRect(s * box.width + box.minX, box.minY, (dividerLocations[i] - s) * box.width, box.height)
-                    Orientation.VERTICAL -> safeRect(box.minX, s * box.height + box.minY, box.width, (dividerLocations[i] - s) * box.height)
+                    Orientation.HORIZONTAL -> safeRect(
+                        s * box.width + box.minX,
+                        box.minY,
+                        (dividerLocations[i] - s) * box.width,
+                        box.height
+                    )
+
+                    Orientation.VERTICAL -> safeRect(
+                        box.minX,
+                        s * box.height + box.minY,
+                        box.width,
+                        (dividerLocations[i] - s) * box.height
+                    )
                 }
             )
             s = dividerLocations[i]
@@ -269,7 +286,13 @@ data class DragLayoutNode(
 
         rects.add(
             when (orientation) {
-                Orientation.HORIZONTAL -> safeRect(s * box.width + box.minX, box.minY, (1.0 - s) * box.width, box.height)
+                Orientation.HORIZONTAL -> safeRect(
+                    s * box.width + box.minX,
+                    box.minY,
+                    (1.0 - s) * box.width,
+                    box.height
+                )
+
                 Orientation.VERTICAL -> safeRect(box.minX, s * box.height + box.minY, box.width, (1.0 - s) * box.height)
             }
         )
@@ -278,11 +301,14 @@ data class DragLayoutNode(
             when (orientation) {
                 Orientation.HORIZONTAL -> {
                     rects[i] = rects[i]?.let { safeRect(it.minX, it.minY, it.width - DIVIDER_SIZE / 2, it.height) }
-                    rects[i + 1] = rects[i + 1]?.let { safeRect(it.minX + DIVIDER_SIZE / 2, it.minY, it.width, it.height) }
+                    rects[i + 1] =
+                        rects[i + 1]?.let { safeRect(it.minX + DIVIDER_SIZE / 2, it.minY, it.width, it.height) }
                 }
+
                 Orientation.VERTICAL -> {
                     rects[i] = rects[i]?.let { safeRect(it.minX, it.minY, it.width, it.height - DIVIDER_SIZE / 2) }
-                    rects[i + 1] = rects[i + 1]?.let { safeRect(it.minX, it.minY + DIVIDER_SIZE / 2, it.width, it.height) }
+                    rects[i + 1] =
+                        rects[i + 1]?.let { safeRect(it.minX, it.minY + DIVIDER_SIZE / 2, it.width, it.height) }
                 }
             }
         }
@@ -303,8 +329,19 @@ data class DragLayoutNode(
             val s = dividerLocations[i]
             rects.add(
                 when (orientation) {
-                    Orientation.HORIZONTAL -> Rectangle2D(s * box.width + box.minX - offset, box.minY, DIVIDER_SIZE, box.height)
-                    Orientation.VERTICAL -> Rectangle2D(box.minX, s * box.height + box.minY - offset, box.width, DIVIDER_SIZE)
+                    Orientation.HORIZONTAL -> Rectangle2D(
+                        s * box.width + box.minX - offset,
+                        box.minY,
+                        DIVIDER_SIZE,
+                        box.height
+                    )
+
+                    Orientation.VERTICAL -> Rectangle2D(
+                        box.minX,
+                        s * box.height + box.minY - offset,
+                        box.width,
+                        DIVIDER_SIZE
+                    )
                 }
             )
         }
@@ -392,7 +429,7 @@ data class DragLayoutNode(
                 callback.accept(res)
                 if (res.stop) return true
             } else if (it.isNode) {
-                if(it.node!!.iterateComponents(callback)) return true
+                if (it.node!!.iterateComponents(callback)) return true
             }
         }; return false
     }
@@ -463,7 +500,7 @@ data class DragLayoutNode(
      * @return [DragLayoutLeaf] or null if no such leaf exists
      */
     fun cutComponentLeaf(id: String): DragLayoutLeaf? {
-        return cutComponent {it.id == id}
+        return cutComponent { it.id == id }
     }
 
     /**
@@ -498,11 +535,26 @@ data class DragLayoutNode(
     }
 
     /**
+     * Checks whether an instance of the given class is present
+     * in this node's tree
+     */
+    fun queryComponentExists(id: String): Boolean {
+        var found = false
+        this.iterateComponents {
+            if (it.nodeId == id) {
+                it.stop()
+                found = true
+            }
+        }
+        return found
+    }
+
+    /**
      * Removes a component of the given class
      * @return true if any component was removed
      */
-    fun removeComponentOfClass(clazz: Class<*>): Boolean {
-        val cutComp = cutComponent { t -> t.component!!::class.java.name == clazz.name }
+    fun removeComponent(id: String): Boolean {
+        val cutComp = cutComponent { t -> t.id == id }
         if (cutComp != null) {
             fireChange()
             return true

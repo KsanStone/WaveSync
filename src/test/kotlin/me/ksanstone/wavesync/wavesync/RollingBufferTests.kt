@@ -10,7 +10,13 @@ class RollingBufferTests {
     @Test
     fun dataOrderTest() {
         val testCases =
-            listOf(50 to IntRange(0, 50), 50 to IntRange(0, 10), 50 to IntRange(0, 100), 50 to IntRange(0, -1), 50 to IntRange(0, 49))
+            listOf(
+                50 to IntRange(0, 50),
+                50 to IntRange(0, 10),
+                50 to IntRange(0, 100),
+                50 to IntRange(0, -1),
+                50 to IntRange(0, 49)
+            )
         testCases.forEach { testCase ->
             val buffer = RollingBuffer(testCase.first) { 0 }
             val floatBuffer = RollingBuffer(testCase.first) { 0.0f }
@@ -39,7 +45,13 @@ class RollingBufferTests {
     @Test
     fun arrayInsertTest() {
         val testCases =
-            listOf(50 to IntRange(0, 50), 50 to IntRange(0, 10), 50 to IntRange(0, 100), 50 to IntRange(0, -1), 50 to IntRange(0, 49))
+            listOf(
+                50 to IntRange(0, 50),
+                50 to IntRange(0, 10),
+                50 to IntRange(0, 100),
+                50 to IntRange(0, -1),
+                50 to IntRange(0, 49)
+            )
         testCases.forEach { testCase ->
             val referenceBuffer = RollingBuffer(testCase.first) { 0 }
             testCase.second.toList().forEach { referenceBuffer.insert(it) }

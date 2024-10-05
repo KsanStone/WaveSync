@@ -38,5 +38,53 @@ enum class DefaultGradient(val gradient: SGradient) {
             Color.TRANSPARENT,
             Color.WHITE
         )
-    )
+    ),
+    DRACULA(
+        SStartEndGradient(
+            Color.web("#3c3366ff"),
+            Color.web("#b5a6ffff")
+        )
+    ),
+    NORD(
+        SStartEndGradient(
+            Color.web("#314359ff"),
+            Color.web("#859fc0ff")
+        )
+    ),
+    CUPERTINO(
+        SStartEndGradient(
+            Color.web("#043566ff"),
+            Color.web("#54a9ffff")
+        )
+    ),
+    PRIMER(
+        SStartEndGradient(
+            Color.web("#051d4dff"),
+            Color.web("#58a6ffff")
+        )
+    ),
+    DRACULA_DARK(
+        SStartEndGradient(
+            Color.web("#282a36ff"),
+            Color.web("#b5a6ffff")
+        )
+    ),
+    NORD_DARK(
+        SStartEndGradient(
+            Color.web("#2e3440ff"),
+            Color.web("#859fc0ff")
+        )
+    ),
+    CUPERTINO_DARK(
+        SStartEndGradient(
+            Color.web("#1c1c1eff"),
+            Color.web("#54a9ffff")
+        )
+    ),
+    PRIMER_DARK(
+        SStartEndGradient(
+            Color.web("#0d1117ff"),
+            Color.web("#58a6ffff")
+        )
+    ),
 }

@@ -39,7 +39,7 @@ class DragRegion(private val base: Node) {
     }
 
     private fun nodeToScreenBounds(node: Node): Bounds {
-        return node.localToScreen(node.boundsInLocal) ?: BoundingBox(0.0,0.0,0.0,0.0)
+        return node.localToScreen(node.boundsInLocal) ?: BoundingBox(0.0, 0.0, 0.0, 0.0)
     }
 
 

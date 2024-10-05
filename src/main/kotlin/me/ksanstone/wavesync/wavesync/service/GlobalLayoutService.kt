@@ -141,8 +141,13 @@ open class GlobalLayoutService(
             targetNode.fullUpdate()
         }
         currentTransaction!!.origin.fullUpdate()
-        if (currentTransaction!!.origin.layoutRoot.isEmpty() && !noAutoRemove.contains(currentTransaction!!.origin)) {
-            stageMap.remove(currentTransaction!!.origin)?.let {
+        tryRemoveEmpty(currentTransaction!!.origin)
+        currentTransaction = null
+    }
+
+    private fun tryRemoveEmpty(layout: DragLayout) {
+        if (layout.layoutRoot.isEmpty() && !noAutoRemove.contains(layout)) {
+            stageMap.remove(layout)?.let {
                 it.close()
                 val id = stageSizingService.findId(it) ?: return
                 stageSizingService.unregisterStage(id)
@@ -151,7 +156,6 @@ open class GlobalLayoutService(
                 }
             }
         }
-        currentTransaction = null
     }
 
     fun loadLayouts() {
@@ -164,11 +168,23 @@ open class GlobalLayoutService(
     /**
      * Same deal as DragLayoutNode.queryComponentOfClassExists buf across all layouts
      */
-    fun queryComponentOfClassExists(clazz: Class<*>): Boolean {
+    fun queryComponentOfExists(id: String): Boolean {
         for (layout in layoutStorageService.layouts) {
-            if (layout.layout.layoutRoot.queryComponentOfClassExists(clazz)) return true
+            if (layout.layout.layoutRoot.queryComponentExists(id)) return true
         }
         return false
+    }
+
+    /**
+     * Same deal as DragLayoutNode.removeComponent buf across all layouts
+     */
+    fun removeComponent(id: String) {
+        for (layout in layoutStorageService.layouts) {
+            if (layout.layout.layoutRoot.removeComponent(id)) {
+                tryRemoveEmpty(layout.layout)
+                return
+            }
+        }
     }
 
     private fun reOpenSideLayout(appLayout: AppLayout) {

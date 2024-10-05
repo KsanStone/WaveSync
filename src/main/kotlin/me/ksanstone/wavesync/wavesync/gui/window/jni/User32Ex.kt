@@ -3,7 +3,6 @@ package me.ksanstone.wavesync.wavesync.gui.window.jni
 import com.sun.jna.Native
 import com.sun.jna.platform.win32.BaseTSD.LONG_PTR
 import com.sun.jna.platform.win32.User32
-import com.sun.jna.platform.win32.WinDef
 import com.sun.jna.platform.win32.WinDef.*
 import com.sun.jna.platform.win32.WinUser.WindowProc
 import com.sun.jna.win32.W32APIOptions
@@ -21,7 +20,7 @@ interface User32Ex : User32 {
     fun IsZoomed(hWnd: HWND?): Boolean
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-drawframecontrol
-    fun DrawFrameControl(hdc: HDC?, rect: WinDef.RECT?, uType: Int, uState: Int): Boolean
+    fun DrawFrameControl(hdc: HDC?, rect: RECT?, uType: Int, uState: Int): Boolean
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getdpiforwindow
     fun GetDpiForWindow(hwnd: HWND?): Int
@@ -33,10 +32,10 @@ interface User32Ex : User32 {
     fun GetDCEx(hWnd: HWND?, hrgnClip: HRGN?, flags: Int): HDC?
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-fillrect
-    fun FillRect(hdc: HDC?, lprc: WinDef.RECT?, hbr: HBRUSH?): Int
+    fun FillRect(hdc: HDC?, lprc: RECT?, hbr: HBRUSH?): Int
 
     // https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-adjustwindowrectexfordpi
-    fun AdjustWindowRectExForDpi(lpRect: WinDef.RECT?, dwStyle: Int, bMenu: Boolean, dwExStyle: Int, dpi: Int): Boolean
+    fun AdjustWindowRectExForDpi(lpRect: RECT?, dwStyle: Int, bMenu: Boolean, dwExStyle: Int, dpi: Int): Boolean
 
     // https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-trackmouseevent
     fun TrackMouseEvent(lpEventTrack: TRACKMOUSEEVENT?): Boolean

@@ -44,7 +44,8 @@ class ThemeSelectorController : Initializable {
                 findPair(v)
                 changeTheme()
             }
-        } catch (ignored: Exception) {}
+        } catch (ignored: Exception) {
+        }
     }
 
     private fun findPair(name: String) {

@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class LayoutStorageService(
+open class LayoutStorageService(
     private val layoutSerializerService: DragLayoutSerializerService,
     private val preferenceService: PreferenceService,
     private val stageSizingService: StageSizingService
@@ -50,11 +50,12 @@ class LayoutStorageService(
                 )
             }
         } catch (e: Exception) {
-            logger.warn("Layout load fail", e)
+            if (e.message != "Input cannot be empty")
+                logger.warn("Layout load fail", e)
         }
     }
 
-    fun constructDefaultLayout(wVis: WaveformVisualizer, bVis: BarVisualizer): DragLayoutNode {
+    private fun constructDefaultLayout(wVis: WaveformVisualizer, bVis: BarVisualizer): DragLayoutNode {
         return DragLayoutNode(
             orientation = Orientation.VERTICAL,
             parent = null,
@@ -73,9 +74,8 @@ class LayoutStorageService(
     fun getMainLayout(): DragLayout {
         return layouts.stream().filter { it.id == "main" }.findFirst().orElseGet {
             val node = constructDefaultLayout(
-                nodeFactory.createNode(MAIN_WAVEFORM_VISUALIZER_ID) as WaveformVisualizer, nodeFactory.createNode(
-                    MAIN_BAR_VISUALIZER_ID
-                ) as BarVisualizer
+                nodeFactory.createNode("$MAIN_WAVEFORM_VISUALIZER_ID-Channel-0") as WaveformVisualizer,
+                nodeFactory.createNode(MAIN_BAR_VISUALIZER_ID) as BarVisualizer
             )
             val layout = DragLayout()
             layout.load(node)
@@ -126,18 +126,18 @@ class LayoutStorageService(
         return ret
     }
 
-    protected fun createLayout(node: DragLayoutLeaf): DragLayout {
+    private fun createLayout(node: DragLayoutLeaf): DragLayout {
         val layout = DragLayout()
         layout.layoutRoot.children.add(node)
         layout.fullUpdate()
         return layout
     }
 
-    protected fun layoutChanged(appLayout: AppLayout) {
+    private fun layoutChanged(appLayout: AppLayout) {
         save()
     }
 
-    protected fun save() {
+    private fun save() {
         layoutStorageProperty.set(layoutSerializerService.serializeFull(layouts))
     }
 

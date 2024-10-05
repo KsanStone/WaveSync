@@ -35,9 +35,11 @@
 .control-minimize.hover {
     -fx-background-color: -color-base-6 !important;
 }
+
 .control-maximise.hover {
     -fx-background-color: -color-base-6 !important;
 }
+
 .control-close.hover {
     -fx-background-color: -color-danger-5 !important;
 }

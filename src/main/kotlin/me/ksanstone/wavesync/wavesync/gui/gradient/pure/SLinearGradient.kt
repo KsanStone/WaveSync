@@ -64,8 +64,10 @@ class SLinearGradient(
         }
 
         val ratio = (value - stopCache[startStop]) / (stopCache[endStop] - stopCache[startStop])
-        return interpolateArgb(stopCache[startStop + A], stopCache[startStop + R], stopCache[startStop + G], stopCache[startStop + B],
-            stopCache[endStop + A], stopCache[endStop + R], stopCache[endStop + G], stopCache[endStop + B], ratio)
+        return interpolateArgb(
+            stopCache[startStop + A], stopCache[startStop + R], stopCache[startStop + G], stopCache[startStop + B],
+            stopCache[endStop + A], stopCache[endStop + R], stopCache[endStop + G], stopCache[endStop + B], ratio
+        )
     }
 
     override fun serialize(): String {

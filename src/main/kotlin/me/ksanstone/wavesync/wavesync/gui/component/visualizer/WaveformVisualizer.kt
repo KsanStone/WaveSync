@@ -22,8 +22,11 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.gui.utility.roundTo
-import me.ksanstone.wavesync.wavesync.service.*
+import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.FourierMath
 import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
+import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.roundToInt
 
@@ -38,6 +41,7 @@ class WaveformVisualizer : AutoCanvas() {
     val targetAlignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_WAVEFORM_RENDER_MODE)
     val bufferDuration: ObjectProperty<Duration> = SimpleObjectProperty(Duration.millis(60.0))
+    val channelProperty: IntegerProperty = SimpleIntegerProperty()
 
     private lateinit var buffer: RollingBuffer<Float>
     private val waveColor: StyleableProperty<Color> =
@@ -82,7 +86,8 @@ class WaveformVisualizer : AutoCanvas() {
             alignLowPass.value = calcAlignLowPass()
         }
         align.bind(
-            acs.peakValue.greaterThan(FourierMath.ALIGN_THRESHOLD).and(enableAlign).and(acs.peakFrequency.greaterThan(alignLowPass))
+            acs.peakValue.greaterThan(FourierMath.ALIGN_THRESHOLD).and(enableAlign)
+                .and(acs.peakFrequency.greaterThan(alignLowPass))
                 .and(acs.peakFrequency.lessThanOrEqualTo(20000))
         )
 
@@ -124,8 +129,18 @@ class WaveformVisualizer : AutoCanvas() {
         preferenceService.registerProperty(rangeMin, "rangeMin", this.javaClass, id)
         preferenceService.registerProperty(rangeLink, "rangeLink", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(
+            canvasContainer.horizontalLinesVisible,
+            "horizontalLinesVisible",
+            this.javaClass,
+            id
+        )
+        preferenceService.registerProperty(
+            canvasContainer.verticalLinesVisible,
+            "verticalLinesVisible",
+            this.javaClass,
+            id
+        )
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
     }
 
@@ -137,6 +152,8 @@ class WaveformVisualizer : AutoCanvas() {
         val controls: HBox =
             loader.load(javaClass.classLoader.getResourceAsStream("layout/waveform/waveformSettings.fxml"))
         val controller: WaveformSettingsController = loader.getController()
+        controller.channelLabel.textProperty()
+            .bind(acs.getChannelLabelProperty(channelProperty.value).map { it.shortcut })
         controller.waveformChartSettingsController.initialize(this)
         controlPane.children.add(controls)
     }
@@ -174,7 +191,8 @@ class WaveformVisualizer : AutoCanvas() {
             val maxWaves = (width / PIXELS_PER_WAVE).toInt().coerceIn(2, 50)
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate.get())
             drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - 50)
-            take = (buffer.size - waveSize).coerceIn(10.0, waveSize * maxWaves).roundToInt().coerceAtMost(buffer.size - drop)
+            take = (buffer.size - waveSize).coerceIn(10.0, waveSize * maxWaves).roundToInt()
+                .coerceAtMost(buffer.size - drop)
         } else if (bufferDuration.get().greaterThan(Duration.millis(100.0)).and(renderMode.get() == RenderMode.LINE)) {
             // make the line graph less jumpy
             val waveSize = take.toDouble() / width.roundToInt()
@@ -182,14 +200,21 @@ class WaveformVisualizer : AutoCanvas() {
             takeAdjust = -drop
         }
 
-        when(renderMode.get()!!) {
+        when (renderMode.get()!!) {
             RenderMode.LINE -> drawLine(gc, drop, take, min, rangeBreadth, width, height, takeAdjust)
             RenderMode.POINT_CLOUD -> drawPoints(gc, drop, take, min, rangeBreadth, width, height)
         }
     }
 
     private fun drawLine(
-        gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float, width: Double, height: Double, takeAdjust: Int
+        gc: GraphicsContext,
+        drop: Int,
+        take: Int,
+        min: Float,
+        rangeBreadth: Float,
+        width: Double,
+        height: Double,
+        takeAdjust: Int
     ) {
         var stepAccumulator = 0.0
         val step = take.toDouble() / width.roundToInt()
@@ -208,7 +233,15 @@ class WaveformVisualizer : AutoCanvas() {
         gc.stroke()
     }
 
-    private fun drawPoints(gc: GraphicsContext, drop: Int, take: Int, min: Float, rangeBreadth: Float, width: Double, height: Double) {
+    private fun drawPoints(
+        gc: GraphicsContext,
+        drop: Int,
+        take: Int,
+        min: Float,
+        rangeBreadth: Float,
+        width: Double,
+        height: Double
+    ) {
         var stepAccumulator = 0.0
         val step = take.toDouble() / (width.roundToInt() * 30)
 
@@ -217,17 +250,22 @@ class WaveformVisualizer : AutoCanvas() {
             val ai = i - drop
             if (++stepAccumulator < step) continue
             stepAccumulator -= step
-            gc.pixelWriter.setColor((ai.toDouble() / take * width).roundToInt(),
+            gc.pixelWriter.setColor(
+                (ai.toDouble() / take * width).roundToInt(),
                 ((buffer[i] - min).toDouble() / rangeBreadth * height).roundToInt(),
                 color
             )
         }
     }
 
-    fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
+    override fun registerListeners(acs: AudioCaptureService) {
+        acs.registerSampleObserver(channelProperty.value, this::handleSamples)
+    }
+
+    fun handleSamples(event: AudioCaptureService.SampleEvent) {
         if (isPaused) return
-        sampleRate.value = source.rate
-        buffer.insert(samples.toTypedArray())
+        sampleRate.value = event.source.rate
+        buffer.insert(event.data.toTypedArray())
     }
 
     override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {

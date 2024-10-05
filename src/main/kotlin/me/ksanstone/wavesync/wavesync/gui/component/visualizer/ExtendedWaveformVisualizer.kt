@@ -17,10 +17,10 @@ import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.extendedWaveform.ExtendedWaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.FourierMath
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
-import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.fftScaling.LinearFFTScalar
 import me.ksanstone.wavesync.wavesync.service.fftScaling.LinearFFTScalarParams
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
@@ -81,8 +81,18 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(
+            canvasContainer.horizontalLinesVisible,
+            "horizontalLinesVisible",
+            this.javaClass,
+            id
+        )
+        preferenceService.registerProperty(
+            canvasContainer.verticalLinesVisible,
+            "verticalLinesVisible",
+            this.javaClass,
+            id
+        )
     }
 
     override fun initializeSettingMenu() {
@@ -102,15 +112,15 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         xAxis.upperBound = 0.0
     }
 
-    fun handleSamples(samples: FloatArray, source: SupportedCaptureSource) {
+    fun handleSamples(event: AudioCaptureService.SampleEvent) {
         if (isPaused) return
-        if (source.rate != sourceRate.get()) sourceRate.set(source.rate)
-        if (source.rate <= effectiveBufferSampleRate) {
-            buffer.insert(samples.toTypedArray())
+        if (event.source.rate != sourceRate.get()) sourceRate.set(event.source.rate)
+        if (event.source.rate <= effectiveBufferSampleRate) {
+            buffer.insert(event.data.toTypedArray())
         } else {
-            val scaleDownFactor = source.rate / effectiveBufferSampleRate
-            for (i in samples.indices step scaleDownFactor)
-                buffer.insert(samples[i])
+            val scaleDownFactor = event.source.rate / effectiveBufferSampleRate
+            for (i in event.data.indices step scaleDownFactor)
+                buffer.insert(event.data[i])
         }
     }
 
@@ -194,6 +204,10 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
             gc.fill = rmsColor.value
             gc.fillRect(i.toDouble(), rmsStart, 1.0, rmsEnd - rmsStart)
         }
+    }
+
+    override fun registerListeners(acs: AudioCaptureService) {
+        acs.registerSampleObserver(0, this::handleSamples)
     }
 
     override fun getCssMetaData(): List<CssMetaData<out Styleable?, *>> {

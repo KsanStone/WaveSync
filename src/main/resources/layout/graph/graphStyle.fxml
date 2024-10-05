@@ -3,8 +3,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.HBox?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
-<HBox alignment="CENTER_LEFT" spacing="5.0" xmlns="http://javafx.com/javafx/17.0.2-ea"
-      xmlns:fx="http://javafx.com/fxml/1"
+<HBox xmlns:fx="http://javafx.com/fxml/1" alignment="CENTER_LEFT" spacing="5.0"
+      xmlns="http://javafx.com/javafx/17.0.2-ea"
       fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController">
     <children>
         <ToggleButton fx:id="yAxisToggle" mnemonicParsing="false" prefHeight="36" minHeight="36" maxHeight="36">

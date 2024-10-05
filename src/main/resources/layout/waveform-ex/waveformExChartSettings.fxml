@@ -4,8 +4,8 @@
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
-<GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10"
-          xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+<GridPane xmlns:fx="http://javafx.com/fxml/1" hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+          vgap="10" xmlns="http://javafx.com/javafx/17.0.2-ea"
           fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.extendedWaveform.ExtendedWaveformChartSettingsController">
     <rowConstraints>
         <RowConstraints minHeight="30.0" prefHeight="30.0"/>

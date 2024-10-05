@@ -5,8 +5,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.*?>
-<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="740"
-            xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+            prefWidth="740" xmlns="http://javafx.com/javafx/17.0.2-ea"
             fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.MainSettingsController">
     <children>
         <GridPane hgap="5.0" layoutX="188.0" layoutY="117.0" maxHeight="1.7976931348623157E308"

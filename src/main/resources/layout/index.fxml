@@ -4,8 +4,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
-<AnchorPane prefHeight="550.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/17.0.2-ea"
-            xmlns:fx="http://javafx.com/fxml/1"
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="550.0" prefWidth="900.0"
+            xmlns="http://javafx.com/javafx/17.0.2-ea"
             fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.MainController">
     <children>
         <VBox prefHeight="162.0" prefWidth="304.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"

@@ -10,10 +10,13 @@ import com.sun.jna.platform.win32.WinDef.HWND
 class TRACKMOUSEEVENT : Structure {
     @JvmField
     var cbSize: DWORD? = null
+
     @JvmField
     var dwFlags: DWORD? = null
+
     @JvmField
     var hwndTrack: HWND? = null
+
     @JvmField
     var dwHoverTime: DWORD? = null
 

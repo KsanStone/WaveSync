@@ -9,6 +9,7 @@ import com.sun.jna.platform.win32.WinDef
 class NCCALCSIZE_PARAMS(p: Pointer?) : Structure(p) {
     @JvmField
     var rgrc: Array<WinDef.RECT?> = arrayOfNulls(3)
+
     @JvmField
     var lppos: Pointer? = null
 

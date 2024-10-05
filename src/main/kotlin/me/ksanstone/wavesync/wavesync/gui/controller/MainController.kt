@@ -53,10 +53,11 @@ class MainController : Initializable {
     private var preferenceService: PreferenceService
     private var lastDeviceId: String? = null
     private var barVisualizer: BarVisualizer = BarVisualizer()
-    private var waveformVisualizer: WaveformVisualizer = WaveformVisualizer()
+    private var waveformVisualizers: List<WaveformVisualizer> =
+        List(5) { WaveformVisualizer().also { vis -> vis.channelProperty.value = it } }
     private var spectrogramVisualizer: SpectrogramVisualizer = SpectrogramVisualizer()
     private var extendedWaveformVisualizer: ExtendedWaveformVisualizer = ExtendedWaveformVisualizer()
-    private var vectorscopeVisualizer: VectorScopeVisualizer = VectorScopeVisualizer()
+    private var vectorScopeVisualizer: VectorScopeVisualizer = VectorScopeVisualizer()
     private var fftInfo: FFTInfo = FFTInfo()
     private var runtimeInfo: RuntimeInfo = RuntimeInfo()
     private var layoutService: LayoutStorageService
@@ -151,42 +152,59 @@ class MainController : Initializable {
     }
 
     data class CompComponentToggle(
-        val clazz: Class<*>, val node: Node, val id: String
+        val clazz: Class<*>, val node: Node, val id: String, val channelId: Int = 0, val menuName: String = ""
     ) {
         lateinit var check: CheckMenuItem
     }
 
-    private fun initializeWindowControls(layout: DragLayout, list: List<CompComponentToggle>) {
-
-        list.forEach {
-            val item = CheckMenuItem(localizationService.get("nav.window.toggle." + it.id))
-            componentToggles.items.add(item)
-            it.check = item
+    private fun setupComponent(layout: DragLayout, component: CompComponentToggle, nested: Boolean): MenuItem {
+        val item = if (nested) {
+            val label = CheckMenuItem()
+            label.textProperty().bind(audioCaptureService.getChannelLabelProperty(component.channelId).map { it.label })
+            label
+        } else {
+            CheckMenuItem(
+                localizationService.get(
+                    "nav.window.toggle." + component.id
+                )
+            )
         }
-
-        list.forEach {
-            it.check.selectedProperty().set(globalLayoutService.queryComponentOfClassExists(it.clazz))
+        component.check = item
+        component.check.selectedProperty().set(globalLayoutService.queryComponentOfExists(component.id))
+        component.check.selectedProperty().addListener { _, _, v ->
+            if (v) layout.addComponent(component.node, component.id)
+            else globalLayoutService.removeComponent(component.id)
+            layout.fullUpdate()
         }
+        return item
+    }
 
+    private fun initializeWindowControls(layout: DragLayout, list: List<List<CompComponentToggle>>) {
         list.forEach {
-            it.check.selectedProperty().addListener { _, _, v ->
-                if (v) layout.addComponent(it.node, it.id)
-                else layout.layoutRoot.removeComponentOfClass(it.clazz)
-                layout.fullUpdate()
+            if (it.size == 1) {
+                componentToggles.items.add(setupComponent(layout, it[0], false))
+            } else {
+                val menu = Menu(it[0].menuName)
+                for (child in it) {
+                    menu.items.add(setupComponent(layout, child, true))
+                }
+                componentToggles.items.add(menu)
             }
         }
 
         globalLayoutService.layoutRemovalListeners.add(Consumer {
             it.layoutRoot.iterateComponents {
                 list.forEach { predefined ->
-                    if (predefined.node == it.node) predefined.check.selectedProperty().set(false)
+                    predefined.forEach { component ->
+                        if (component.node == it.node) component.check.selectedProperty().set(false)
+                    }
                 }
             }
         })
     }
 
-    fun registerComponents(cards: List<CompComponentToggle>) {
-        val compMap = cards.associate { it.id to it.node }
+    private fun registerComponents(cards: List<List<CompComponentToggle>>) {
+        val compMap = cards.flatten().associate { it.id to it.node }
         layoutService.registerNodeFactory {
             compMap[it]
         }
@@ -194,12 +212,15 @@ class MainController : Initializable {
         val framerate = WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
             .findHighestRefreshRate()
 
-        cards.forEach {
-            if (it.node is AutoCanvas) {
-                it.node.registerPreferences("main", preferenceService)
-                it.node.info.bind(infoShown)
-                it.node.framerate.set(framerate)
-                it.node.initializeSettingMenu()
+        cards.forEach { card ->
+            card.forEach {
+                if (it.node is AutoCanvas) {
+                    it.node.registerPreferences(it.id, preferenceService)
+                    it.node.info.bind(infoShown)
+                    it.node.framerate.set(framerate)
+                    it.node.initializeSettingMenu()
+                    it.node.registerListeners(audioCaptureService)
+                }
             }
         }
 
@@ -214,20 +235,29 @@ class MainController : Initializable {
         }.thenRun { refreshDeviceList().thenRun { selectDefaultDevice() } }
 
         val list = listOf(
-            CompComponentToggle(FFTInfo::class.java, fftInfo, MAIN_FFT_INFO_ID),
-            CompComponentToggle(WaveformVisualizer::class.java, waveformVisualizer, MAIN_WAVEFORM_VISUALIZER_ID),
-            CompComponentToggle(BarVisualizer::class.java, barVisualizer, MAIN_BAR_VISUALIZER_ID),
-            CompComponentToggle(RuntimeInfo::class.java, runtimeInfo, MAIN_RUNTIME_INFO_ID),
-            CompComponentToggle(ExtendedWaveformVisualizer::class.java, extendedWaveformVisualizer, MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID),
-            CompComponentToggle(SpectrogramVisualizer::class.java, spectrogramVisualizer, MAIN_SPECTROGRAM_ID),
-            CompComponentToggle(VectorScopeVisualizer::class.java, vectorscopeVisualizer, MAIN_VECTORSCOPE_ID),
+            listOf(CompComponentToggle(FFTInfo::class.java, fftInfo, MAIN_FFT_INFO_ID)),
+            waveformVisualizers.mapIndexed { index, waveformVisualizer ->
+                CompComponentToggle(
+                    WaveformVisualizer::class.java,
+                    waveformVisualizer,
+                    "$MAIN_WAVEFORM_VISUALIZER_ID-Channel-${index}",
+                    channelId = index,
+                    menuName = localizationService.get("nav.window.toggle.$MAIN_WAVEFORM_VISUALIZER_ID")
+                )
+            },
+            listOf(CompComponentToggle(BarVisualizer::class.java, barVisualizer, MAIN_BAR_VISUALIZER_ID)),
+            listOf(CompComponentToggle(RuntimeInfo::class.java, runtimeInfo, MAIN_RUNTIME_INFO_ID)),
+            listOf(
+                CompComponentToggle(
+                    ExtendedWaveformVisualizer::class.java,
+                    extendedWaveformVisualizer,
+                    MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID
+                )
+            ),
+            listOf(CompComponentToggle(SpectrogramVisualizer::class.java, spectrogramVisualizer, MAIN_SPECTROGRAM_ID)),
+            listOf(CompComponentToggle(VectorScopeVisualizer::class.java, vectorScopeVisualizer, MAIN_VECTORSCOPE_ID)),
         )
         registerComponents(list)
-
-        audioCaptureService.registerFFTObserver(barVisualizer::handleFFT)
-        audioCaptureService.registerFFTObserver(spectrogramVisualizer::handleFFT)
-        audioCaptureService.registerSampleObserver(waveformVisualizer::handleSamples)
-        audioCaptureService.registerSampleObserver(extendedWaveformVisualizer::handleSamples)
 
         audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
         barVisualizer.highPass.addListener { _ -> refreshInfoLabel() }
@@ -250,7 +280,7 @@ class MainController : Initializable {
 
         val quickInfo = FFTInfo(true)
         quickInfo.visibleProperty()
-            .bind(list[0].check.selectedProperty().not().and(bottomBar.widthProperty().greaterThan(1000.0)))
+            .bind(list[0][0].check.selectedProperty().not().and(bottomBar.widthProperty().greaterThan(1000.0)))
         quickInfo.managedProperty().bind(quickInfo.visibleProperty())
         quickInfo.maxHeight = 20.0
         quickInfo.maxWidth = 100.0

@@ -39,7 +39,8 @@ class FFTTransformerService {
     fun computeMagnitudesSquared(output: FloatArray) {
         result.get(resulAuxArray)
         for (i in 0 until numPoints / 2) {
-            output[i] = resulAuxArray[2 * i + REAL] * resulAuxArray[2 * i + REAL] + resulAuxArray[2 * i + IMAG] * resulAuxArray[2 * i + IMAG]
+            output[i] =
+                resulAuxArray[2 * i + REAL] * resulAuxArray[2 * i + REAL] + resulAuxArray[2 * i + IMAG] * resulAuxArray[2 * i + IMAG]
         }
     }
 

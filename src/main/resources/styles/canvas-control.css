@@ -1,6 +1,7 @@
 .menu-item:hover, .menu-item:focused {
     -fx-background-color: transparent;
 }
+
 .control-box {
     -fx-spacing: 5;
 }

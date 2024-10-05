@@ -2,11 +2,13 @@ package me.ksanstone.wavesync.wavesync.utility
 
 class FloatChanneledStore : ChannelStore<FloatArray>() {
 
-    private lateinit var channelData: Array<Channel<FloatArray>>
+    private var channelData: Array<Channel<FloatArray>> = arrayOf()
+    private var channelSizeHints: Array<Int> = arrayOf()
 
     @Suppress("UNCHECKED_CAST")
     override fun resize(channels: Int, channelSize: Int): FloatChanneledStore {
         val newData = arrayOfNulls<Channel<FloatArray>>(channels)
+        channelSizeHints = Array(channels) { 0 }
         for (i in 0 until channels) {
             newData[i] = Channel(FloatArray(channelSize))
         }
@@ -30,6 +32,14 @@ class FloatChanneledStore : ChannelStore<FloatArray>() {
 
     override operator fun get(idx: Int): Channel<FloatArray> {
         return channelData[idx]
+    }
+
+    fun setSizeHint(idx: Int, hint: Int) {
+        channelSizeHints[idx] = hint
+    }
+
+    fun sizeHint(idx: Int): Int {
+        return channelSizeHints[idx]
     }
 
     override fun channels(): Int {

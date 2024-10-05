@@ -122,7 +122,8 @@ class BarChartSettingsController : Initializable {
         line.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.LINE)
         bar.selectedProperty().set(visualizer.renderMode.get() == BarVisualizer.RenderMode.BAR)
         falloff.selectedProperty().set(visualizer.smootherType.get() == BarVisualizer.SmootherType.FALLOFF)
-        multiplicative.selectedProperty().set(visualizer.smootherType.get() == BarVisualizer.SmootherType.MULTIPLICATIVE)
+        multiplicative.selectedProperty()
+            .set(visualizer.smootherType.get() == BarVisualizer.SmootherType.MULTIPLICATIVE)
         axisLogarithmicToggle.selectedProperty().set(visualizer.logarithmic.get())
         peakPointToggleSwitch.selectedProperty().set(visualizer.showPeak.value)
         axisLinearToggle.selectedProperty().set(!visualizer.logarithmic.get())
@@ -174,7 +175,9 @@ class BarChartSettingsController : Initializable {
         barWidthSlider.value = visualizer.targetBarWidth.get().toDouble()
         peakToggleSwitch.isSelected = visualizer.peakLineVisible.get()
         gapSlider.value = visualizer.gap.get().toDouble()
-        gapSlider.valueProperty().addListener { _, _, v -> if (barWidthSlider.value <= v.toDouble()) barWidthSlider.value = v.toDouble() + 1 }
+        gapSlider.valueProperty().addListener { _, _, v ->
+            if (barWidthSlider.value <= v.toDouble()) barWidthSlider.value = v.toDouble() + 1
+        }
         scalarTypeTabPane.selectionModel.select(
             when (visualizer.scalarType.value) {
                 FFTScalarType.LINEAR -> 0

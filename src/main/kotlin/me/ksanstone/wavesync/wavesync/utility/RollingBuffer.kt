@@ -5,7 +5,9 @@ import java.lang.Integer.max
 class RollingBuffer<T : Any>(val size: Int = 1024, private val default: (i: Int) -> T) : Iterable<T> {
 
     val tail: Long
-        get() { return written - size }
+        get() {
+            return written - size
+        }
 
     var written: Long = 0L
         private set
@@ -79,7 +81,7 @@ class RollingBuffer<T : Any>(val size: Int = 1024, private val default: (i: Int)
 }
 
 fun RollingBuffer<Float>.toFloatArrayInterlaced(preset: FloatArray): FloatArray {
-    for (i in currentHeadPosition + 1 until size) preset[(i - currentHeadPosition - 1)*2] = data[i] as Float
-    for (i in 0 until currentHeadPosition + 1) preset[(i + size - currentHeadPosition - 1)*2] = data[i] as Float
+    for (i in currentHeadPosition + 1 until size) preset[(i - currentHeadPosition - 1) * 2] = data[i] as Float
+    for (i in 0 until currentHeadPosition + 1) preset[(i + size - currentHeadPosition - 1) * 2] = data[i] as Float
     return preset
 }

@@ -1,21 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.CustomMenuItem?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.layout.HBox?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
-<HBox xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformSettingsController">
+<HBox xmlns:fx="http://javafx.com/fxml/1" alignment="CENTER_LEFT" spacing="5.0" xmlns="http://javafx.com/javafx/17.0.12"
+      fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformSettingsController">
     <children>
+        <Label styleClass="accent" fx:id="channelLabel"/>
         <MenuButton mnemonicParsing="false">
             <items>
                 <CustomMenuItem hideOnClick="false" mnemonicParsing="false" text="Unspecified Action">
                     <content>
-                        <fx:include source="/layout/waveform/waveformChartSettings.fxml" fx:id="waveformChartSettings"/>
+                        <fx:include fx:id="waveformChartSettings" source="/layout/waveform/waveformChartSettings.fxml"/>
                     </content>
                 </CustomMenuItem>
             </items>
             <graphic>
-                <FontIcon iconLiteral="mdmz-settings" iconSize="20" text="" />
+                <FontIcon iconLiteral="mdmz-settings" iconSize="20" text=""/>
             </graphic>
         </MenuButton>
     </children>

@@ -32,7 +32,11 @@ data class SupportedCaptureSource(
 
     fun getPropertyDescriptor(fftSize: Int, targetMin: Int, targetMax: Int, numberFormat: NumberFormat): String {
         val resultingSamples = trimResultTo(fftSize * 2, targetMax) - bufferBeginningSkipFor(targetMin, fftSize * 2)
-        return "${numberFormat.format(format.mix.rate)}Hz • ${format.mix.sample} • 🔈 x${format.channels.inputs} • ${numberFormat.format(fftSize)} [${
+        return "${numberFormat.format(format.mix.rate)}Hz • ${format.mix.sample} • 🔈 x${format.channels.inputs} • ${
+            numberFormat.format(
+                fftSize
+            )
+        } [${
             numberFormat.format(
                 resultingSamples
             )

@@ -86,13 +86,13 @@ class CustomizedStage(private val stage: Stage, private val config: CaptionConfi
     }
 
     private val closeBtnLocation: Bounds
-        get() = closeButton!!.localToScreen(closeButton!!.boundsInLocal) ?: BoundingBox(0.0,0.0,0.0,0.0)
+        get() = closeButton!!.localToScreen(closeButton!!.boundsInLocal) ?: BoundingBox(0.0, 0.0, 0.0, 0.0)
 
     private val maximizeBtnLocation: Bounds
-        get() = restoreButton!!.localToScreen(restoreButton!!.boundsInLocal) ?: BoundingBox(0.0,0.0,0.0,0.0)
+        get() = restoreButton!!.localToScreen(restoreButton!!.boundsInLocal) ?: BoundingBox(0.0, 0.0, 0.0, 0.0)
 
     private val minimizeBtnLocation: Bounds
-        get() = minimizeButton!!.localToScreen(minimizeButton!!.boundsInLocal) ?: BoundingBox(0.0,0.0,0.0,0.0)
+        get() = minimizeButton!!.localToScreen(minimizeButton!!.boundsInLocal) ?: BoundingBox(0.0, 0.0, 0.0, 0.0)
 
 
     internal inner class WndProc : WindowProc {

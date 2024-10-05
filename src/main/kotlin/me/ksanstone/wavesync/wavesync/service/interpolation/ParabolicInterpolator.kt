@@ -13,7 +13,7 @@ class ParabolicInterpolator : FFTPeakInterpolator {
         val b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) / denominator
         // we do not need the c coefficient, as we only care about the peak
 
-        return -b / (a*2)
+        return -b / (a * 2)
     }
 
     override fun calcPeak(samples: FloatArray, peakIndex: Int, rate: Int): Float {

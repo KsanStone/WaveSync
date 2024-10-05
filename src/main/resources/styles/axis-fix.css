@@ -31,7 +31,8 @@
     -fx-stroke: -color-base-6;
 }
 
-.tooltip {}
+.tooltip {
+}
 
 .tooltip-cross {
     -fx-stroke: -color-accent-4;

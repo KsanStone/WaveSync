@@ -53,7 +53,7 @@ class GradientPicker : HBox() {
             sGradient.value = v
         }
         stageController.second.shouldClose.addListener { _, _, v ->
-            if(v) stageController.first.close()
+            if (v) stageController.first.close()
         }
     }
 

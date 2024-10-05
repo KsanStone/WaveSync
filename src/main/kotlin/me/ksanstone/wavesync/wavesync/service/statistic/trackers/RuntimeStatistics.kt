@@ -26,9 +26,15 @@ class RuntimeStatistics(
 
         return listOf(
             Statistic.ofDuration("statistic.runtime.uptime", Duration.millis(runtimeBean.uptime.toDouble())),
-            Statistic.ofDuration("statistic.runtime.totalUptime", Duration.millis(totalRuntimeTracker.getTotal().inWholeMilliseconds.toDouble())),
+            Statistic.ofDuration(
+                "statistic.runtime.totalUptime",
+                Duration.millis(totalRuntimeTracker.getTotal().inWholeMilliseconds.toDouble())
+            ),
             Statistic("statistic.runtime.vm", "${runtimeBean.vmVersion} ${runtimeBean.vmVendor}"),
-            Statistic("statistic.runtime.threads", "${threadBean.threadCount} (${threadBean.daemonThreadCount} daemon)"),
+            Statistic(
+                "statistic.runtime.threads",
+                "${threadBean.threadCount} (${threadBean.daemonThreadCount} daemon)"
+            ),
         )
     }
 

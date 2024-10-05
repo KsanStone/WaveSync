@@ -24,7 +24,7 @@ class ExtendedWaveformChartSettingsController {
         )
 
         visualizer.registerGraphSettings(graphStyleController)
-        visualizer.bufferDuration.bind(bufferLengthSpinner.valueFactory.valueProperty().map { Duration.seconds(it)})
+        visualizer.bufferDuration.bind(bufferLengthSpinner.valueFactory.valueProperty().map { Duration.seconds(it) })
     }
 
 }

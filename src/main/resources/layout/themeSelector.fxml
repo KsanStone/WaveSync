@@ -4,9 +4,11 @@
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.layout.HBox?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
-<HBox alignment="CENTER_LEFT" spacing="5.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.ThemeSelectorController">
-    <ChoiceBox fx:id="themeChoiceBox" prefWidth="150.0" HBox.hgrow="ALWAYS" />
-    <FontIcon iconLiteral="mdmz-wb_sunny" iconSize="25" />
-    <ToggleSwitch fx:id="darkLightSwitch" prefWidth="45.0" />
-    <FontIcon iconLiteral="mdmz-nights_stay" iconSize="25" />
+<HBox xmlns:fx="http://javafx.com/fxml/1" alignment="CENTER_LEFT" spacing="5.0"
+      xmlns="http://javafx.com/javafx/17.0.2-ea"
+      fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.ThemeSelectorController">
+    <ChoiceBox fx:id="themeChoiceBox" prefWidth="150.0" HBox.hgrow="ALWAYS"/>
+    <FontIcon iconLiteral="mdmz-wb_sunny" iconSize="25"/>
+    <ToggleSwitch fx:id="darkLightSwitch" prefWidth="45.0"/>
+    <FontIcon iconLiteral="mdmz-nights_stay" iconSize="25"/>
 </HBox>

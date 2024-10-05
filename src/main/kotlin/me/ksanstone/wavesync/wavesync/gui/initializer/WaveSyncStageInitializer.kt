@@ -134,8 +134,8 @@ class WaveSyncStageInitializer(
     fun customize(stage: Stage) {
         if (stage.scene == null) {
             var listener: ChangeListener<Scene>? = null
-            listener = ChangeListener<Scene>  { _, _, v ->
-                if (v!=null)
+            listener = ChangeListener<Scene> { _, _, v ->
+                if (v != null)
                     injectControls(stage)
                 stage.sceneProperty().removeListener(listener)
             }

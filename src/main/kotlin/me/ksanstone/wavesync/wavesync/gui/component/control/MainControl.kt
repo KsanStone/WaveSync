@@ -21,7 +21,7 @@ class MainControl : VBox() {
         isSetup = true
         this.controls.setup()
         stage.fullScreenProperty().addListener { _, _, v ->
-            if(v)
+            if (v)
                 children.remove(controls)
             else
                 children.add(0, controls)

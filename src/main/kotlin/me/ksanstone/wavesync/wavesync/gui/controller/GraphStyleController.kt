@@ -18,5 +18,6 @@ class GraphStyleController : Initializable {
     lateinit var yAxisToggle: ToggleButton
 
     @FXML
-    override fun initialize(location: URL?, resources: ResourceBundle?) {}
+    override fun initialize(location: URL?, resources: ResourceBundle?) {
+    }
 }

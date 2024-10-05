@@ -27,6 +27,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneController
 import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
+import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.RecordingModeService
@@ -274,6 +275,8 @@ abstract class AutoCanvas(selfDraw: Boolean = false, private val detachable: Boo
     }
 
     protected open fun usedState(state: Boolean) {}
+
+    open fun registerListeners(acs: AudioCaptureService) {}
 
     abstract fun registerPreferences(id: String, preferenceService: PreferenceService)
 

@@ -68,8 +68,10 @@ class SpectrogramChartSettingsController {
     }
 
     private lateinit var visualizer: SpectrogramVisualizer
-    private val audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
-    private val layoutStorageService = WaveSyncBootApplication.applicationContext.getBean(LayoutStorageService::class.java)
+    private val audioCaptureService =
+        WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
+    private val layoutStorageService =
+        WaveSyncBootApplication.applicationContext.getBean(LayoutStorageService::class.java)
     private val preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
     private val propsDelegated = SimpleBooleanProperty(false)
 
@@ -168,13 +170,17 @@ class SpectrogramChartSettingsController {
     }
 
     fun axisLinear() {
-        if (propsDelegated.value) {updateToggles(); return}
+        if (propsDelegated.value) {
+            updateToggles(); return
+        }
         visualizer.logarithmic.value = false
         updateToggles()
     }
 
     fun axisLogarithmic() {
-        if (propsDelegated.value) {updateToggles(); return}
+        if (propsDelegated.value) {
+            updateToggles(); return
+        }
         visualizer.logarithmic.value = true
         updateToggles()
     }

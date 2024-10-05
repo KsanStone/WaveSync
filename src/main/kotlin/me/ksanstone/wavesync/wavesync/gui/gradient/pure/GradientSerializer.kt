@@ -30,8 +30,9 @@ class GradientSerializer {
             Optional.empty()
         }
     }
+
     fun toStops(gradient: SGradient): List<Stop> {
-        return when(gradient) {
+        return when (gradient) {
             is SLinearGradient -> gradient.stops
             is SStartEndGradient -> listOf(Stop(0.0, gradient.start), Stop(1.0, gradient.end))
             else -> listOf()
@@ -40,7 +41,7 @@ class GradientSerializer {
 }
 
 fun Color.toHexString(): String {
-    return "#" + Integer.toHexString(this.hashCode()).padStart(8,'0').substring(0, 6).uppercase(Locale.getDefault())
+    return "#" + Integer.toHexString(this.hashCode()).padStart(8, '0').substring(0, 6).uppercase(Locale.getDefault())
 }
 
 fun Color.toAHexString(): String {

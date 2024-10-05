@@ -107,7 +107,9 @@ class VectorScopeVisualizer : AutoCanvas(false) {
     private fun drawSkewed(gc: GraphicsContext, width: Double, height: Double) {
         val sX = 1.0 / rangeX.value
         val sY = 1.0 / rangeY.value
-        acs.samples[1].data.forEachIndexed { i, sample ->
+
+        for (i in 0 until acs.samples.sizeHint(0)) {
+            val sample = acs.samples[0].data[i]
             gc.fillRect(
                 (sample.toDouble() * sX + 1.0) * 0.5 * width - 1.0,
                 height - (acs.samples[2].data[i].toDouble() * sY + 1) * height * 0.5,
@@ -141,14 +143,13 @@ class VectorScopeVisualizer : AutoCanvas(false) {
         val scaledHeight = dividedHeight * sY
         val yOffset = (ROOT2 - 1) * scaledHeight - (scaledHeight - dividedHeight) * ROOT2
         val xOffset = width / 2
-        acs.samples[1].data.forEachIndexed { i, sample ->
+        for (i in 0 until acs.samples.sizeHint(0)) {
+            val sample = acs.samples[0].data[i]
             val x = sample.toDouble()
             val y = acs.samples[2].data[i].toDouble()
             rotate45(x, y, gc, dividedWidth, scaledHeight, xOffset, yOffset)
         }
 
-//        val edgePoints =
-//            listOf(0.0 to 1.0, 1.0 to 0.0, 1.0 to 1.0, 0.0 to -1.0, -1.0 to 0.0, -1.0 to -1.0, -1.0 to 1.0, 1.0 to -1.0)
         gc.fill = Color.VIOLET
         for (edge in edgePoints) {
             rotate45(edge.first, edge.second, gc, dividedWidth, scaledHeight, xOffset, yOffset)

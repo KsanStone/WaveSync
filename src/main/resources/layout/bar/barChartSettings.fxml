@@ -6,8 +6,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.*?>
-<GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10"
-          xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1"
+<GridPane xmlns:fx="http://javafx.com/fxml/1" hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+          vgap="10" xmlns="http://javafx.com/javafx/17.0.2-ea"
           fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarChartSettingsController">
     <rowConstraints>
         <RowConstraints minHeight="30.0"/>

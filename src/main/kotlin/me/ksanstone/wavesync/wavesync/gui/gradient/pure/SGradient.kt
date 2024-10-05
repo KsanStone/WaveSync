@@ -23,8 +23,8 @@ interface SGradientDeserializer {
 fun interpolateArgb(start: Color, end: Color, v: Float): Int {
     return packArgb(
         ((start.opacity + (end.opacity - start.opacity) * v) * 255).toInt(),
-        ((start.red     + (end.red     - start.red)     * v) * 255).toInt(),
-        ((start.green   + (end.green   - start.green)   * v) * 255).toInt(),
-        ((start.blue    + (end.blue    - start.blue)    * v) * 255).toInt(),
+        ((start.red + (end.red - start.red) * v) * 255).toInt(),
+        ((start.green + (end.green - start.green) * v) * 255).toInt(),
+        ((start.blue + (end.blue - start.blue) * v) * 255).toInt(),
     )
 }

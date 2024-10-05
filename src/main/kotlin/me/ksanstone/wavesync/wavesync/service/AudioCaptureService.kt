@@ -24,7 +24,7 @@ import xt.audio.XtStream
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
-import java.util.function.BiConsumer
+import java.util.function.Consumer
 import kotlin.math.log10
 
 
@@ -33,7 +33,6 @@ class AudioCaptureService(
     private val preferenceService: PreferenceService,
     private var fftTransformerService: FFTTransformerService
 ) : AsyncInit() {
-
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
 
     private lateinit var pcmDataBuffer: ByteArray
@@ -43,8 +42,8 @@ class AudioCaptureService(
     private lateinit var fftwSignalArray: FloatArray
     private var lock: CountDownLatch = CountDownLatch(0)
     private var recordingFuture: CompletableFuture<Void>? = null
-    private var fftObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
-    private var sampleObservers: MutableList<BiConsumer<FloatArray, SupportedCaptureSource>> = mutableListOf()
+    private var fftObservers: EventEmitter<Int, FftEvent> = EventEmitter()
+    private var sampleObservers: EventEmitter<Int, SampleEvent> = EventEmitter()
     private var windowFunction: WindowFunction? = null
     private val _captureRunning = SimpleBooleanProperty(false)
 
@@ -106,11 +105,11 @@ class AudioCaptureService(
             audioSystems = platform.systems.toList()
         }
     }
-    
+
     fun onBuffer(stream: XtStream, buffer: XtBuffer, user: Any?): Int {
         val safe = XtSafeBuffer.get(stream) ?: return 0
         safe.lock(buffer)
-        
+
         processSamples(marshalSamples(safe.input, stream.format), buffer.frames)
 
         safe.unlock(buffer)
@@ -120,7 +119,7 @@ class AudioCaptureService(
     private fun marshalSamples(samples: Any?, format: XtFormat): FloatArray {
         return samples as FloatArray
     }
-    
+
     private fun processSamples(audio: FloatArray, frames: Int) {
         if (paused.get()) return
         val channels = source.get().format.channels.inputs
@@ -139,13 +138,21 @@ class AudioCaptureService(
                 doFFT(fftSampleBuffer.toFloatArrayInterlaced(fftwSignalArray), source.get().rate)
             }
         }
+        for (i in 0 until samples.channels()) {
+            samples.setSizeHint(i, frames)
+        }
         processSamples(frames)
     }
 
     private fun processSamples(frames: Int) {
         doLoudnessCalc(frames)
-        val sampleSlice = samples[0].data.sliceArray(0 until frames)
-        sampleObservers.forEach { it.accept(sampleSlice, source.get()) }
+
+        sampleObservers.indices.forEach {
+            if (it < samples.channels()) {
+                val sampleSlice = samples[it].data.sliceArray(0 until frames)
+                sampleObservers.publish(it, SampleEvent(it, sampleSlice, source.get()))
+            }
+        }
     }
 
     private fun doLoudnessCalc(frames: Int) {
@@ -161,7 +168,11 @@ class AudioCaptureService(
         fftTransformerService.transform()
         fftTransformerService.computeMagnitudesSquared(fftResult[0].data)
         calcPeak(fftResult[0].data)
-        fftObservers.forEach { it.accept(fftResult[0].data, source.get()) }
+
+        fftObservers.indices.forEach {
+            if (it < fftResult.channels())
+                fftObservers.publish(it, FftEvent(it, fftResult[it].data, source.get()))
+        }
     }
 
     private val interpolator = ParabolicInterpolator()
@@ -180,12 +191,35 @@ class AudioCaptureService(
         peakValue.value = peakV
     }
 
-    fun registerFFTObserver(observer: BiConsumer<FloatArray, SupportedCaptureSource>) {
-        fftObservers.add(observer)
+    fun registerFFTObserver(channelId: Int, observer: Consumer<FftEvent>) {
+        fftObservers.register(channelId, observer)
     }
 
-    fun registerSampleObserver(observer: BiConsumer<FloatArray, SupportedCaptureSource>) {
-        sampleObservers.add(observer)
+    fun registerSampleObserver(channelId: Int, observer: Consumer<SampleEvent>) {
+        sampleObservers.register(channelId, observer)
+    }
+
+    private val channelLabelProps = mutableMapOf<Int, ObjectProperty<ChannelLabel>>()
+
+    fun getChannelLabelProperty(index: Int): ObjectProperty<ChannelLabel> {
+        if (channelLabelProps.containsKey(index)) {
+            return channelLabelProps[index]!!
+        } else {
+            channelLabelProps[index] = SimpleObjectProperty(ChannelLabel.UNDEFINED)
+            updateLabels()
+            return channelLabelProps[index]!!
+        }
+    }
+
+    private fun updateLabels() {
+        javafx.application.Platform.runLater {
+            channelLabelProps.values.forEach { it.value = ChannelLabel.UNDEFINED }
+            for (i in 0 until samples.channels()) {
+                if (channelLabelProps.containsKey(i)) {
+                    channelLabelProps[i]!!.value = samples[i].label
+                }
+            }
+        }
     }
 
     @Synchronized
@@ -208,7 +242,8 @@ class AudioCaptureService(
                     val channels = format.channels.inputs
                     val rate = deviceParams.format.mix.rate
                     val sample = deviceParams.format.mix.sample
-                    val channelLabels = (0 until channels).map { idx -> ChannelLabel.resolve(device.getChannelName(false, idx)) }
+                    val channelLabels =
+                        (0 until channels).map { idx -> ChannelLabel.resolve(device.getChannelName(false, idx)) }
 
                     setScanWindowSize(fftSize.get())
                     val deviceStream = device.openStream(deviceParams, null)
@@ -221,6 +256,7 @@ class AudioCaptureService(
                             )
                             samples.resize(1 + channels, stream.frames).label(*defaultChannelLabels.plus(channelLabels))
                             channelVolumes.resize(1 + channels, 1).label(*defaultChannelLabels.plus(channelLabels))
+                            updateLabels()
                             logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
                             _captureRunning.set(true)
                             stream.start()
@@ -262,10 +298,10 @@ class AudioCaptureService(
         logger.info("Using window size $size")
         fftSampleBuffer = RollingBuffer(size) { 0.0f }
         fftResult.resize(1, size / 2).label(CommonChannel.MASTER)
-        if(this::fftwSignal.isInitialized) {
+        if (this::fftwSignal.isInitialized) {
             this.fftwSignal.deallocate()
         }
-        if(this::fftwResult.isInitialized) {
+        if (this::fftwResult.isInitialized) {
             this.fftwResult.deallocate()
         }
         fftwSignal = FloatPointer(size * 2L)
@@ -366,4 +402,7 @@ class AudioCaptureService(
         }
         return supported
     }
+
+    class SampleEvent(val channel: Int, val data: FloatArray, val source: SupportedCaptureSource)
+    class FftEvent(val channel: Int, val data: FloatArray, val source: SupportedCaptureSource)
 }

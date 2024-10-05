@@ -179,11 +179,11 @@ class SpectrogramVisualizer : AutoCanvas() {
         stripeBuffer = FloatArray(fftArraySize.value)
     }
 
-    fun handleFFT(res: FloatArray, source: SupportedCaptureSource) {
+    fun handleFFT(event: AudioCaptureService.FftEvent) {
         if (!canDraw || buffer.size == 2) return
-        this.source = source
+        this.source = event.source
         buffer.incrementPosition()
-        System.arraycopy(res, 0, buffer.last(), 0, res.size)
+        System.arraycopy(event.data, 0, buffer.last(), 0, event.data.size)
     }
 
     private fun resetBuffer() {
@@ -419,5 +419,9 @@ class SpectrogramVisualizer : AutoCanvas() {
             this.imageTop = WritableImage(1, 1)
             this.imageBottom = WritableImage(1, 1)
         }
+    }
+
+    override fun registerListeners(acs: AudioCaptureService) {
+        acs.registerFFTObserver(0, this::handleFFT)
     }
 }

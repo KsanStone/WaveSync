@@ -35,7 +35,7 @@ public class HeapMeterThread extends Thread {
         super("jvm-alloc-rate-meter-thread");
 
         this.memoryBean = ManagementFactory.getMemoryMXBean();
-        this.threadBean = (ThreadMXBean)ManagementFactory.getThreadMXBean();
+        this.threadBean = (ThreadMXBean) ManagementFactory.getThreadMXBean();
         this.gcBeans = ManagementFactory.getGarbageCollectorMXBeans();
 
         this.callback = callback;
@@ -73,8 +73,8 @@ public class HeapMeterThread extends Thread {
                         long rate = Math.round(deltaUsage * multiplier);
                         callback.accept(rate);
                     } else if (threadAllocated.compareTo(BigInteger.ZERO) >= 0 &&
-                               lastThreadAllocated.compareTo(BigInteger.ZERO) >= 0 &&
-                               deltaAllocated.compareTo(BigInteger.ZERO) >= 0) {
+                            lastThreadAllocated.compareTo(BigInteger.ZERO) >= 0 &&
+                            deltaAllocated.compareTo(BigInteger.ZERO) >= 0) {
                         long rate = Math.round(deltaAllocated.longValue() * multiplier);
                         callback.accept(rate);
                     } else {
@@ -103,7 +103,9 @@ public class HeapMeterThread extends Thread {
         return memoryBean.getHeapMemoryUsage().getUsed();
     }
 
-    /** Returns total number of GC cycles since the start of the VM. **/
+    /**
+     * Returns total number of GC cycles since the start of the VM.
+     **/
     private long gcCounts() {
         long total = 0;
         for (GarbageCollectorMXBean bean : gcBeans) {
@@ -112,7 +114,9 @@ public class HeapMeterThread extends Thread {
         return total;
     }
 
-    /** Total allocation can overflow a long, so using BigInt here. **/
+    /**
+     * Total allocation can overflow a long, so using BigInt here.
+     **/
     private BigInteger allocatedByAllThreads() {
         long[] ids = threadBean.getAllThreadIds();
         long[] allocatedBytes = threadBean.getThreadAllocatedBytes(ids);

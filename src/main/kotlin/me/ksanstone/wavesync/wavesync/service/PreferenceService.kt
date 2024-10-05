@@ -107,22 +107,45 @@ class PreferenceService(
             { v -> preferences.put(name, (v as Enum<*>).name) })
     }
 
-    fun registerDurationProperty(property: ObjectProperty<Duration>, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
-        registerProperty(property, name, clazz, id, {e -> e.toMillis().toString()}, {str -> Duration.millis(str.toDouble())})
+    fun registerDurationProperty(
+        property: ObjectProperty<Duration>,
+        name: String,
+        clazz: Class<*>? = null,
+        id: String = DEFAULT_ID
+    ) {
+        registerProperty(
+            property,
+            name,
+            clazz,
+            id,
+            { e -> e.toMillis().toString() },
+            { str -> Duration.millis(str.toDouble()) })
     }
 
-    fun registerColorProperty(property: ObjectProperty<Color>, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
+    fun registerColorProperty(
+        property: ObjectProperty<Color>,
+        name: String,
+        clazz: Class<*>? = null,
+        id: String = DEFAULT_ID
+    ) {
         val preferences = getPreferences(clazz, id)
         doRegister(property as Property<Any?>,
             { intToColor(preferences.getInt(name, colorToInt(property.get()))) },
             { v -> preferences.putInt(name, colorToInt(v as Color)) })
     }
 
-    fun registerSGradientProperty(property: ObjectProperty<SGradient>, name: String, clazz: Class<*>? = null, id: String = DEFAULT_ID) {
+    fun registerSGradientProperty(
+        property: ObjectProperty<SGradient>,
+        name: String,
+        clazz: Class<*>? = null,
+        id: String = DEFAULT_ID
+    ) {
         val preferences = getPreferences(clazz, id)
         doRegister(property as Property<Any?>,
-            { gradientSerializer.deserialize(preferences.get(name, gradientSerializer.serialize(property.get())))
-                .getOrElse { gradientSerializer.serialize(property.get()) } },
+            {
+                gradientSerializer.deserialize(preferences.get(name, gradientSerializer.serialize(property.get())))
+                    .getOrElse { gradientSerializer.serialize(property.get()) }
+            },
             { v -> preferences.put(name, gradientSerializer.serialize(v as SGradient)) })
     }
 

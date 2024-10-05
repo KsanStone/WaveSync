@@ -46,7 +46,7 @@ import kotlin.math.*
 
 class BarVisualizer : AutoCanvas() {
 
-    private var smoother: MagnitudeSmoother
+    private var smoother: MagnitudeSmoother = ExponentialFalloffSmoother()
     private var rawMaxTracker: MaxTracker
     private var localizationService: LocalizationService =
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
@@ -87,9 +87,17 @@ class BarVisualizer : AutoCanvas() {
     private val peakLineColor: StyleableProperty<Paint> =
         FACTORY.createStyleablePaintProperty(this, "peakLineColor", "-fx-peak-line-color") { vis -> vis.peakLineColor }
     private val peakLineUnderColor: StyleableProperty<Paint> =
-        FACTORY.createStyleablePaintProperty(this, "peakLineUnderColor", "peakLineUnderColor") { vis -> vis.peakLineColor }
+        FACTORY.createStyleablePaintProperty(
+            this,
+            "peakLineUnderColor",
+            "peakLineUnderColor"
+        ) { vis -> vis.peakLineColor }
     private val peakPointUnderColor: StyleableProperty<Color> =
-        FACTORY.createStyleableColorProperty(this, "peakPointUnderColor", "-fx-peak-point-color") { vis -> vis.peakPointUnderColor }
+        FACTORY.createStyleableColorProperty(
+            this,
+            "peakPointUnderColor",
+            "-fx-peak-point-color"
+        ) { vis -> vis.peakPointUnderColor }
     private val startCssColor: StyleableProperty<Color> =
         FACTORY.createStyleableColorProperty(this, "startCssColor", "-fx-start-color") { vis -> vis.startCssColor }
     private val endCssColor: StyleableProperty<Color> =
@@ -104,8 +112,9 @@ class BarVisualizer : AutoCanvas() {
     init {
         if (xAxis is NumberAxis)
             (xAxis as NumberAxis).tickUnit = 1000.0
+        smoother.dataSize = 512
         changeSmoother()
-        this.smootherType.addListener { _ ->  changeSmoother() }
+        this.smootherType.addListener { _ -> changeSmoother() }
         canvasContainer.dependOnXAxis.set(true)
         canvasContainer.highlightedVerticalLines.add(20000.0)
         detachedWindowNameProperty.set("Bar")
@@ -120,8 +129,6 @@ class BarVisualizer : AutoCanvas() {
         this.setEndColor.bind(globalColorService.endColor)
         this.useCssColor.bind(globalColorService.barUseCssColor)
 
-        smoother = ExponentialFalloffSmoother()
-        smoother.dataSize = 512
         rawMaxTracker = MaxTracker()
         rawMaxTracker.dataSize = smoother.dataSize
 
@@ -199,8 +206,18 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(logarithmic, "logarithmic", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.horizontalLinesVisible, "horizontalLinesVisible", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
+        preferenceService.registerProperty(
+            canvasContainer.horizontalLinesVisible,
+            "horizontalLinesVisible",
+            this.javaClass,
+            id
+        )
+        preferenceService.registerProperty(
+            canvasContainer.verticalLinesVisible,
+            "verticalLinesVisible",
+            this.javaClass,
+            id
+        )
         preferenceService.registerProperty(showPeak, "showPeak", this.javaClass, id)
     }
 
@@ -211,8 +228,9 @@ class BarVisualizer : AutoCanvas() {
                 return
             }
             if (logarithmic.get()) logarithmicTooltipText() else linearTooltipText()
-        } catch (_: IndexOutOfBoundsException) { }
-        catch (_: NullPointerException) { }
+        } catch (_: IndexOutOfBoundsException) {
+        } catch (_: NullPointerException) {
+        }
     }
 
     private fun logarithmicTooltipText() {
@@ -266,10 +284,11 @@ class BarVisualizer : AutoCanvas() {
     }
 
     private fun changeSmoother() {
-        val oldSize = smoother?.dataSize ?: 500
+        val oldSize = smoother.dataSize
         val new = when (smootherType.get()) {
             SmootherType.MULTIPLICATIVE -> MultiplicativeSmoother()
             SmootherType.FALLOFF -> ExponentialFalloffSmoother()
+            else -> MultiplicativeSmoother()
         }
         new.dataSize = oldSize
         this.smoother = new
@@ -314,12 +333,13 @@ class BarVisualizer : AutoCanvas() {
         xAxis.upperBound = FourierMath.frequencyOfBin(upper, rate, fftSize).toDouble()
     }
 
-    fun handleFFT(array: FloatArray, source: SupportedCaptureSource) {
+    fun handleFFT(event: AudioCaptureService.FftEvent) {
         if (isPaused) return
 
-        fftDataArray = array
+        fftDataArray = event.data
+        val source = event.source
         val oldFftSize = this.fftSize
-        this.fftSize = array.size * 2
+        this.fftSize = event.data.size * 2
         this.rate = source.rate
         if (source != this.source || oldFftSize != this.fftSize) {
             this.source = source
@@ -335,10 +355,10 @@ class BarVisualizer : AutoCanvas() {
             }
         }
 
-        smoother.setData(array, frequencyBinSkip, size) { fftScalar.scale(it) }
+        smoother.setData(event.data, frequencyBinSkip, size) { fftScalar.scale(it) }
 
         if (peakLineVisible.get()) {
-            rawMaxTracker.applyData(array, frequencyBinSkip, size)
+            rawMaxTracker.applyData(event.data, frequencyBinSkip, size)
         }
     }
 
@@ -360,7 +380,10 @@ class BarVisualizer : AutoCanvas() {
             var barWidth = (width - (totalBars - 1) * localGap) / totalBars
             val buffer = smoother.data
             val padding = 1.0
-            gc.stroke = effectiveStartColor.get()
+            if (useCssColor.get())
+                gc.stroke = effectiveEndColor.get()
+            else
+                gc.stroke = effectiveStartColor.get()
 
             calculateLocBuffer(buffer, logarithmic.get(), barWidth, step, height, width)
 
@@ -407,11 +430,17 @@ class BarVisualizer : AutoCanvas() {
         var num = 0
         var added = false
         if (logarithmic) {
-            val binOffset = if(renderMode.get()!! == RenderMode.LINE) 0 else 1
+            val binOffset = if (renderMode.get()!! == RenderMode.LINE) 0 else 1
             var lastX = 0.0
             for (i in buffer.indices) {
                 y = max(buffer[i].toDouble(), y); added = false
-                x = xAxis.getDisplayPosition(FourierMath.frequencyOfBinD(i + frequencyBinSkip + binOffset, rate, fftSize))
+                x = xAxis.getDisplayPosition(
+                    FourierMath.frequencyOfBinD(
+                        i + frequencyBinSkip + binOffset,
+                        rate,
+                        fftSize
+                    )
+                )
                 if (x - lastX < barWidth) continue
 
                 fftLocBuffer.data[num].x = x
@@ -563,7 +592,9 @@ class BarVisualizer : AutoCanvas() {
     private fun drawBars(gc: GraphicsContext, barWidth: Double, padding: Double, height: Double, logarithmic: Boolean) {
         var lastX = 0.0
         for (i in 0 until fftLocBuffer.size) {
-            val color = effectiveStartColor.get().interpolate(effectiveEndColor.get(), fftLocBuffer.data[i].raw)
+            val color = effectiveStartColor
+                .get()
+                .interpolate(effectiveEndColor.get(), fftLocBuffer.data[i].raw)
             val width = (if (logarithmic) fftLocBuffer.data[i].x - lastX else barWidth) + padding
 
             gc.fill = color
@@ -586,6 +617,10 @@ class BarVisualizer : AutoCanvas() {
         fun getClassCssMetaData(): List<CssMetaData<out Styleable?, *>> {
             return FACTORY.cssMetaData
         }
+    }
+
+    override fun registerListeners(acs: AudioCaptureService) {
+        acs.registerFFTObserver(0, this::handleFFT)
     }
 
     enum class RenderMode {
