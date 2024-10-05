@@ -28,6 +28,7 @@ import me.ksanstone.wavesync.wavesync.gui.controller.AutoCanvasInfoPaneControlle
 import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.RecordingModeService
 import me.ksanstone.wavesync.wavesync.utility.FPSCounter
 import org.kordamp.ikonli.javafx.FontIcon
@@ -273,6 +274,10 @@ abstract class AutoCanvas(selfDraw: Boolean = false, private val detachable: Boo
     }
 
     protected open fun usedState(state: Boolean) {}
+
+    abstract fun registerPreferences(id: String, preferenceService: PreferenceService)
+
+    abstract fun initializeSettingMenu()
 }
 
 fun Double.roundTo(precision: Int): Double {

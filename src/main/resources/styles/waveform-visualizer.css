@@ -1,4 +1,4 @@
-.extended-waveform-visualizer, .waveform-visualizer {
+.extended-waveform-visualizer, .waveform-visualizer, .vector-visualizer {
     -fx-color: ladder(-color-bg-default, -color-accent-3 49%, -color-accent-6 50%);
     -a: derive(-color-accent-3, -13%);
     -b: derive(-color-accent-6, 13%);

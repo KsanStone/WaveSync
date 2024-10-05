@@ -168,7 +168,7 @@ class BarVisualizer : AutoCanvas() {
         }
     }
 
-    fun initializeSettingMenu() {
+    override fun initializeSettingMenu() {
         val loader = FXMLLoader()
         loader.location = javaClass.classLoader.getResource("layout/bar")
         loader.resources =
@@ -180,7 +180,7 @@ class BarVisualizer : AutoCanvas() {
         controlPane.children.add(controls)
     }
 
-    fun registerPreferences(id: String, preferenceService: PreferenceService) {
+    override fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerProperty(renderMode, "renderMode", RenderMode::class.java, this.javaClass, id)
         preferenceService.registerProperty(smootherType, "smootherType", SmootherType::class.java, this.javaClass, id)
         preferenceService.registerProperty(smoothing, "smoothing", this.javaClass, id)

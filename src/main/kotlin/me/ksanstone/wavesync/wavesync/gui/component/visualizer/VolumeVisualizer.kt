@@ -22,6 +22,7 @@ import javafx.scene.text.Font
 import javafx.scene.text.Text
 import javafx.scene.text.TextAlignment
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
 import me.ksanstone.wavesync.wavesync.utility.ChannelLabel
 import java.text.DecimalFormat
@@ -326,4 +327,8 @@ class VolumeVisualizer : AutoCanvas() {
             }
         }
     }
+
+    override fun registerPreferences(id: String, preferenceService: PreferenceService) {}
+
+    override fun initializeSettingMenu() {}
 }

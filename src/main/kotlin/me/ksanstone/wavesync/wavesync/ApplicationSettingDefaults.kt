@@ -2,6 +2,7 @@ package me.ksanstone.wavesync.wavesync
 
 import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
+import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VectorScopeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.DefaultGradient
 import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalarType
@@ -32,6 +33,10 @@ object ApplicationSettingDefaults {
     const val DEFAULT_SMOOTH_CURVE = true
     const val DEFAULT_USE_CSS_COLOR = true
     const val DEFAULT_SHOW_PEAK = false
+    const val DEFAULT_VECTOR_X_RANGE = 0.5
+    const val DEFAULT_VECTOR_Y_RANGE = 0.5
+    const val DEFAULT_VECTOR_RANGE_LINK = true
+    val DEFAULT_VECTOR_MODE = VectorScopeVisualizer.VectorOrientation.SKEWED
     val DEFAULT_SCALAR_TYPE = FFTScalarType.DECIBEL
     val DEFAULT_WINDOWING_FUNCTION = WindowFunctionType.HAMMING
     val DEFAULT_BAR_RENDER_MODE = BarVisualizer.RenderMode.BAR

@@ -115,7 +115,7 @@ class WaveformVisualizer : AutoCanvas() {
         return 1 / (buffer.size.toDouble() / sampleRate.get().toDouble()) * 1.2
     }
 
-    fun registerPreferences(id: String, preferenceService: PreferenceService) {
+    override fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerProperty(renderMode, "renderMode", RenderMode::class.java, this.javaClass, id)
         preferenceService.registerProperty(targetAlignFrequency, "targetAlignFrequency", this.javaClass, id)
         preferenceService.registerProperty(enableAlign, "enableAlign", this.javaClass, id)
@@ -129,7 +129,7 @@ class WaveformVisualizer : AutoCanvas() {
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
     }
 
-    fun initializeSettingMenu() {
+    override fun initializeSettingMenu() {
         val loader = FXMLLoader()
         loader.location = javaClass.classLoader.getResource("layout/waveform")
         loader.resources =

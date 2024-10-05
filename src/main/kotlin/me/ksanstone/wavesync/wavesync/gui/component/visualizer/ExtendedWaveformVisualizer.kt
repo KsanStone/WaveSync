@@ -77,7 +77,7 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         stylesheets.add("/styles/waveform-visualizer.css")
     }
 
-    fun registerPreferences(id: String, preferenceService: PreferenceService) {
+    override fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
@@ -85,7 +85,7 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
         preferenceService.registerProperty(canvasContainer.verticalLinesVisible, "verticalLinesVisible", this.javaClass, id)
     }
 
-    fun initializeSettingMenu() {
+    override fun initializeSettingMenu() {
         val loader = FXMLLoader()
         loader.location = javaClass.classLoader.getResource("layout/waveform-ex")
         loader.resources =

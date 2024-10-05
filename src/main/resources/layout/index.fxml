@@ -29,16 +29,8 @@
                         </Button>
                         <Label fx:id="deviceInfoLabel" text="No device" HBox.hgrow="SOMETIMES"/>
                         <Label maxWidth="Infinity" HBox.hgrow="ALWAYS"/> <!-- Padding -->
-                        <MenuButton mnemonicParsing="false" text="%nav.window">
+                        <MenuButton mnemonicParsing="false" text="%nav.window" fx:id="componentToggles">
                             <items>
-                                <CheckMenuItem fx:id="barOnOff" text="%nav.window.toggle.fft"/>
-                                <CheckMenuItem fx:id="waveformOnOff" text="%nav.window.toggle.waveform"/>
-                                <CheckMenuItem fx:id="extendedWaveformVisualizerOnOff"
-                                               text="%nav.window.toggle.extendedWaveform"/>
-                                <CheckMenuItem fx:id="fftInfoOnOff" text="%nav.window.toggle.info"/>
-                                <CheckMenuItem fx:id="runtimeInfoOnOff" text="%nav.window.toggle.statistic"/>
-                                <CheckMenuItem fx:id="spectrogramVisualizerOnOff"
-                                               text="%nav.window.toggle.spectrogram"/>
                             </items>
                         </MenuButton>
                     </children>

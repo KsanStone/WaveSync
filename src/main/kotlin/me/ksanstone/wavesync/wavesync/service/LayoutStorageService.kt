@@ -5,16 +5,11 @@ import javafx.beans.property.SimpleStringProperty
 import javafx.beans.property.StringProperty
 import javafx.collections.FXCollections
 import javafx.geometry.Orientation
-import javafx.scene.Node
 import javafx.stage.Stage
-import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
-import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
-import me.ksanstone.wavesync.wavesync.gui.component.visualizer.ExtendedWaveformVisualizer
-import me.ksanstone.wavesync.wavesync.gui.component.visualizer.SpectrogramVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -38,25 +33,10 @@ class LayoutStorageService(
         preferenceService.registerProperty(layoutStorageProperty, "layout", this::class.java, "main")
     }
 
-    fun createDefaultNodeFactory(
-        wVis: WaveformVisualizer,
-        bVis: BarVisualizer,
-        fftInfo: FFTInfo,
-        runtimeInfo: RuntimeInfo,
-        ewVis: ExtendedWaveformVisualizer,
-        spectrogram: SpectrogramVisualizer
+    fun registerNodeFactory(
+        factory: DragLayoutSerializerService.NodeFactory
     ) {
-        this.nodeFactory =
-            DragLayoutSerializerService.NodeFactory {
-                mapOf<String, Node>(
-                    MAIN_WAVEFORM_VISUALIZER_ID to wVis,
-                    MAIN_BAR_VISUALIZER_ID to bVis,
-                    MAIN_FFT_INFO_ID to fftInfo,
-                    MAIN_RUNTIME_INFO_ID to runtimeInfo,
-                    MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID to ewVis,
-                    MAIN_SPECTROGRAM_ID to spectrogram,
-                )[it]
-            }
+        this.nodeFactory = factory
     }
 
     fun loadLayouts() {
@@ -168,6 +148,7 @@ class LayoutStorageService(
         const val MAIN_FFT_INFO_ID = "fftInfo"
         const val MAIN_RUNTIME_INFO_ID = "runtimeInfo"
         const val MAIN_SPECTROGRAM_ID = "spectrogram"
+        const val MAIN_VECTORSCOPE_ID = "vectorscope"
     }
 }
 

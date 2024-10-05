@@ -101,7 +101,7 @@ class AudioCaptureService(
         usedAudioSystem.addListener { _ -> changeWindowingFunction() }
     }
 
-    fun detectSupportedAudioSystems() {
+    private fun detectSupportedAudioSystems() {
         XtAudio.init(null, Pointer.NULL).use { platform ->
             audioSystems = platform.systems.toList()
         }
@@ -117,11 +117,11 @@ class AudioCaptureService(
         return 0
     }
 
-    fun marshalSamples(samples: Any?, format: XtFormat): FloatArray {
+    private fun marshalSamples(samples: Any?, format: XtFormat): FloatArray {
         return samples as FloatArray
     }
     
-    fun processSamples(audio: FloatArray, frames: Int) {
+    private fun processSamples(audio: FloatArray, frames: Int) {
         if (paused.get()) return
         val channels = source.get().format.channels.inputs
         val sampleFactor = 1.0f / channels.toFloat()
@@ -142,20 +142,20 @@ class AudioCaptureService(
         processSamples(frames)
     }
 
-    fun processSamples(frames: Int) {
+    private fun processSamples(frames: Int) {
         doLoudnessCalc(frames)
         val sampleSlice = samples[0].data.sliceArray(0 until frames)
         sampleObservers.forEach { it.accept(sampleSlice, source.get()) }
     }
 
-    fun doLoudnessCalc(frames: Int) {
+    private fun doLoudnessCalc(frames: Int) {
         for (i in 0 until samples.channels()) {
             channelVolumes[i].data[0] = (20 * log10(calcRMS(samples[i].data, frames))).toFloat()
         }
         channelVolumes.fireDataChanged()
     }
 
-    fun doFFT(samples: FloatArray, rate: Int) {
+    private fun doFFT(samples: FloatArray, rate: Int) {
         windowFunction!!.applyFunctionInterlaced(samples)
         fftTransformerService.scaleAndPutSamples(samples, windowFunction!!.getSum())
         fftTransformerService.transform()

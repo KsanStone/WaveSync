@@ -1,7 +1,6 @@
 package me.ksanstone.wavesync.wavesync.utility
 
 import java.lang.Integer.max
-import java.util.function.Supplier
 
 class RollingBuffer<T : Any>(val size: Int = 1024, private val default: (i: Int) -> T) : Iterable<T> {
 

@@ -1,7 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar
 
 import atlantafx.base.controls.ToggleSwitch
-import javafx.event.ActionEvent
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*

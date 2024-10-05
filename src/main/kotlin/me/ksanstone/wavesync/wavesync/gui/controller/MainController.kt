@@ -5,20 +5,23 @@ import javafx.beans.property.SimpleBooleanProperty
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.Node
-import javafx.scene.control.CheckMenuItem
-import javafx.scene.control.ChoiceBox
-import javafx.scene.control.Label
-import javafx.scene.control.SplitPane
-import javafx.scene.layout.Background
+import javafx.scene.control.*
 import javafx.scene.layout.HBox
-import javafx.scene.paint.Color
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.*
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
+import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.*
+import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_BAR_VISUALIZER_ID
+import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID
+import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_FFT_INFO_ID
+import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_RUNTIME_INFO_ID
+import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_SPECTROGRAM_ID
+import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_VECTORSCOPE_ID
+import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_WAVEFORM_VISUALIZER_ID
 import java.net.URL
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -28,22 +31,7 @@ import java.util.function.Consumer
 class MainController : Initializable {
 
     @FXML
-    lateinit var extendedWaveformVisualizerOnOff: CheckMenuItem
-
-    @FXML
-    lateinit var spectrogramVisualizerOnOff: CheckMenuItem
-
-    @FXML
-    lateinit var runtimeInfoOnOff: CheckMenuItem
-
-    @FXML
-    lateinit var fftInfoOnOff: CheckMenuItem
-
-    @FXML
-    lateinit var barOnOff: CheckMenuItem
-
-    @FXML
-    lateinit var waveformOnOff: CheckMenuItem
+    lateinit var componentToggles: MenuButton
 
     @FXML
     lateinit var bottomBar: HBox
@@ -64,14 +52,15 @@ class MainController : Initializable {
     private var menuInitializer: MenuInitializer
     private var preferenceService: PreferenceService
     private var lastDeviceId: String? = null
-    private var barVisualizer: BarVisualizer
-    private var waveformVisualizer: WaveformVisualizer
-    private var spectrogramVisualizer: SpectrogramVisualizer
-    private var extendedWaveformVisualizer: ExtendedWaveformVisualizer
-    private var fftInfo: FFTInfo
+    private var barVisualizer: BarVisualizer = BarVisualizer()
+    private var waveformVisualizer: WaveformVisualizer = WaveformVisualizer()
+    private var spectrogramVisualizer: SpectrogramVisualizer = SpectrogramVisualizer()
+    private var extendedWaveformVisualizer: ExtendedWaveformVisualizer = ExtendedWaveformVisualizer()
+    private var vectorscopeVisualizer: VectorScopeVisualizer = VectorScopeVisualizer()
+    private var fftInfo: FFTInfo = FFTInfo()
+    private var runtimeInfo: RuntimeInfo = RuntimeInfo()
     private var layoutService: LayoutStorageService
     private var globalLayoutService: GlobalLayoutService
-    private var runtimeInfo: RuntimeInfo
     private val isRefreshing = AtomicBoolean(false)
     private lateinit var resources: ResourceBundle
     val infoShown = SimpleBooleanProperty(false)
@@ -85,12 +74,6 @@ class MainController : Initializable {
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
         globalLayoutService = WaveSyncBootApplication.applicationContext.getBean(GlobalLayoutService::class.java)
-        waveformVisualizer = WaveformVisualizer()
-        barVisualizer = BarVisualizer()
-        fftInfo = FFTInfo()
-        runtimeInfo = RuntimeInfo()
-        spectrogramVisualizer = SpectrogramVisualizer()
-        extendedWaveformVisualizer = ExtendedWaveformVisualizer()
     }
 
     @FXML
@@ -130,30 +113,28 @@ class MainController : Initializable {
     }
 
     @FXML
-    fun refreshDeviceList(): CompletableFuture<Void> =
-        CompletableFuture.runAsync {
-            if (!isRefreshing.compareAndSet(false, true)) return@runAsync
-            audioCaptureService.stopCapture()
-            val supported = audioCaptureService.findSupportedSources()
-            deviceList.clear()
-            deviceList.addAll(supported)
-            Platform.runLater {
-                audioDeviceListComboBox.items.clear()
-                audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
-            }
-            refreshInfoLabel()
-
-            if (lastDeviceId != null) {
-                val similarDevice =
-                    audioCaptureService.findSimilarAudioSource(lastDeviceId!!, deviceList) ?: run {
-                        isRefreshing.set(false)
-                        return@runAsync
-                    }
-
-                setByName(similarDevice.name)
-            }
-            isRefreshing.set(false)
+    fun refreshDeviceList(): CompletableFuture<Void> = CompletableFuture.runAsync {
+        if (!isRefreshing.compareAndSet(false, true)) return@runAsync
+        audioCaptureService.stopCapture()
+        val supported = audioCaptureService.findSupportedSources()
+        deviceList.clear()
+        deviceList.addAll(supported)
+        Platform.runLater {
+            audioDeviceListComboBox.items.clear()
+            audioDeviceListComboBox.items.addAll(deviceList.map { it.name })
         }
+        refreshInfoLabel()
+
+        if (lastDeviceId != null) {
+            val similarDevice = audioCaptureService.findSimilarAudioSource(lastDeviceId!!, deviceList) ?: run {
+                isRefreshing.set(false)
+                return@runAsync
+            }
+
+            setByName(similarDevice.name)
+        }
+        isRefreshing.set(false)
+    }
 
     @FXML
     fun showOptionMenu() {
@@ -170,43 +151,18 @@ class MainController : Initializable {
     }
 
     data class CompComponentToggle(
-        val check: CheckMenuItem, val clazz: Class<*>, val node: Node, val id: String
-    )
+        val clazz: Class<*>, val node: Node, val id: String
+    ) {
+        lateinit var check: CheckMenuItem
+    }
 
-    private fun initializeWindowControls(layout: DragLayout) {
-        val list = listOf(
-            CompComponentToggle(
-                waveformOnOff,
-                WaveformVisualizer::class.java,
-                waveformVisualizer,
-                LayoutStorageService.MAIN_WAVEFORM_VISUALIZER_ID
-            ),
-            CompComponentToggle(
-                barOnOff,
-                BarVisualizer::class.java,
-                barVisualizer,
-                LayoutStorageService.MAIN_BAR_VISUALIZER_ID
-            ),
-            CompComponentToggle(fftInfoOnOff, FFTInfo::class.java, fftInfo, LayoutStorageService.MAIN_FFT_INFO_ID),
-            CompComponentToggle(
-                runtimeInfoOnOff,
-                RuntimeInfo::class.java,
-                runtimeInfo,
-                LayoutStorageService.MAIN_RUNTIME_INFO_ID
-            ),
-            CompComponentToggle(
-                extendedWaveformVisualizerOnOff,
-                ExtendedWaveformVisualizer::class.java,
-                extendedWaveformVisualizer,
-                LayoutStorageService.MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID
-            ),
-            CompComponentToggle(
-                spectrogramVisualizerOnOff,
-                SpectrogramVisualizer::class.java,
-                spectrogramVisualizer,
-                LayoutStorageService.MAIN_SPECTROGRAM_ID
-            ),
-        )
+    private fun initializeWindowControls(layout: DragLayout, list: List<CompComponentToggle>) {
+
+        list.forEach {
+            val item = CheckMenuItem(localizationService.get("nav.window.toggle." + it.id))
+            componentToggles.items.add(item)
+            it.check = item
+        }
 
         list.forEach {
             it.check.selectedProperty().set(globalLayoutService.queryComponentOfClassExists(it.clazz))
@@ -229,6 +185,26 @@ class MainController : Initializable {
         })
     }
 
+    fun registerComponents(cards: List<CompComponentToggle>) {
+        val compMap = cards.associate { it.id to it.node }
+        layoutService.registerNodeFactory {
+            compMap[it]
+        }
+
+        val framerate = WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
+            .findHighestRefreshRate()
+
+        cards.forEach {
+            if (it.node is AutoCanvas) {
+                it.node.registerPreferences("main", preferenceService)
+                it.node.info.bind(infoShown)
+                it.node.framerate.set(framerate)
+                it.node.initializeSettingMenu()
+            }
+        }
+
+    }
+
     @FXML
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         this.resources = resources!!
@@ -236,6 +212,17 @@ class MainController : Initializable {
         CompletableFuture.runAsync {
             audioCaptureService.initLatch.await()
         }.thenRun { refreshDeviceList().thenRun { selectDefaultDevice() } }
+
+        val list = listOf(
+            CompComponentToggle(FFTInfo::class.java, fftInfo, MAIN_FFT_INFO_ID),
+            CompComponentToggle(WaveformVisualizer::class.java, waveformVisualizer, MAIN_WAVEFORM_VISUALIZER_ID),
+            CompComponentToggle(BarVisualizer::class.java, barVisualizer, MAIN_BAR_VISUALIZER_ID),
+            CompComponentToggle(RuntimeInfo::class.java, runtimeInfo, MAIN_RUNTIME_INFO_ID),
+            CompComponentToggle(ExtendedWaveformVisualizer::class.java, extendedWaveformVisualizer, MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID),
+            CompComponentToggle(SpectrogramVisualizer::class.java, spectrogramVisualizer, MAIN_SPECTROGRAM_ID),
+            CompComponentToggle(VectorScopeVisualizer::class.java, vectorscopeVisualizer, MAIN_VECTORSCOPE_ID),
+        )
+        registerComponents(list)
 
         audioCaptureService.registerFFTObserver(barVisualizer::handleFFT)
         audioCaptureService.registerFFTObserver(spectrogramVisualizer::handleFFT)
@@ -246,41 +233,11 @@ class MainController : Initializable {
         barVisualizer.highPass.addListener { _ -> refreshInfoLabel() }
         barVisualizer.lowPass.addListener { _ -> refreshInfoLabel() }
 
-        val framerate = WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
-                .findHighestRefreshRate()
-
-        barVisualizer.info.bind(infoShown)
-        waveformVisualizer.info.bind(infoShown)
-        spectrogramVisualizer.info.bind(infoShown)
-        extendedWaveformVisualizer.info.bind(infoShown)
-
-        barVisualizer.framerate.set(framerate)
-        waveformVisualizer.framerate.set(framerate)
-        spectrogramVisualizer.framerate.set(framerate)
-        extendedWaveformVisualizer.framerate.set(framerate)
-
-        layoutService.createDefaultNodeFactory(
-            waveformVisualizer,
-            barVisualizer,
-            fftInfo,
-            runtimeInfo,
-            extendedWaveformVisualizer,
-            spectrogramVisualizer
-        )
-
-        barVisualizer.registerPreferences("main", preferenceService)
-        barVisualizer.initializeSettingMenu()
-        waveformVisualizer.registerPreferences("main", preferenceService)
-        waveformVisualizer.initializeSettingMenu()
-        extendedWaveformVisualizer.registerPreferences("main", preferenceService)
-        extendedWaveformVisualizer.initializeSettingMenu()
-        spectrogramVisualizer.registerPreferences("main", preferenceService)
-        spectrogramVisualizer.initializeSettingMenu()
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
         layoutService.loadLayouts()
         val layout = layoutService.getMainLayout()
-        initializeWindowControls(layout)
+        initializeWindowControls(layout, list)
         visualizerPane.items.add(layout)
         globalLayoutService.noAutoRemove.add(layout)
         globalLayoutService.loadLayouts()
@@ -292,7 +249,8 @@ class MainController : Initializable {
         }
 
         val quickInfo = FFTInfo(true)
-        quickInfo.visibleProperty().bind(fftInfoOnOff.selectedProperty().not().and(bottomBar.widthProperty().greaterThan(1000.0)))
+        quickInfo.visibleProperty()
+            .bind(list[0].check.selectedProperty().not().and(bottomBar.widthProperty().greaterThan(1000.0)))
         quickInfo.managedProperty().bind(quickInfo.visibleProperty())
         quickInfo.maxHeight = 20.0
         quickInfo.maxWidth = 100.0

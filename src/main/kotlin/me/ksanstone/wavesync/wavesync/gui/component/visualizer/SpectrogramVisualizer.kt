@@ -1,6 +1,5 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
-import javafx.application.Platform
 import javafx.beans.binding.IntegerBinding
 import javafx.beans.property.*
 import javafx.fxml.FXMLLoader
@@ -117,7 +116,7 @@ class SpectrogramVisualizer : AutoCanvas() {
         }
     }
 
-    fun initializeSettingMenu() {
+    override fun initializeSettingMenu() {
         val loader = FXMLLoader()
         loader.location = javaClass.classLoader.getResource("layout/spectrogram")
         loader.resources =
@@ -129,7 +128,7 @@ class SpectrogramVisualizer : AutoCanvas() {
         controlPane.children.add(controls)
     }
 
-    fun registerPreferences(id: String, preferenceService: PreferenceService) {
+    override fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
         preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
