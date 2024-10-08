@@ -52,6 +52,7 @@ class DragLayout : Pane() {
 
     fun load(node: DragLayoutNode) {
         layoutRoot = node
+        layoutRoot.layout = WeakReference(this)
         layoutRoot.addLayoutChangeListener {
             layoutChangeListeners.fire(layoutRoot)
         }

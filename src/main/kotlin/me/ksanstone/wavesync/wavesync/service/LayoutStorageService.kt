@@ -61,8 +61,8 @@ open class LayoutStorageService(
             parent = null,
             children = FXCollections.observableList(
                 mutableListOf(
-                    DragLayoutLeaf(component = bVis, id = MAIN_BAR_VISUALIZER_ID),
-                    DragLayoutLeaf(component = wVis, id = MAIN_WAVEFORM_VISUALIZER_ID)
+                    DragLayoutLeaf(component = bVis, id = "$MAIN_BAR_VISUALIZER_ID-Channel-0"),
+                    DragLayoutLeaf(component = wVis, id = "$MAIN_WAVEFORM_VISUALIZER_ID-Channel-0")
                 )
             ),
             dividerLocations = mutableListOf(0.5),
@@ -75,7 +75,7 @@ open class LayoutStorageService(
         return layouts.stream().filter { it.id == "main" }.findFirst().orElseGet {
             val node = constructDefaultLayout(
                 nodeFactory.createNode("$MAIN_WAVEFORM_VISUALIZER_ID-Channel-0") as WaveformVisualizer,
-                nodeFactory.createNode(MAIN_BAR_VISUALIZER_ID) as BarVisualizer
+                nodeFactory.createNode("$MAIN_BAR_VISUALIZER_ID-Channel-0") as BarVisualizer
             )
             val layout = DragLayout()
             layout.load(node)

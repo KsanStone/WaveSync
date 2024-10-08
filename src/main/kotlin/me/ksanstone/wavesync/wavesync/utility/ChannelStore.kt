@@ -23,7 +23,7 @@ abstract class ChannelStore<E> {
 }
 
 data class Channel<E>(
-    val data: E,
+    var data: E,
     var label: ChannelLabel = ChannelLabel.UNDEFINED
 )
 

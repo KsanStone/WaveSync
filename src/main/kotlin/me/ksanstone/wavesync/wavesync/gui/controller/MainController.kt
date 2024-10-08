@@ -52,9 +52,10 @@ class MainController : Initializable {
     private var menuInitializer: MenuInitializer
     private var preferenceService: PreferenceService
     private var lastDeviceId: String? = null
-    private var barVisualizer: BarVisualizer = BarVisualizer()
+    private var barVisualizers: List<BarVisualizer> =
+        List(SUPPORTED_CHANNELS) { BarVisualizer().also { vis -> vis.channelProperty.value = it } }
     private var waveformVisualizers: List<WaveformVisualizer> =
-        List(5) { WaveformVisualizer().also { vis -> vis.channelProperty.value = it } }
+        List(SUPPORTED_CHANNELS) { WaveformVisualizer().also { vis -> vis.channelProperty.value = it } }
     private var spectrogramVisualizer: SpectrogramVisualizer = SpectrogramVisualizer()
     private var extendedWaveformVisualizer: ExtendedWaveformVisualizer = ExtendedWaveformVisualizer()
     private var vectorScopeVisualizer: VectorScopeVisualizer = VectorScopeVisualizer()
@@ -105,8 +106,8 @@ class MainController : Initializable {
             } else {
                 deviceInfoLabel.text = source.getPropertyDescriptor(
                     audioCaptureService.fftSize.get(),
-                    barVisualizer.lowPass.get(),
-                    barVisualizer.highPass.get(),
+                    barVisualizers[0].lowPass.get(),
+                    barVisualizers[0].highPass.get(),
                     localizationService.numberFormat
                 )
             }
@@ -152,7 +153,7 @@ class MainController : Initializable {
     }
 
     data class CompComponentToggle(
-        val clazz: Class<*>, val node: Node, val id: String, val channelId: Int = 0, val menuName: String = ""
+        val clazz: Class<*>, val node: Node, val id: String, val channelId: Int = 0, val menuName: String = "",
     ) {
         lateinit var check: CheckMenuItem
     }
@@ -245,7 +246,15 @@ class MainController : Initializable {
                     menuName = localizationService.get("nav.window.toggle.$MAIN_WAVEFORM_VISUALIZER_ID")
                 )
             },
-            listOf(CompComponentToggle(BarVisualizer::class.java, barVisualizer, MAIN_BAR_VISUALIZER_ID)),
+            barVisualizers.mapIndexed { index, barVisualizer ->
+                CompComponentToggle(
+                    BarVisualizer::class.java,
+                    barVisualizer,
+                    "$MAIN_BAR_VISUALIZER_ID-Channel-${index}",
+                    channelId = index,
+                    menuName = localizationService.get("nav.window.toggle.$MAIN_BAR_VISUALIZER_ID")
+                )
+            },
             listOf(CompComponentToggle(RuntimeInfo::class.java, runtimeInfo, MAIN_RUNTIME_INFO_ID)),
             listOf(
                 CompComponentToggle(
@@ -260,13 +269,15 @@ class MainController : Initializable {
         registerComponents(list)
 
         audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
-        barVisualizer.highPass.addListener { _ -> refreshInfoLabel() }
-        barVisualizer.lowPass.addListener { _ -> refreshInfoLabel() }
+//        barVisualizer.highPass.addListener { _ -> refreshInfoLabel() }
+//        barVisualizer.lowPass.addListener { _ -> refreshInfoLabel() }
+// TODO bind them together, figureout what to do with this label
 
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
         layoutService.loadLayouts()
         val layout = layoutService.getMainLayout()
+
         initializeWindowControls(layout, list)
         visualizerPane.items.add(layout)
         globalLayoutService.noAutoRemove.add(layout)
@@ -292,5 +303,6 @@ class MainController : Initializable {
 
     companion object {
         lateinit var instance: MainController
+        const val SUPPORTED_CHANNELS = 5
     }
 }

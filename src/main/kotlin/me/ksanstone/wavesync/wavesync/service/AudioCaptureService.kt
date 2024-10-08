@@ -36,10 +36,10 @@ class AudioCaptureService(
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
 
     private lateinit var pcmDataBuffer: ByteArray
-    private lateinit var fftSampleBuffer: RollingBuffer<Float>
     private lateinit var fftwSignal: FloatPointer
     private lateinit var fftwResult: FloatPointer
     private lateinit var fftwSignalArray: FloatArray
+    private var fftSampleBuffer: CyclicFFTChanneledStore = CyclicFFTChanneledStore()
     private var lock: CountDownLatch = CountDownLatch(0)
     private var recordingFuture: CompletableFuture<Void>? = null
     private var fftObservers: EventEmitter<Int, FftEvent> = EventEmitter()
@@ -129,13 +129,16 @@ class AudioCaptureService(
             val sampleIndex = frame * channels
             var sample = 0.0f
             for (channel in 0 until channels) {
-                sample += audio[sampleIndex + channel] * sampleFactor
-                samples[1 + channel].data[frame] = audio[sampleIndex + channel]
+                val point = audio[sampleIndex + channel]
+                sample += point * sampleFactor
+                samples[1 + channel].data[frame] = point
+                fftSampleBuffer[1 + channel].data.insert(point)
             }
             samples[0].data[frame] = sample
-            fftSampleBuffer.insert(sample)
-            if (fftSampleBuffer.written % targetSamplesUntilRefresh == 0L) {
-                doFFT(fftSampleBuffer.toFloatArrayInterlaced(fftwSignalArray), source.get().rate)
+            fftSampleBuffer[0].data.insert(sample)
+            if (fftSampleBuffer[0].data.written % targetSamplesUntilRefresh == 0L) {
+                for (i in 0 until fftSampleBuffer.channels())
+                    doFFT(i, fftSampleBuffer[i].data.toFloatArrayInterlaced(fftwSignalArray), source.get().rate)
             }
         }
         for (i in 0 until samples.channels()) {
@@ -162,12 +165,12 @@ class AudioCaptureService(
         channelVolumes.fireDataChanged()
     }
 
-    private fun doFFT(samples: FloatArray, rate: Int) {
+    private fun doFFT(channel: Int, samples: FloatArray, rate: Int) {
         windowFunction!!.applyFunctionInterlaced(samples)
         fftTransformerService.scaleAndPutSamples(samples, windowFunction!!.getSum())
         fftTransformerService.transform()
-        fftTransformerService.computeMagnitudesSquared(fftResult[0].data)
-        calcPeak(fftResult[0].data)
+        fftTransformerService.computeMagnitudesSquared(fftResult[channel].data)
+        calcPeak(fftResult[channel].data)
 
         fftObservers.indices.forEach {
             if (it < fftResult.channels())
@@ -256,6 +259,8 @@ class AudioCaptureService(
                             )
                             samples.resize(1 + channels, stream.frames).label(*defaultChannelLabels.plus(channelLabels))
                             channelVolumes.resize(1 + channels, 1).label(*defaultChannelLabels.plus(channelLabels))
+                            fftSampleBuffer.resize(1 + channels, fftSize.get()).label(*defaultChannelLabels.plus(channelLabels))
+                            setScanWindowSize(fftSize.get())
                             updateLabels()
                             logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
                             _captureRunning.set(true)
@@ -296,8 +301,8 @@ class AudioCaptureService(
 
     private fun setScanWindowSize(size: Int) {
         logger.info("Using window size $size")
-        fftSampleBuffer = RollingBuffer(size) { 0.0f }
-        fftResult.resize(1, size / 2).label(CommonChannel.MASTER)
+        fftSampleBuffer.resizeBuffers(size)
+        fftResult.resize(fftSampleBuffer.channels(), size / 2).label(CommonChannel.MASTER)
         if (this::fftwSignal.isInitialized) {
             this.fftwSignal.deallocate()
         }
@@ -312,7 +317,7 @@ class AudioCaptureService(
     }
 
     fun changeWindowingFunction() {
-        val size = fftSampleBuffer.size
+        val size = fftSize.get()
         windowFunction = when (usedWindowingFunction.get()!!) {
             WindowFunctionType.HAMMING -> HammingWindowFunction(size)
             WindowFunctionType.HANN -> HannWindowFunction(size)

@@ -191,7 +191,7 @@ class WaveformVisualizer : AutoCanvas() {
             val maxWaves = (width / PIXELS_PER_WAVE).toInt().coerceIn(2, 50)
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate.get())
             drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - 50)
-            take = (buffer.size - waveSize).coerceIn(10.0, waveSize * maxWaves).roundToInt()
+            take = (buffer.size - waveSize).coerceIn(1.0, waveSize * maxWaves).roundToInt()
                 .coerceAtMost(buffer.size - drop)
         } else if (bufferDuration.get().greaterThan(Duration.millis(100.0)).and(renderMode.get() == RenderMode.LINE)) {
             // make the line graph less jumpy

@@ -344,7 +344,7 @@ class SpectrogramVisualizer : AutoCanvas() {
             else (stripeMapper.forwards(i + 1)) - 1
 
             var value = 0.0F
-            for (j in rMin..rMax.coerceAtLeast(rMin)) {
+            for (j in rMin until rMax.coerceAtLeast(rMin)) {
                 value = max(value, stripe[j])
             }
             processedStripe[i] = scalar.scale(value)

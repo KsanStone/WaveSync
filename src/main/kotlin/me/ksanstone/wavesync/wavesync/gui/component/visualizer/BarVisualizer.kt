@@ -59,6 +59,7 @@ class BarVisualizer : AutoCanvas() {
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(DEFAULT_TARGET_BAR_WIDTH)
     val gap: IntegerProperty = SimpleIntegerProperty(DEFAULT_GAP)
     val peakLineVisible: BooleanProperty = SimpleBooleanProperty(DEFAULT_PEAK_LINE_VISIBLE)
+    val channelProperty: IntegerProperty = SimpleIntegerProperty()
 
     val scalarType: ObjectProperty<FFTScalarType> = SimpleObjectProperty(DEFAULT_SCALAR_TYPE)
     val exaggeratedScalar: FloatProperty = SimpleFloatProperty(DEFAULT_BAR_SCALING)
@@ -182,6 +183,8 @@ class BarVisualizer : AutoCanvas() {
             WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java).getDefault()
         val controls: HBox = loader.load(javaClass.classLoader.getResourceAsStream("layout/bar/barSettings.fxml"))
         val controller: BarSettingsController = loader.getController()
+        controller.channelLabel.textProperty()
+            .bind(audioCaptureService.getChannelLabelProperty(channelProperty.value).map { it.shortcut })
         controller.chartSettingsController.initialize(this)
 
         controlPane.children.add(controls)
@@ -620,7 +623,7 @@ class BarVisualizer : AutoCanvas() {
     }
 
     override fun registerListeners(acs: AudioCaptureService) {
-        acs.registerFFTObserver(0, this::handleFFT)
+        acs.registerFFTObserver(channelProperty.value, this::handleFFT)
     }
 
     enum class RenderMode {

@@ -17,21 +17,27 @@ class FloatChanneledStore : ChannelStore<FloatArray>() {
     }
 
     fun label(vararg labels: String): ChannelStore<FloatArray> {
-        if (labels.size > channelData.size) throw IllegalArgumentException("Too many labels :O")
-        for ((i, channelLabel) in labels.withIndex())
+        for ((i, channelLabel) in labels.withIndex()) {
+            if (i >= channelData.size) return this
             channelData[i].label = ChannelLabel.resolve(channelLabel)
+        }
         return this
     }
 
     override fun label(vararg labels: ChannelLabel): ChannelStore<FloatArray> {
-        if (labels.size > channelData.size) throw IllegalArgumentException("Too many labels :O")
-        for ((i, channelLabel) in labels.withIndex())
+        for ((i, channelLabel) in labels.withIndex()) {
+            if (i >= channelData.size) return this
             channelData[i].label = channelLabel
+        }
         return this
     }
 
     override operator fun get(idx: Int): Channel<FloatArray> {
         return channelData[idx]
+    }
+
+    override fun channels(): Int {
+        return channelData.size
     }
 
     fun setSizeHint(idx: Int, hint: Int) {
@@ -42,8 +48,5 @@ class FloatChanneledStore : ChannelStore<FloatArray>() {
         return channelSizeHints[idx]
     }
 
-    override fun channels(): Int {
-        return channelData.size
-    }
 
 }

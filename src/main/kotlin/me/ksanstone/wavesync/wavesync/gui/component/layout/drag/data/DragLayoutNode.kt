@@ -25,7 +25,7 @@ data class DragLayoutNode(
     var dividerLocations: MutableList<Double> = mutableListOf(),
     var dividers: MutableList<DragDivider> = mutableListOf(),
     var parent: DragLayoutLeaf? = null,
-    val layout: WeakReference<DragLayout>? = null
+    var layout: WeakReference<DragLayout>? = null
 ) {
 
     private val layoutChangeListeners = mutableListOf<DragLayout.LayoutChangeListener>()
@@ -573,7 +573,7 @@ data class DragLayoutNode(
 
     fun getEffectiveLayout(): WeakReference<DragLayout> {
         if (this.layout != null)
-            return layout
+            return layout!!
         return this.parent!!.parent!!.getEffectiveLayout()
     }
 

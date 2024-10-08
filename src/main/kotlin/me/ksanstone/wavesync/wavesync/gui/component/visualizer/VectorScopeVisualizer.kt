@@ -6,6 +6,7 @@ import javafx.css.Styleable
 import javafx.css.StyleableProperty
 import javafx.css.StyleablePropertyFactory
 import javafx.fxml.FXMLLoader
+import javafx.geometry.Point2D
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
 import javafx.scene.layout.HBox
@@ -95,7 +96,8 @@ class VectorScopeVisualizer : AutoCanvas(false) {
 
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         gc.clearRect(0.0, 0.0, width, height)
-        gc.fill = vectorColor.value
+        gc.stroke = vectorColor.value
+        gc.beginPath()
         if (acs.samples.channels() == 2 + 1) { // combined + L + R
             when (renderMode.value!!) {
                 VectorOrientation.SKEWED -> drawSkewed(gc, width, height)
@@ -110,28 +112,30 @@ class VectorScopeVisualizer : AutoCanvas(false) {
 
         for (i in 0 until acs.samples.sizeHint(0)) {
             val sample = acs.samples[1].data[i]
-            gc.fillRect(
-                (sample.toDouble() * sX + 1.0) * 0.5 * width - 1.0,
-                height - (acs.samples[2].data[i].toDouble() * sY + 1) * height * 0.5,
-                2.0,
-                2.0
-            )
+            val p = Point2D((sample.toDouble() * sX + 1.0) * 0.5 * width - 1.0, height - (acs.samples[2].data[i].toDouble() * sY + 1) * height * 0.5)
+            if (i == 0) {
+                gc.moveTo(p.x, p.y)
+            } else {
+                gc.lineTo(p.x, p.y)
+            }
         }
+
+        gc.closePath()
+        gc.stroke()
     }
 
     private fun rotate45(
         x: Double,
         y: Double,
-        gc: GraphicsContext,
         width: Double,
         height: Double,
         xOffset: Double,
         yOffset: Double
-    ) {
+    ): Point2D {
         val sumHalved = (x + y) * 0.5
         val x2 = ROOT2 * (x - sumHalved)
         val y2 = ROOT2 * sumHalved
-        gc.fillRect(x2 * width + xOffset - 1, height - y2 * height + yOffset - 1.0, 2.0, 2.0)
+        return Point2D(x2 * width + xOffset, height - y2 * height + yOffset)
     }
 
 
@@ -147,12 +151,20 @@ class VectorScopeVisualizer : AutoCanvas(false) {
             val sample = acs.samples[1].data[i]
             val x = sample.toDouble()
             val y = acs.samples[2].data[i].toDouble()
-            rotate45(x, y, gc, dividedWidth, scaledHeight, xOffset, yOffset)
+            val p = rotate45(x, y, dividedWidth, scaledHeight, xOffset, yOffset)
+            if (i == 0) {
+                gc.moveTo(p.x, p.y)
+            } else {
+                gc.lineTo(p.x, p.y)
+            }
         }
+        gc.closePath()
+        gc.stroke()
 
         gc.fill = Color.VIOLET
         for (edge in edgePoints) {
-            rotate45(edge.first, edge.second, gc, dividedWidth, scaledHeight, xOffset, yOffset)
+            val p = rotate45(edge.first, edge.second, dividedWidth, scaledHeight, xOffset, yOffset)
+            gc.fillRect(p.x - 1.0, p.y - 1.0, 2.0, 2.0)
         }
     }
 
