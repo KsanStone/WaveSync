@@ -145,8 +145,8 @@ class SpectrogramChartSettingsController {
             visualizer.rangeMax.bind(dbMaxSpinner.valueProperty().map { it.toFloat() })
         } else {
             visualizer.setBindEffective(false)
-            val bars = layoutStorageService.nodeFactory.createNode(MAIN_BAR_VISUALIZER_ID)?.let {
-                it as BarVisualizer
+            val bars = layoutStorageService.nodeFactory.createNode("$MAIN_BAR_VISUALIZER_ID-Channel-0")?.let {
+                it.node as BarVisualizer
             } ?: return
 
             visualizer.effectiveLowPass.bind(bars.lowPass)

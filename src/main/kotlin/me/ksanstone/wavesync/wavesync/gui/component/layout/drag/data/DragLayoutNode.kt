@@ -25,7 +25,7 @@ data class DragLayoutNode(
     var dividerLocations: MutableList<Double> = mutableListOf(),
     var dividers: MutableList<DragDivider> = mutableListOf(),
     var parent: DragLayoutLeaf? = null,
-    var layout: WeakReference<DragLayout>? = null
+    var layout: WeakReference<DragLayout>? = null,
 ) {
 
     private val layoutChangeListeners = mutableListOf<DragLayout.LayoutChangeListener>()
@@ -234,7 +234,7 @@ data class DragLayoutNode(
         rangeStart: Double,
         rangeEnd: Double,
         index: Int,
-        inverse: Boolean = false
+        inverse: Boolean = false,
     ) {
         var divBeforeScalar = rangeStart / rangeMid
         var divAfterScalar = rangeMid / rangeEnd
@@ -408,7 +408,7 @@ data class DragLayoutNode(
         point: Point2D,
         rangeStart: Double,
         rangeEnd: Double,
-        orientation: Orientation
+        orientation: Orientation,
     ): Point2D {
         return when (orientation) {
             Orientation.HORIZONTAL -> Point2D((point.x - rangeStart) / (rangeEnd - rangeStart), point.y)
@@ -587,6 +587,62 @@ data class DragLayoutNode(
     }
 
     private fun doJustify() {
+        if (boundCache == null || children.size < 2) return justifyEqually()
+
+        val fixedSize = when (orientation) {
+            Orientation.HORIZONTAL -> boundCache!!.height
+            Orientation.VERTICAL -> boundCache!!.width
+        }
+
+        val flexibleSize = when (orientation) {
+            Orientation.HORIZONTAL -> boundCache!!.width
+            Orientation.VERTICAL -> boundCache!!.height
+        }
+
+        // Compute pixel widths
+        val justifiedWidths = MutableList(children.size) { 0.0 }
+        var justified = 0
+        for (childIndex in children.indices) {
+            val preferredRatio = children[childIndex].layoutPreference.preferredAspectRatio
+            if (preferredRatio != null) {
+                justified++
+                justifiedWidths[childIndex] = fixedSize * preferredRatio
+            }
+        }
+
+        if (justified == 0) return justifyEqually()
+        val nonJustified = justifiedWidths.size - justified
+        val pixelJustifiedWidth = justifiedWidths.sum()
+        if (pixelJustifiedWidth > flexibleSize - nonJustified /* some padding */ ) return justifyEqually()
+
+        // Compute indexed width
+        for (index in justifiedWidths.indices) {
+            if (justifiedWidths[index] != 0.0) {
+                justifiedWidths[index] = justifiedWidths[index] / flexibleSize
+            }
+        }
+        val indexedJustifiedWidth = justifiedWidths.sum()
+        val indexedNonJustifiedWidth = (1 - indexedJustifiedWidth) / nonJustified
+
+        val newDividers = MutableList(children.size - 1) { 0.0 }
+        var x = 0.0
+        for (i in 0 until children.size - 1) {
+            x += if (justifiedWidths[i] != 0.0){
+                justifiedWidths[i]
+            } else {
+                indexedNonJustifiedWidth
+            }
+            newDividers[i] = x
+        }
+
+        this.dividerLocations.clear()
+        this.dividerLocations.addAll(newDividers)
+    }
+
+    /**
+     * Spaces every component evenly regardless of their preferred aspect ratio
+     */
+    private fun justifyEqually() {
         val newSize = this.dividerLocations.size
         this.dividerLocations.clear()
         this.dividerLocations.addAll(generateDividerPositions(newSize))
@@ -609,7 +665,7 @@ data class DragLayoutNode(
 
 data class ComponentCallbackResult(
     val node: Node,
-    val nodeId: String
+    val nodeId: String,
 ) {
     internal var stop: Boolean = false
 
@@ -627,5 +683,5 @@ data class NodeCallbackResult(
 
 data class DividerCallbackResult(
     val divider: DragDivider,
-    val loc: Double
+    val loc: Double,
 )

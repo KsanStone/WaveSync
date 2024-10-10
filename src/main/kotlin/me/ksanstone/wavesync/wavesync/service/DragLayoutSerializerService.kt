@@ -9,6 +9,7 @@ import javafx.geometry.Orientation
 import javafx.scene.Node
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.LeafLayoutPreference
 import org.springframework.stereotype.Service
 
 @Service
@@ -99,7 +100,8 @@ class DragLayoutSerializerService {
             return DragLayoutLeaf(node = deserializeNode(obj.get("data").asJsonObject, nodeFactory))
         } else if (type == "component") {
             val id = obj.get("id").asString
-            return DragLayoutLeaf(component = nodeFactory.createNode(id), id = id)
+            val product = nodeFactory.createNode(id)!!
+            return DragLayoutLeaf(component = product.node, layoutPreference = product.layoutPreference, id = id)
         }
         throw IllegalArgumentException("Invalid leaf type")
     }
@@ -110,7 +112,9 @@ class DragLayoutSerializerService {
         /**
          * Constructs an instance of the javafx [Node] with the given id
          */
-        fun createNode(nodeId: String): Node?
+        fun createNode(nodeId: String): ProducedNode?
     }
+
+    data class ProducedNode(val node: Node, val layoutPreference: LeafLayoutPreference)
 
 }

@@ -9,6 +9,7 @@ import java.util.*
 
 data class DragLayoutLeaf(
     var component: Node? = null,
+    var layoutPreference: LeafLayoutPreference = LeafLayoutPreference(),
     var node: DragLayoutNode? = null,
     var id: String = UUID.randomUUID().toString(),
 ) {
@@ -75,14 +76,17 @@ data class DragLayoutLeaf(
         val tempComp = other.component
         val tempId = other.id
         val tempParent = other.parent
+        val tempPreference = other.layoutPreference
         other.node = node
         other.component = component
         other.id = id
         other.parent = tempParent
+        other.layoutPreference = layoutPreference
         id = tempId
         node = tempNode
         component = tempComp
         parent = tempParent
+        layoutPreference = tempPreference
         this.adjustParent()
         other.adjustParent()
     }

@@ -11,6 +11,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.LeafLayoutPreference
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.*
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
@@ -22,6 +23,7 @@ import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAI
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_SPECTROGRAM_ID
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_VECTORSCOPE_ID
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_WAVEFORM_VISUALIZER_ID
+import org.kordamp.ikonli.javafx.FontIcon
 import java.net.URL
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -180,15 +182,36 @@ class MainController : Initializable {
         return item
     }
 
+    private fun updateLabel(icon: FontIcon, menu: Menu) {
+        val isAny = menu.items.any { it is CheckMenuItem && it.isSelected }
+        val isAll = menu.items.all { it is CheckMenuItem && it.isSelected }
+
+        if (!isAny && !isAll) {
+            icon.opacity = 0.0
+        } else if (isAll) {
+            icon.opacity = 1.0
+            icon.iconLiteral = "mdal-check"
+        } else { // isAny
+            icon.iconLiteral = "mdal-list"
+        }
+    }
+
     private fun initializeWindowControls(layout: DragLayout, list: List<List<CompComponentToggle>>) {
         list.forEach {
             if (it.size == 1) {
                 componentToggles.items.add(setupComponent(layout, it[0], false))
             } else {
                 val menu = Menu(it[0].menuName)
+                val label = FontIcon()
                 for (child in it) {
-                    menu.items.add(setupComponent(layout, child, true))
+                    val comp = setupComponent(layout, child, true)
+                    (comp as CheckMenuItem).selectedProperty().addListener { _, _, _ ->
+                        updateLabel(label, menu)
+                    }
+                    menu.items.add(comp)
                 }
+                menu.graphic = label
+                updateLabel(label, menu)
                 componentToggles.items.add(menu)
             }
         }
@@ -206,8 +229,13 @@ class MainController : Initializable {
 
     private fun registerComponents(cards: List<List<CompComponentToggle>>) {
         val compMap = cards.flatten().associate { it.id to it.node }
-        layoutService.registerNodeFactory {
-            compMap[it]
+        layoutService.registerNodeFactory { nodeId ->
+            compMap[nodeId]?.let {
+                return@let DragLayoutSerializerService.ProducedNode(
+                    node = it,
+                    layoutPreference = if (it is VectorScopeVisualizer) LeafLayoutPreference(1.0) else LeafLayoutPreference()
+                )
+            }
         }
 
         val framerate = WaveSyncBootApplication.applicationContext.getBean(WaveSyncBootApplication::class.java)
@@ -224,7 +252,6 @@ class MainController : Initializable {
                 }
             }
         }
-
     }
 
     @FXML
@@ -269,9 +296,8 @@ class MainController : Initializable {
         registerComponents(list)
 
         audioCaptureService.fftSize.addListener { _ -> refreshInfoLabel() }
-//        barVisualizer.highPass.addListener { _ -> refreshInfoLabel() }
-//        barVisualizer.lowPass.addListener { _ -> refreshInfoLabel() }
-// TODO bind them together, figureout what to do with this label
+        barVisualizers[0].highPass.addListener { _ -> refreshInfoLabel() }
+        barVisualizers[0].lowPass.addListener { _ -> refreshInfoLabel() }
 
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
