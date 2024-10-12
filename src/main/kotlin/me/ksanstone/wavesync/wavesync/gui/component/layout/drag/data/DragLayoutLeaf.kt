@@ -18,8 +18,8 @@ data class DragLayoutLeaf(
     var boundCache: Rectangle2D? = null
 
     init {
-        if (isComponent && isNode) throw IllegalArgumentException("The leaf can only contain one type")
-        if (!isComponent && !isNode) throw IllegalArgumentException("The leaf must contain exactly one type")
+        if ((isComponent && isNode) || (!isComponent && !isNode))
+            throw IllegalArgumentException("The leaf must contain exactly one type")
         adjustParent()
     }
 
@@ -62,7 +62,9 @@ data class DragLayoutLeaf(
     }
 
     /**
-     * Unwraps the first child of the contained node
+     * Unwraps the first child of the contained node.
+     *
+     * @throws IllegalStateException if not this.isNode
      */
     fun unwrap() {
         if (!this.isNode) throw IllegalStateException("This leaf does not contain a node")
@@ -106,6 +108,9 @@ data class DragLayoutLeaf(
         )
     }
 
+    /**
+     * Stores the bounding boxes of side sections, where the user can drop additional leafs
+     */
     data class SideSections(
         val top: Rectangle2D,
         val bottom: Rectangle2D,

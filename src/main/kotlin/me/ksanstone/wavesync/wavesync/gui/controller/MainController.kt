@@ -7,6 +7,7 @@ import javafx.fxml.Initializable
 import javafx.scene.Node
 import javafx.scene.control.*
 import javafx.scene.layout.HBox
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.SUPPORTED_CHANNELS
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
@@ -175,7 +176,11 @@ class MainController : Initializable {
         component.check = item
         component.check.selectedProperty().set(globalLayoutService.queryComponentOfExists(component.id))
         component.check.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(component.node, component.id)
+            if (v) layout.addComponent(
+                component.node,
+                component.id,
+                layoutService.nodeFactory.createNode(component.id)!!.layoutPreference
+            )
             else globalLayoutService.removeComponent(component.id)
             layout.fullUpdate()
         }
@@ -192,6 +197,7 @@ class MainController : Initializable {
             icon.opacity = 1.0
             icon.iconLiteral = "mdal-check"
         } else { // isAny
+            icon.opacity = 1.0
             icon.iconLiteral = "mdal-list"
         }
     }
@@ -329,6 +335,5 @@ class MainController : Initializable {
 
     companion object {
         lateinit var instance: MainController
-        const val SUPPORTED_CHANNELS = 5
     }
 }

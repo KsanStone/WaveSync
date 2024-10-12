@@ -384,12 +384,12 @@ class BarVisualizer : AutoCanvas() {
 
             if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
 
-            if (showPeak.get() && audioCaptureService.peakValue.value != 0.0F) {
+            if (showPeak.get() && audioCaptureService.peakValue[channelProperty.value].value != 0.0F) {
                 val s = 4.0
                 gc.fill = peakPointUnderColor.value
                 gc.fillRect(
-                    xAxis.getDisplayPosition(audioCaptureService.peakFrequency.value) - s / 2,
-                    height - height * fftScalar.scale(audioCaptureService.peakValue.value) - s / 2,
+                    xAxis.getDisplayPosition(audioCaptureService.peakFrequency[channelProperty.value].value) - s / 2,
+                    height - height * fftScalar.scale(audioCaptureService.peakValue[channelProperty.value].value) - s / 2,
                     s, s
                 )
             }

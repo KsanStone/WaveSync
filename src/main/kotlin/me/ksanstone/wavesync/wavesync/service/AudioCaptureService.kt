@@ -8,6 +8,7 @@ import javafx.beans.property.*
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FFT_RATE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FFT_SIZE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION
+import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.SUPPORTED_CHANNELS
 import me.ksanstone.wavesync.wavesync.service.FourierMath.calcRMS
 import me.ksanstone.wavesync.wavesync.service.interpolation.ParabolicInterpolator
 import me.ksanstone.wavesync.wavesync.service.windowing.*
@@ -50,8 +51,8 @@ class AudioCaptureService(
     val fftResult = FloatChanneledStore()
     val samples = FloatChanneledStore()
 
-    val peakFrequency = SimpleDoubleProperty(0.0)
-    val peakValue = SimpleFloatProperty(0.0f)
+    val peakFrequency = List(SUPPORTED_CHANNELS) { SimpleFloatProperty() }
+    val peakValue = List(SUPPORTED_CHANNELS) { SimpleFloatProperty() }
     val captureRunning: ReadOnlyBooleanProperty = ReadOnlyBooleanProperty.readOnlyBooleanProperty(_captureRunning)
     val channelVolumes = FloatChanneledStore()
 
@@ -181,23 +182,24 @@ class AudioCaptureService(
         fftTransformerService.scaleAndPutSamples(samples, windowFunction!!.getSum())
         fftTransformerService.transform()
         fftTransformerService.computeMagnitudesSquared(fftResult[channel].data)
-        calcPeak(fftResult[channel].data)
+        calcPeak(channel, fftResult[channel].data)
     }
 
     private val interpolator = ParabolicInterpolator()
 
-    private fun calcPeak(fftResult: FloatArray) {
+    private fun calcPeak(channel: Int, fftResult: FloatArray) {
+        if (channel >= SUPPORTED_CHANNELS) return
         val maxIdx = fftResult.indices.maxBy { fftResult[it] }
         if (maxIdx == -1) return
 
         val peakV = fftResult[maxIdx]
         if (peakV < 0.00001f) {
-            peakValue.value = 0.0f
+            peakValue[channel].value = 0.0f
             return
         }
 
-        peakFrequency.value = interpolator.calcPeak(fftResult, maxIdx, source.get().rate).toDouble()
-        peakValue.value = peakV
+        peakFrequency[channel].value = interpolator.calcPeak(fftResult, maxIdx, source.get().rate)
+        peakValue[channel].value = peakV
     }
 
     fun registerFFTObserver(channelId: Int, observer: Consumer<FftEvent>) {

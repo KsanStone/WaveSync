@@ -36,6 +36,7 @@ object ApplicationSettingDefaults {
     const val DEFAULT_VECTOR_X_RANGE = 0.5
     const val DEFAULT_VECTOR_Y_RANGE = 0.5
     const val DEFAULT_VECTOR_RANGE_LINK = true
+    const val SUPPORTED_CHANNELS = 5
     val DEFAULT_VECTOR_MODE = VectorScopeVisualizer.VectorOrientation.SKEWED
     val DEFAULT_SCALAR_TYPE = FFTScalarType.DECIBEL
     val DEFAULT_WINDOWING_FUNCTION = WindowFunctionType.HAMMING

@@ -30,8 +30,8 @@ class FFTInfoController : Initializable {
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
-        acs.peakFrequency.addListener { _, _, v -> Platform.runLater { peakLabel.text = peakFormat.format(v) + " Hz" } }
-        acs.peakValue.addListener { _, _, v ->
+        acs.peakFrequency[0].addListener { _, _, v -> Platform.runLater { peakLabel.text = peakFormat.format(v) + " Hz" } }
+        acs.peakValue[0].addListener { _, _, v ->
             Platform.runLater {
                 peakVLabel.text = peakFormat.format(deciBelFFTScalar.scaleRaw(v.toFloat())) + " dB"
             }

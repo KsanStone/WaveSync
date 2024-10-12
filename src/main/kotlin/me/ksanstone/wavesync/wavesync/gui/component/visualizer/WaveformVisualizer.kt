@@ -86,9 +86,9 @@ class WaveformVisualizer : AutoCanvas() {
             alignLowPass.value = calcAlignLowPass()
         }
         align.bind(
-            acs.peakValue.greaterThan(FourierMath.ALIGN_THRESHOLD).and(enableAlign)
-                .and(acs.peakFrequency.greaterThan(alignLowPass))
-                .and(acs.peakFrequency.lessThanOrEqualTo(20000))
+            acs.peakValue[channelProperty.value].greaterThan(FourierMath.ALIGN_THRESHOLD).and(enableAlign)
+                .and(acs.peakFrequency[channelProperty.value].greaterThan(alignLowPass))
+                .and(acs.peakFrequency[channelProperty.value].lessThanOrEqualTo(20000))
         )
 
         val alignInfo = Label()
@@ -111,7 +111,7 @@ class WaveformVisualizer : AutoCanvas() {
     private fun bindAlign() {
         alignFrequency.unbind()
         if (autoAlign.get())
-            alignFrequency.bind(acs.peakFrequency.map { it.toDouble().roundTo(0) })
+            alignFrequency.bind(acs.peakFrequency[channelProperty.value].map { it.toDouble().roundTo(0) })
         else
             alignFrequency.bind(targetAlignFrequency)
     }

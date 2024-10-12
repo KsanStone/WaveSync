@@ -1,10 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.component.layout.drag
 
 import javafx.beans.property.SimpleBooleanProperty
-import javafx.geometry.Bounds
-import javafx.geometry.Point2D
-import javafx.geometry.Rectangle2D
-import javafx.geometry.Side
+import javafx.geometry.*
 import javafx.scene.Node
 import javafx.scene.SnapshotParameters
 import javafx.scene.input.ClipboardContent
@@ -16,6 +13,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DIVIDER_SIZE
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.LeafLayoutPreference
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DragLayoutEvent
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.LayoutChangeEvent
 import me.ksanstone.wavesync.wavesync.service.GlobalLayoutService
@@ -47,6 +45,12 @@ class DragLayout : Pane() {
         stylesheets.add("/styles/drag-layout.css")
 
         layoutRoot.eventEmitter.bubbleTo(eventEmitter)
+
+        eventEmitter.on(LayoutChangeEvent::class.java, Consumer<LayoutChangeEvent> {
+            val minSize = calculateMinSize()
+            minWidth = minSize.width
+            minHeight = minSize.height
+        })
     }
 
     fun addLayoutChangeListener(listener: Consumer<LayoutChangeEvent>) {
@@ -69,8 +73,18 @@ class DragLayout : Pane() {
      * @param node The node to be inserted
      * @param id the (hopefully) unique ID of the node
      */
-    fun addComponent(node: Node, id: String) {
-        layoutRoot.insertNodes(0, mutableListOf(DragLayoutLeaf(component = node, id = id)))
+    fun addComponent(node: Node, id: String, layoutPreference: LeafLayoutPreference = LeafLayoutPreference()) {
+        layoutRoot.insertNodes(
+            0,
+            mutableListOf(DragLayoutLeaf(component = node, id = id, layoutPreference = layoutPreference))
+        )
+    }
+
+    /**
+     * Calculate the minimum pixel size of the layout where every minimum size constraint is satisfied
+     */
+    fun calculateMinSize(): Dimension2D {
+        return layoutRoot.calculateMinSize()
     }
 
     private fun onDragOver(e: DragEvent) {
@@ -84,7 +98,7 @@ class DragLayout : Pane() {
 
     fun dragOver(p: Point2D, nodeId: String): Boolean {
         dragCueShowing.value = false
-        val noteId = decodeNoteId(nodeId) ?: return false
+        val noteId = decodeNodeId(nodeId) ?: return false
         val intersectedNode =
             layoutRoot.intersect(xyToAbsolute(p), getDividerMargin()) ?: return false
         if (intersectedNode.boundCache == null) return false
@@ -102,7 +116,7 @@ class DragLayout : Pane() {
     }
 
     private fun dropHandler(e: DragEvent) {
-        val nodeId = decodeNoteId(e.dragboard.string) ?: return
+        val nodeId = decodeNodeId(e.dragboard.string) ?: return
         dragDropped(layoutRoot, nodeId, Point2D(e.x, e.y))
     }
 
@@ -150,6 +164,9 @@ class DragLayout : Pane() {
         }
     }
 
+    /**
+     * Simplifies the layout and re-layouts all child components.
+     */
     fun fullUpdate() {
         this.layoutRoot.simplify()
         this.updateChildren()
@@ -249,7 +266,7 @@ class DragLayout : Pane() {
         return Point2D(DIVIDER_SIZE / width, DIVIDER_SIZE / height)
     }
 
-    private fun decodeNoteId(encoded: String): String? {
+    private fun decodeNodeId(encoded: String): String? {
         if (encoded.startsWith("<node-transfer-") && encoded.endsWith(">"))
             return encoded.substring(15, encoded.length - 1)
         return null

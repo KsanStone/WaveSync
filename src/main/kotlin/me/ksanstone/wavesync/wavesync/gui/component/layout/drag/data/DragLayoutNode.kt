@@ -3,6 +3,7 @@ package me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
+import javafx.geometry.Dimension2D
 import javafx.geometry.Orientation
 import javafx.geometry.Point2D
 import javafx.geometry.Rectangle2D
@@ -16,6 +17,7 @@ import java.lang.ref.WeakReference
 import java.util.function.Consumer
 import java.util.function.Predicate
 import kotlin.math.abs
+import kotlin.math.max
 
 const val DIVIDER_SIZE = 5.0
 const val SIDE_CUE_SIZE = 60.0
@@ -78,22 +80,25 @@ data class DragLayoutNode(
      * Relocates the given divider. Its position will be clamped
      */
     fun relocateDivider(id: Int, newPos: Double) {
-        val newDividerValue = when (orientation) {
-            Orientation.HORIZONTAL -> newPos / boundCache!!.width
-            Orientation.VERTICAL -> newPos / boundCache!!.height
-        }
-        val dividerWidth = when (orientation) {
-            Orientation.HORIZONTAL -> DIVIDER_SIZE / boundCache!!.width
-            Orientation.VERTICAL -> DIVIDER_SIZE / boundCache!!.height
-        }
-        val minSizePx = 40 // TODO, make components be able to declare this on their own
-        val minSizePadding = when (orientation) {
-            Orientation.HORIZONTAL -> minSizePx / boundCache!!.width
-            Orientation.VERTICAL -> minSizePx / boundCache!!.height
+        if (boundCache == null) return
+
+        val scalar = when (orientation) {
+            Orientation.HORIZONTAL -> boundCache!!.width
+            Orientation.VERTICAL -> boundCache!!.height
         }
 
-        val dividerPrev = dividerLocations.getOrElse(id - 1) { _ -> 0.0 - dividerWidth } + dividerWidth + minSizePadding
-        val dividerNext = dividerLocations.getOrElse(id + 1) { _ -> 1.0 + dividerWidth } - dividerWidth - minSizePadding
+        val newDividerValue = newPos / scalar
+        val dividerWidth = DIVIDER_SIZE / scalar
+
+        val compPrev = children[id]
+        val minSizePaddingPrev = compPrev.layoutPreference.minSize / scalar
+        val compNext = children[id + 1]
+        val minSizePaddingNext = compNext.layoutPreference.minSize / scalar
+
+        val dividerPrev =
+            dividerLocations.getOrElse(id - 1) { _ -> 0.0 - dividerWidth } + dividerWidth + minSizePaddingPrev
+        val dividerNext =
+            dividerLocations.getOrElse(id + 1) { _ -> 1.0 + dividerWidth } - dividerWidth - minSizePaddingNext
 
         dividerLocations[id] = newDividerValue.coerceIn(dividerPrev, dividerNext)
         fireChange()
@@ -104,12 +109,14 @@ data class DragLayoutNode(
      */
     fun simplify(noRecurse: Boolean = false) {
         if (!noRecurse)
+        // Simplify the children first
+        // to ensure that when we remove empty nodes, we only remove actually empty nodes
             for (child in children) {
                 if (child.isNode)
                     child.node!!.simplify()
             }
 
-        val toRemove = mutableListOf<Int>()
+        val toRemove = mutableListOf<Int>() // Prevent concurrent modifications
         for (i in children.indices) {
             val child = children[i]
             if (child.isNode && child.node!!.children.size == 1) { // Remove useless container
@@ -121,6 +128,7 @@ data class DragLayoutNode(
             }
         }
 
+        // Apply removes
         for (i in toRemove.reversed()) {
             children.removeAt(i)
             var j = i
@@ -536,21 +544,6 @@ data class DragLayoutNode(
      * Checks whether an instance of the given class is present
      * in this node's tree
      */
-    fun queryComponentOfClassExists(clazz: Class<*>): Boolean {
-        var found = false
-        this.forEachComponent {
-            if (it.node.javaClass == clazz) {
-                it.stop()
-                found = true
-            }
-        }
-        return found
-    }
-
-    /**
-     * Checks whether an instance of the given class is present
-     * in this node's tree
-     */
     fun queryComponentExists(id: String): Boolean {
         var found = false
         this.forEachComponent {
@@ -659,6 +652,38 @@ data class DragLayoutNode(
         val newSize = this.dividerLocations.size
         this.dividerLocations.clear()
         this.dividerLocations.addAll(generateDividerPositions(newSize))
+    }
+
+    /**
+     * Calculate the minimum pixel size of the layout where every minimum size constraint is satisfied
+     */
+    fun calculateMinSize(): Dimension2D {
+        var inline = DIVIDER_SIZE * dividers.size
+        var axis = 0.0
+
+        for (child in children) {
+            val dim = if (child.isNode) child.node!!.calculateMinSize() else Dimension2D(
+                child.layoutPreference.minSize,
+                child.layoutPreference.minSize
+            )
+
+            when (orientation) {
+                Orientation.HORIZONTAL -> {
+                    inline += dim.width
+                    axis = max(axis, dim.height)
+                }
+
+                Orientation.VERTICAL -> {
+                    inline += dim.height
+                    axis = max(axis, dim.width)
+                }
+            }
+        }
+
+        return when (orientation) {
+            Orientation.HORIZONTAL -> Dimension2D(inline, axis)
+            Orientation.VERTICAL -> Dimension2D(axis, inline)
+        }
     }
 
     companion object {
