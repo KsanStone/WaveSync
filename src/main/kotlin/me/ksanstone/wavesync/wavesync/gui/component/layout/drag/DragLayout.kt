@@ -16,8 +16,13 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DIVIDER_SIZE
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DragLayoutEvent
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.LayoutChangeEvent
 import me.ksanstone.wavesync.wavesync.service.GlobalLayoutService
+import me.ksanstone.wavesync.wavesync.utility.EventEmitter
 import java.lang.ref.WeakReference
+import java.util.function.Consumer
+import java.util.stream.Collectors
 
 class DragLayout : Pane() {
 
@@ -26,7 +31,7 @@ class DragLayout : Pane() {
     private val dragCueShowing = SimpleBooleanProperty(false)
     private val drawCueRect: Pane = Pane()
     private val layoutLock = Object()
-    private val layoutChangeListeners = mutableListOf<LayoutChangeListener>()
+    private val eventEmitter = EventEmitter<DragLayoutEvent>()
     private val gls = WaveSyncBootApplication.applicationContext.getBean(GlobalLayoutService::class.java)
     private val multiScreen = SimpleBooleanProperty(true)
 
@@ -41,26 +46,31 @@ class DragLayout : Pane() {
         styleClass.setAll("drag-layout")
         stylesheets.add("/styles/drag-layout.css")
 
-        layoutRoot.addLayoutChangeListener {
-            layoutChangeListeners.fire(layoutRoot)
-        }
+        layoutRoot.eventEmitter.bubbleTo(eventEmitter)
     }
 
-    fun addLayoutChangeListener(listener: LayoutChangeListener) {
-        layoutChangeListeners.add(listener)
+    fun addLayoutChangeListener(listener: Consumer<LayoutChangeEvent>) {
+        eventEmitter.on(LayoutChangeEvent::class.java, listener)
     }
 
+    /**
+     * Load up a new root layout
+     */
     fun load(node: DragLayoutNode) {
         layoutRoot = node
         layoutRoot.layout = WeakReference(this)
-        layoutRoot.addLayoutChangeListener {
-            layoutChangeListeners.fire(layoutRoot)
-        }
+        layoutRoot.eventEmitter.bubbleTo(eventEmitter)
         updateChildren()
     }
 
-    fun addComponent(comp: Node, id: String) {
-        layoutRoot.insertNodes(0, mutableListOf(DragLayoutLeaf(component = comp, id = id)))
+    /**
+     * Insert a node somewhere into this layout
+     *
+     * @param node The node to be inserted
+     * @param id the (hopefully) unique ID of the node
+     */
+    fun addComponent(node: Node, id: String) {
+        layoutRoot.insertNodes(0, mutableListOf(DragLayoutLeaf(component = node, id = id)))
     }
 
     private fun onDragOver(e: DragEvent) {
@@ -110,7 +120,7 @@ class DragLayout : Pane() {
             } else {
                 swapNodes(sourceLayout, nodeId, intersectedNode.id)
             }
-            layoutChangeListeners.fire(layoutRoot)
+            eventEmitter.publish(LayoutChangeEvent(layoutRoot))
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -120,9 +130,9 @@ class DragLayout : Pane() {
         layoutRoot.justify(true)
     }
 
-    private fun swapNodes(sourceLayout: DragLayoutNode, target: String, dest: String) {
-        val targetNode = layoutRoot.findComponentLeaf(target) ?: return
-        val destNode = sourceLayout.findComponentLeaf(dest) ?: return
+    private fun swapNodes(sourceLayout: DragLayoutNode, targetId: String, destinationId: String) {
+        val targetNode = layoutRoot.findComponentLeaf(targetId) ?: return
+        val destNode = sourceLayout.findComponentLeaf(destinationId) ?: return
         targetNode.swapOnto(destNode)
         layoutChildren()
     }
@@ -152,7 +162,7 @@ class DragLayout : Pane() {
     private fun updateChildren() {
         this.children.clear()
         layoutRoot.createDividers()
-        layoutRoot.iterateComponents {
+        layoutRoot.forEachComponent {
             it.node.setOnDragDetected { _ ->
                 if (multiScreen.get()) {
                     gls.startTransaction(it.nodeId, this)
@@ -172,9 +182,10 @@ class DragLayout : Pane() {
             this.children.add(it.node)
         }
 
-        layoutRoot.iterateDividers {
-            this.children.add(it.divider)
-        }
+        // Lay out dividers in depth to prevent overlap
+        val dividers = layoutRoot.collectDividers()
+        dividers.sortByDescending { it.depth }
+        this.children.addAll(dividers.stream().map { it.divider }.collect(Collectors.toList()))
 
         this.children.add(drawCueRect)
     }
@@ -244,20 +255,11 @@ class DragLayout : Pane() {
         return null
     }
 
-    @FunctionalInterface
-    fun interface LayoutChangeListener {
-        fun change(node: DragLayoutNode)
-    }
-
     companion object {
         fun encodeNodeId(id: String): String {
             return "<node-transfer-$id>"
         }
     }
-}
-
-fun MutableList<DragLayout.LayoutChangeListener>.fire(e: DragLayoutNode) {
-    this.forEach { it.change(e) }
 }
 
 fun Node.resizeRelocate(bound: Rectangle2D) {

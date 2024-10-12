@@ -9,7 +9,9 @@ import javafx.geometry.Rectangle2D
 import javafx.scene.Node
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragDivider
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
-import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.fire
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DragLayoutEvent
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.LayoutChangeEvent
+import me.ksanstone.wavesync.wavesync.utility.EventEmitter
 import java.lang.ref.WeakReference
 import java.util.function.Consumer
 import java.util.function.Predicate
@@ -28,7 +30,7 @@ data class DragLayoutNode(
     var layout: WeakReference<DragLayout>? = null,
 ) {
 
-    private val layoutChangeListeners = mutableListOf<DragLayout.LayoutChangeListener>()
+    val eventEmitter = EventEmitter<DragLayoutEvent>()
 
     var boundCache: Rectangle2D? = null
 
@@ -46,12 +48,8 @@ data class DragLayoutNode(
         children.forEach { it.parent = this }
     }
 
-    fun addLayoutChangeListener(listener: DragLayout.LayoutChangeListener) {
-        layoutChangeListeners.add(listener)
-    }
-
     private fun fireChange() {
-        layoutChangeListeners.fire(this)
+        eventEmitter.publish(LayoutChangeEvent(this))
         parent?.parent?.fireChange()
     }
 
@@ -69,7 +67,7 @@ data class DragLayoutNode(
             )
         })
 
-        this.iterateNodes {
+        this.forEachNode {
             it.node.createDividers()
         }
 
@@ -422,14 +420,14 @@ data class DragLayoutNode(
      * @param callback Callback to be called on each node
      * @return true if iteration has been stopped preemptively by calling [ComponentCallbackResult.stop]
      */
-    fun iterateComponents(callback: Consumer<ComponentCallbackResult>): Boolean {
+    fun forEachComponent(callback: Consumer<ComponentCallbackResult>): Boolean {
         this.children.forEach {
             if (it.isComponent) {
                 val res = ComponentCallbackResult(it.component!!, it.id)
                 callback.accept(res)
                 if (res.stop) return true
             } else if (it.isNode) {
-                if (it.node!!.iterateComponents(callback)) return true
+                if (it.node!!.forEachComponent(callback)) return true
             }
         }; return false
     }
@@ -439,11 +437,15 @@ data class DragLayoutNode(
      *
      * @param callback Callback to be called on each node
      */
-    fun iterateNodes(callback: Consumer<NodeCallbackResult>) {
+    fun forEachNode(callback: Consumer<NodeCallbackResult>) {
+        iterateNodesInternal(callback, 0)
+    }
+
+    private fun iterateNodesInternal(callback: Consumer<NodeCallbackResult>, depth: Int = 0) {
         this.children.forEach {
             if (it.isNode) {
-                callback.accept(NodeCallbackResult(it.node!!))
-                it.node!!.iterateNodes(callback)
+                callback.accept(NodeCallbackResult(it.node!!, depth))
+                it.node!!.iterateNodesInternal(callback, depth + 1)
             }
         }
     }
@@ -453,16 +455,27 @@ data class DragLayoutNode(
      *
      * @param callback Callback to be called on each divider
      */
-    fun iterateDividers(callback: Consumer<DividerCallbackResult>) {
-        iterDiv(callback)
-        this.iterateNodes {
-            it.node.iterDiv(callback)
+    fun forEachDivider(callback: Consumer<DividerCallbackResult>) {
+        iterateDividersInternal(callback, 0)
+        this.forEachNode {
+            // Directly nested nodes will have a depth of 0, however their dividers are at a depth of 1 already
+            it.node.iterateDividersInternal(callback, it.depth + 1)
         }
     }
 
-    private fun iterDiv(callback: Consumer<DividerCallbackResult>) {
+    /**
+     * Recursively iterates over every [DragDivider] component,
+     * and collects them to a list.
+     */
+    fun collectDividers(): MutableList<DividerCallbackResult> {
+        val dividers = mutableListOf<DividerCallbackResult>()
+        forEachDivider(dividers::add)
+        return dividers
+    }
+
+    private fun iterateDividersInternal(callback: Consumer<DividerCallbackResult>, depth: Int) {
         this.dividers.indices.forEach {
-            callback.accept(DividerCallbackResult(dividers[it], dividerLocations[it]))
+            callback.accept(DividerCallbackResult(dividers[it], dividerLocations[it], depth))
         }
     }
 
@@ -525,7 +538,7 @@ data class DragLayoutNode(
      */
     fun queryComponentOfClassExists(clazz: Class<*>): Boolean {
         var found = false
-        this.iterateComponents {
+        this.forEachComponent {
             if (it.node.javaClass == clazz) {
                 it.stop()
                 found = true
@@ -540,7 +553,7 @@ data class DragLayoutNode(
      */
     fun queryComponentExists(id: String): Boolean {
         var found = false
-        this.iterateComponents {
+        this.forEachComponent {
             if (it.nodeId == id) {
                 it.stop()
                 found = true
@@ -582,7 +595,7 @@ data class DragLayoutNode(
      */
     fun justify(recurse: Boolean = false) {
         doJustify()
-        if (recurse) this.iterateNodes { it.node.doJustify() }
+        if (recurse) this.forEachNode { it.node.doJustify() }
         this.fireChange()
     }
 
@@ -613,7 +626,7 @@ data class DragLayoutNode(
         if (justified == 0) return justifyEqually()
         val nonJustified = justifiedWidths.size - justified
         val pixelJustifiedWidth = justifiedWidths.sum()
-        if (pixelJustifiedWidth > flexibleSize - nonJustified /* some padding */ ) return justifyEqually()
+        if (pixelJustifiedWidth > flexibleSize - nonJustified /* some padding */) return justifyEqually()
 
         // Compute indexed width
         for (index in justifiedWidths.indices) {
@@ -627,7 +640,7 @@ data class DragLayoutNode(
         val newDividers = MutableList(children.size - 1) { 0.0 }
         var x = 0.0
         for (i in 0 until children.size - 1) {
-            x += if (justifiedWidths[i] != 0.0){
+            x += if (justifiedWidths[i] != 0.0) {
                 justifiedWidths[i]
             } else {
                 indexedNonJustifiedWidth
@@ -659,8 +672,6 @@ data class DragLayoutNode(
             return dividers
         }
     }
-
-
 }
 
 data class ComponentCallbackResult(
@@ -679,9 +690,18 @@ data class ComponentCallbackResult(
 
 data class NodeCallbackResult(
     val node: DragLayoutNode,
+    /**
+     * How nested the node is in the component tree.
+     */
+    val depth: Int
 )
 
 data class DividerCallbackResult(
     val divider: DragDivider,
     val loc: Double,
+    /**
+     * How nested the divider is in the component tree,
+     * deeper dividers should render first
+     */
+    val depth: Int
 )

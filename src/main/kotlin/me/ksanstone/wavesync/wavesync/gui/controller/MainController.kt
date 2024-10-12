@@ -217,7 +217,7 @@ class MainController : Initializable {
         }
 
         globalLayoutService.layoutRemovalListeners.add(Consumer {
-            it.layoutRoot.iterateComponents {
+            it.layoutRoot.forEachComponent {
                 list.forEach { predefined ->
                     predefined.forEach { component ->
                         if (component.node == it.node) component.check.selectedProperty().set(false)

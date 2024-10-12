@@ -42,8 +42,8 @@ class AudioCaptureService(
     private var fftSampleBuffer: CyclicFFTChanneledStore = CyclicFFTChanneledStore()
     private var lock: CountDownLatch = CountDownLatch(0)
     private var recordingFuture: CompletableFuture<Void>? = null
-    private var fftObservers: EventEmitter<Int, FftEvent> = EventEmitter()
-    private var sampleObservers: EventEmitter<Int, SampleEvent> = EventEmitter()
+    private var fftObservers: IndexedEventEmitter<Int, FftEvent> = IndexedEventEmitter()
+    private var sampleObservers: IndexedEventEmitter<Int, SampleEvent> = IndexedEventEmitter()
     private var windowFunction: WindowFunction? = null
     private val _captureRunning = SimpleBooleanProperty(false)
 
@@ -150,10 +150,10 @@ class AudioCaptureService(
     private fun processSamples(frames: Int) {
         doLoudnessCalc(frames)
 
-        sampleObservers.indices.forEach {
+        sampleObservers.forEachIndex {
             if (it < samples.channels()) {
                 val sampleSlice = samples[it].data.sliceArray(0 until frames)
-                sampleObservers.publish(it, SampleEvent(it, sampleSlice, source.get()))
+                sampleObservers.publishFor(it, SampleEvent(it, sampleSlice, source.get()))
             }
         }
     }
@@ -172,9 +172,9 @@ class AudioCaptureService(
         fftTransformerService.computeMagnitudesSquared(fftResult[channel].data)
         calcPeak(fftResult[channel].data)
 
-        fftObservers.indices.forEach {
+        fftObservers.forEachIndex {
             if (it < fftResult.channels())
-                fftObservers.publish(it, FftEvent(it, fftResult[it].data, source.get()))
+                fftObservers.publishFor(it, FftEvent(it, fftResult[it].data, source.get()))
         }
     }
 
@@ -195,11 +195,11 @@ class AudioCaptureService(
     }
 
     fun registerFFTObserver(channelId: Int, observer: Consumer<FftEvent>) {
-        fftObservers.register(channelId, observer)
+        fftObservers.on(channelId, observer)
     }
 
     fun registerSampleObserver(channelId: Int, observer: Consumer<SampleEvent>) {
-        sampleObservers.register(channelId, observer)
+        sampleObservers.on(channelId, observer)
     }
 
     private val channelLabelProps = mutableMapOf<Int, ObjectProperty<ChannelLabel>>()

@@ -74,14 +74,14 @@ open class LayoutStorageService(
     fun getMainLayout(): DragLayout {
         return layouts.stream().filter { it.id == "main" }.findFirst().orElseGet {
             val node = constructDefaultLayout(
-                nodeFactory.createNode("$MAIN_WAVEFORM_VISUALIZER_ID-Channel-0") as WaveformVisualizer,
-                nodeFactory.createNode("$MAIN_BAR_VISUALIZER_ID-Channel-0") as BarVisualizer
+                nodeFactory.createNode("$MAIN_WAVEFORM_VISUALIZER_ID-Channel-0")?.node as WaveformVisualizer,
+                nodeFactory.createNode("$MAIN_BAR_VISUALIZER_ID-Channel-0")?.node as BarVisualizer
             )
             val layout = DragLayout()
             layout.load(node)
             layout.layoutRoot.simplify()
             AppLayout("main", null, layout).also { al ->
-                layout.addLayoutChangeListener { layoutChanged(al) }
+                layout.addLayoutChangeListener { layoutChanged() }
                 layouts.add(al)
             }
         }.layout
@@ -90,7 +90,7 @@ open class LayoutStorageService(
     fun constructSideLayout(cutNode: DragLayoutLeaf, windowId: String): DragLayout {
         val newLayout = createLayout(cutNode)
         AppLayout(windowId, windowId, newLayout).also { al ->
-            newLayout.addLayoutChangeListener { layoutChanged(al) }
+            newLayout.addLayoutChangeListener { layoutChanged() }
             layouts.add(al)
         }
         save()
@@ -133,11 +133,12 @@ open class LayoutStorageService(
         return layout
     }
 
-    private fun layoutChanged(appLayout: AppLayout) {
+    private fun layoutChanged() {
         save()
     }
 
     private fun save() {
+        logger.info("Saving layout")
         layoutStorageProperty.set(layoutSerializerService.serializeFull(layouts))
     }
 
