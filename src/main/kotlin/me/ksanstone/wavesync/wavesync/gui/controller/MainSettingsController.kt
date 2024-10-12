@@ -182,8 +182,8 @@ class MainSettingsController : Initializable {
     }
 
     fun applyFreqSettings() {
-        audioCaptureService.fftSize.set(fftSizeChoiceBox.value)
         applyFreqButton.styleClass.remove("accent")
+        audioCaptureService.fftSize.set(fftSizeChoiceBox.value)
         audioCaptureService.restartCapture()
         updateFftRateInfoLabel()
     }

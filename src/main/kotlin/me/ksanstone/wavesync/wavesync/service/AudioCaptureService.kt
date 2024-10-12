@@ -127,18 +127,18 @@ class AudioCaptureService(
         val targetSamplesUntilRefresh = ((1.0 / fftRate.get()) * source.get().rate).toInt().coerceAtMost(fftSize.get())
         for (frame in 0 until frames) {
             val sampleIndex = frame * channels
-            var sample = 0.0f
+            var combinedSample = 0.0f
             for (channel in 0 until channels) {
                 val point = audio[sampleIndex + channel]
-                sample += point * sampleFactor
+                combinedSample += point
                 samples[1 + channel].data[frame] = point
                 fftSampleBuffer[1 + channel].data.insert(point)
             }
-            samples[0].data[frame] = sample
-            fftSampleBuffer[0].data.insert(sample)
+
+            samples[0].data[frame] = combinedSample * sampleFactor
+            fftSampleBuffer[0].data.insert(combinedSample)
             if (fftSampleBuffer[0].data.written % targetSamplesUntilRefresh == 0L) {
-                for (i in 0 until fftSampleBuffer.channels())
-                    doFFT(i, fftSampleBuffer[i].data.toFloatArrayInterlaced(fftwSignalArray), source.get().rate)
+                doFFT()
             }
         }
         for (i in 0 until samples.channels()) {
@@ -165,17 +165,23 @@ class AudioCaptureService(
         channelVolumes.fireDataChanged()
     }
 
+    private fun doFFT() {
+        val source = source.get()
+        for (i in 0 until fftSampleBuffer.channels())
+            doFFT(i, fftSampleBuffer[i].data.toFloatArrayInterlaced(fftwSignalArray), source.rate)
+
+        fftObservers.forEachIndex {
+            if (it < fftResult.channels())
+                fftObservers.publishFor(it, FftEvent(it, fftResult[it].data, source))
+        }
+    }
+
     private fun doFFT(channel: Int, samples: FloatArray, rate: Int) {
         windowFunction!!.applyFunctionInterlaced(samples)
         fftTransformerService.scaleAndPutSamples(samples, windowFunction!!.getSum())
         fftTransformerService.transform()
         fftTransformerService.computeMagnitudesSquared(fftResult[channel].data)
         calcPeak(fftResult[channel].data)
-
-        fftObservers.forEachIndex {
-            if (it < fftResult.channels())
-                fftObservers.publishFor(it, FftEvent(it, fftResult[it].data, source.get()))
-        }
     }
 
     private val interpolator = ParabolicInterpolator()
@@ -259,7 +265,8 @@ class AudioCaptureService(
                             )
                             samples.resize(1 + channels, stream.frames).label(*defaultChannelLabels.plus(channelLabels))
                             channelVolumes.resize(1 + channels, 1).label(*defaultChannelLabels.plus(channelLabels))
-                            fftSampleBuffer.resize(1 + channels, fftSize.get()).label(*defaultChannelLabels.plus(channelLabels))
+                            fftSampleBuffer.resize(1 + channels, fftSize.get())
+                                .label(*defaultChannelLabels.plus(channelLabels))
                             setScanWindowSize(fftSize.get())
                             updateLabels()
                             logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
@@ -301,7 +308,6 @@ class AudioCaptureService(
 
     private fun setScanWindowSize(size: Int) {
         logger.info("Using window size $size")
-        fftSampleBuffer.resizeBuffers(size)
         fftResult.resize(fftSampleBuffer.channels(), size / 2).label(CommonChannel.MASTER)
         if (this::fftwSignal.isInitialized) {
             this.fftwSignal.deallocate()
@@ -316,7 +322,7 @@ class AudioCaptureService(
         changeWindowingFunction()
     }
 
-    fun changeWindowingFunction() {
+    private fun changeWindowingFunction() {
         val size = fftSize.get()
         windowFunction = when (usedWindowingFunction.get()!!) {
             WindowFunctionType.HAMMING -> HammingWindowFunction(size)

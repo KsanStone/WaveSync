@@ -79,20 +79,7 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
 
     override fun registerPreferences(id: String, preferenceService: PreferenceService) {
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(
-            canvasContainer.horizontalLinesVisible,
-            "horizontalLinesVisible",
-            this.javaClass,
-            id
-        )
-        preferenceService.registerProperty(
-            canvasContainer.verticalLinesVisible,
-            "verticalLinesVisible",
-            this.javaClass,
-            id
-        )
+        registerGraphPreferences(id, preferenceService)
     }
 
     override fun initializeSettingMenu() {

@@ -33,6 +33,7 @@ import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
+import kotlin.math.min
 
 class SpectrogramVisualizer : AutoCanvas() {
 
@@ -129,21 +130,8 @@ class SpectrogramVisualizer : AutoCanvas() {
     }
 
     override fun registerPreferences(id: String, preferenceService: PreferenceService) {
+        registerGraphPreferences(id, preferenceService)
         preferenceService.registerDurationProperty(bufferDuration, "bufferDuration", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(
-            canvasContainer.horizontalLinesVisible,
-            "horizontalLinesVisible",
-            this.javaClass,
-            id
-        )
-        preferenceService.registerProperty(
-            canvasContainer.verticalLinesVisible,
-            "verticalLinesVisible",
-            this.javaClass,
-            id
-        )
         preferenceService.registerProperty(highPass, "cutoff", this.javaClass, id)
         preferenceService.registerProperty(lowPass, "lowPass", this.javaClass, id)
         preferenceService.registerSGradientProperty(gradient, "gradient", this.javaClass, id)
@@ -180,7 +168,7 @@ class SpectrogramVisualizer : AutoCanvas() {
     }
 
     fun handleFFT(event: AudioCaptureService.FftEvent) {
-        if (!canDraw || buffer.size == 2) return
+        if (!canDraw || buffer.size == 2 || event.data.size != fftArraySize.value) return
         this.source = event.source
         buffer.incrementPosition()
         System.arraycopy(event.data, 0, buffer.last(), 0, event.data.size)
@@ -295,6 +283,7 @@ class SpectrogramVisualizer : AutoCanvas() {
         val stripePixelLength: Int
         val size: Int
         var realWidth = width
+
         if (isHorizontal) {
             stripePixelLength = canvasHeight
             size = canvasWidth
@@ -340,11 +329,11 @@ class SpectrogramVisualizer : AutoCanvas() {
 
         for (i in processedStripe.indices) {
             val rMin = stripeMapper.forwards(i)
-            val rMax = if (i + 1 == processedStripe.size) processedStripe.size
+            val rMax = if (i + 1 == processedStripe.size) stripe.size - 1
             else (stripeMapper.forwards(i + 1)) - 1
 
             var value = 0.0F
-            for (j in rMin until rMax.coerceAtLeast(rMin)) {
+            for (j in rMin..rMax.coerceAtLeast(rMin)) {
                 value = max(value, stripe[j])
             }
             processedStripe[i] = scalar.scale(value)
@@ -396,7 +385,9 @@ class SpectrogramVisualizer : AutoCanvas() {
         gc.isImageSmoothing = false
         gc.clearRect(0.0, 0.0, width, height)
         val isHorizontal = orientation.value == Orientation.HORIZONTAL
-        drawChunk(isHorizontal)
+        try {
+            drawChunk(isHorizontal)
+        } catch (ignored: ArrayIndexOutOfBoundsException) {} // happens during downsizing
 
         if (isHorizontal) {
             val rOffset = imageOffset.toDouble()

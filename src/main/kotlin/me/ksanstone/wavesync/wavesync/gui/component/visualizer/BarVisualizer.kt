@@ -191,6 +191,7 @@ class BarVisualizer : AutoCanvas() {
     }
 
     override fun registerPreferences(id: String, preferenceService: PreferenceService) {
+        registerGraphPreferences(id, preferenceService)
         preferenceService.registerProperty(renderMode, "renderMode", RenderMode::class.java, this.javaClass, id)
         preferenceService.registerProperty(smootherType, "smootherType", SmootherType::class.java, this.javaClass, id)
         preferenceService.registerProperty(smoothing, "smoothing", this.javaClass, id)
@@ -207,20 +208,6 @@ class BarVisualizer : AutoCanvas() {
         preferenceService.registerProperty(fillCurve, "fillCurve", this.javaClass, id)
         preferenceService.registerProperty(smoothCurve, "smoothCurve", this.javaClass, id)
         preferenceService.registerProperty(logarithmic, "logarithmic", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(
-            canvasContainer.horizontalLinesVisible,
-            "horizontalLinesVisible",
-            this.javaClass,
-            id
-        )
-        preferenceService.registerProperty(
-            canvasContainer.verticalLinesVisible,
-            "verticalLinesVisible",
-            this.javaClass,
-            id
-        )
         preferenceService.registerProperty(showPeak, "showPeak", this.javaClass, id)
     }
 

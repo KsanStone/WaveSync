@@ -112,7 +112,10 @@ class VectorScopeVisualizer : AutoCanvas(false) {
 
         for (i in 0 until acs.samples.sizeHint(0)) {
             val sample = acs.samples[1].data[i]
-            val p = Point2D((sample.toDouble() * sX + 1.0) * 0.5 * width - 1.0, height - (acs.samples[2].data[i].toDouble() * sY + 1) * height * 0.5)
+            val p = Point2D(
+                (sample.toDouble() * sX + 1.0) * 0.5 * width - 1.0,
+                height - (acs.samples[2].data[i].toDouble() * sY + 1) * height * 0.5
+            )
             if (i == 0) {
                 gc.moveTo(p.x, p.y)
             } else {
@@ -173,20 +176,7 @@ class VectorScopeVisualizer : AutoCanvas(false) {
         preferenceService.registerProperty(rangeX, "rangeX", this.javaClass, id)
         preferenceService.registerProperty(rangeY, "rangeY", this.javaClass, id)
         preferenceService.registerProperty(rangeLink, "rangeLink", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(
-            canvasContainer.horizontalLinesVisible,
-            "horizontalLinesVisible",
-            this.javaClass,
-            id
-        )
-        preferenceService.registerProperty(
-            canvasContainer.verticalLinesVisible,
-            "verticalLinesVisible",
-            this.javaClass,
-            id
-        )
+        registerGraphPreferences(id, preferenceService)
     }
 
     override fun initializeSettingMenu() {

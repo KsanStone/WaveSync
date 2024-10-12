@@ -247,6 +247,23 @@ abstract class AutoCanvas(selfDraw: Boolean = false, private val detachable: Boo
         this.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
     }
 
+    fun registerGraphPreferences(id: String, preferenceService: PreferenceService) {
+        preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(
+            canvasContainer.horizontalLinesVisible,
+            "horizontalLinesVisible",
+            this.javaClass,
+            id
+        )
+        preferenceService.registerProperty(
+            canvasContainer.verticalLinesVisible,
+            "verticalLinesVisible",
+            this.javaClass,
+            id
+        )
+    }
+
     private val isDrawing = AtomicBoolean(false)
 
     private fun drawCall() {
