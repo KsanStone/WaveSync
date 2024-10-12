@@ -14,8 +14,10 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.LayoutChangeEvent
 import me.ksanstone.wavesync.wavesync.utility.EventEmitter
 import java.lang.ref.WeakReference
+import java.util.Optional
 import java.util.function.Consumer
 import java.util.function.Predicate
+import kotlin.jvm.optionals.getOrDefault
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -43,16 +45,18 @@ data class DragLayoutNode(
                 change.removed.forEach { it.parent = null }
             }
             if (change.wasAdded()) {
-                change.addedSubList.forEach { it.parent = this }
+                change.addedSubList.forEach {
+                    it.parent = this
+                    it.node?.eventEmitter?.bubbleTo(eventEmitter)
+                }
             }
             fireChange()
         })
         children.forEach { it.parent = this }
     }
 
-    private fun fireChange() {
-        eventEmitter.publish(LayoutChangeEvent(this))
-        parent?.parent?.fireChange()
+    private fun fireChange(event: LayoutChangeEvent = LayoutChangeEvent(this)) {
+        eventEmitter.publish(event)
     }
 
     /**
@@ -593,7 +597,13 @@ data class DragLayoutNode(
     }
 
     private fun doJustify() {
-        if (boundCache == null || children.size < 2) return justifyEqually()
+        val newDividers = calculateAspectRatioAwareDividers().getOrDefault(calculateEvenlySpacedDividers())
+        this.dividerLocations.clear()
+        this.dividerLocations.addAll(newDividers)
+    }
+
+    fun calculateAspectRatioAwareDividers(): Optional<List<Double>> {
+         if (boundCache == null || children.size < 2) return Optional.empty()
 
         val fixedSize = when (orientation) {
             Orientation.HORIZONTAL -> boundCache!!.height
@@ -616,10 +626,10 @@ data class DragLayoutNode(
             }
         }
 
-        if (justified == 0) return justifyEqually()
+        if (justified == 0) return Optional.empty()
         val nonJustified = justifiedWidths.size - justified
         val pixelJustifiedWidth = justifiedWidths.sum()
-        if (pixelJustifiedWidth > flexibleSize - nonJustified /* some padding */) return justifyEqually()
+        if (pixelJustifiedWidth > flexibleSize - nonJustified /* some padding */) return Optional.empty()
 
         // Compute indexed width
         for (index in justifiedWidths.indices) {
@@ -641,17 +651,11 @@ data class DragLayoutNode(
             newDividers[i] = x
         }
 
-        this.dividerLocations.clear()
-        this.dividerLocations.addAll(newDividers)
+        return Optional.of(newDividers)
     }
 
-    /**
-     * Spaces every component evenly regardless of their preferred aspect ratio
-     */
-    private fun justifyEqually() {
-        val newSize = this.dividerLocations.size
-        this.dividerLocations.clear()
-        this.dividerLocations.addAll(generateDividerPositions(newSize))
+    fun calculateEvenlySpacedDividers(): List<Double> {
+        return generateDividerPositions(this.dividerLocations.size)
     }
 
     /**

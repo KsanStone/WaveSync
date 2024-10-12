@@ -9,16 +9,6 @@ class EventEmitter<T : Any> : IndexedEventEmitter<Class<out T>, T>() {
         publishFor(event.javaClass, event)
     }
 
-    @Synchronized
-    @Suppress("UNCHECKED_CAST")
-    fun on(index: Class<out T>, observer: Consumer<out T>) {
-        if (listenerMap.containsKey(index)) {
-            listenerMap[index]!!.add(observer as Consumer<T>)
-        } else {
-            listenerMap[index] = mutableListOf(observer) as MutableList<Consumer<T>>
-        }
-    }
-
     /**
      * Bubble all events to parent.
      */
@@ -38,12 +28,13 @@ class EventEmitter<T : Any> : IndexedEventEmitter<Class<out T>, T>() {
     }
 }
 
-open class IndexedEventEmitter<I, T> {
+open class IndexedEventEmitter<I, T : Any> {
 
-    protected val listenerMap: MutableMap<I?, MutableList<Consumer<T>>> = Collections.synchronizedMap(mutableMapOf())
+    protected val listenerMap: MutableMap<I?, MutableList<Consumer<out T>>> =
+        Collections.synchronizedMap(mutableMapOf())
 
     @Synchronized
-    fun on(index: I?, observer: Consumer<T>) {
+    fun on(index: I?, observer: Consumer<out T>) {
         if (listenerMap.containsKey(index)) {
             listenerMap[index]!!.add(observer)
         } else {
@@ -70,9 +61,10 @@ open class IndexedEventEmitter<I, T> {
     }
 
     @Synchronized
+    @Suppress("UNCHECKED_CAST")
     fun publishFor(index: I, event: T) {
-        listenerMap[index]?.forEach { it.accept(event) }
-        listenerMap[null]?.forEach { it.accept(event) }
+        listenerMap[index]?.forEach { (it as Consumer<in T>).accept(event) }
+        listenerMap[null]?.forEach { (it as Consumer<in T>).accept(event) }
     }
 
     @Synchronized

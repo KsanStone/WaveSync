@@ -1,6 +1,9 @@
 package me.ksanstone.wavesync.wavesync.gui.component.layout.drag
 
 import javafx.beans.property.SimpleBooleanProperty
+import javafx.collections.FXCollections
+import javafx.collections.ListChangeListener
+import javafx.collections.ObservableList
 import javafx.geometry.*
 import javafx.scene.Node
 import javafx.scene.SnapshotParameters
@@ -8,19 +11,20 @@ import javafx.scene.input.ClipboardContent
 import javafx.scene.input.DragEvent
 import javafx.scene.input.TransferMode
 import javafx.scene.layout.Pane
+import javafx.scene.shape.Line
 import javafx.scene.transform.Transform
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DIVIDER_SIZE
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutLeaf
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.LeafLayoutPreference
-import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DragLayoutEvent
-import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.LayoutChangeEvent
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.*
 import me.ksanstone.wavesync.wavesync.service.GlobalLayoutService
 import me.ksanstone.wavesync.wavesync.utility.EventEmitter
 import java.lang.ref.WeakReference
 import java.util.function.Consumer
 import java.util.stream.Collectors
+import kotlin.jvm.optionals.getOrDefault
 
 class DragLayout : Pane() {
 
@@ -32,6 +36,9 @@ class DragLayout : Pane() {
     private val eventEmitter = EventEmitter<DragLayoutEvent>()
     private val gls = WaveSyncBootApplication.applicationContext.getBean(GlobalLayoutService::class.java)
     private val multiScreen = SimpleBooleanProperty(true)
+    private val snapPoints: ObservableList<SnapPoint> = FXCollections.observableArrayList()
+    private val snapPointLines: ObservableList<Line> = FXCollections.observableArrayList()
+    private var snapNode: DragLayoutNode? = null
 
     init {
         setOnDragOver(this::onDragOver)
@@ -46,11 +53,30 @@ class DragLayout : Pane() {
 
         layoutRoot.eventEmitter.bubbleTo(eventEmitter)
 
-        eventEmitter.on(LayoutChangeEvent::class.java, Consumer<LayoutChangeEvent> {
+        eventEmitter.on(LayoutChangeEvent::class.java) {
             val minSize = calculateMinSize()
             minWidth = minSize.width
             minHeight = minSize.height
+        }
+
+        snapPointLines.addListener(ListChangeListener { change ->
+            while (change.next()) {
+                if (change.wasAdded()) {
+                    children.addAll(change.addedSubList)
+                }
+                if (change.wasRemoved()) {
+                    children.removeAll(change.removed)
+                }
+            }
         })
+
+        snapPoints.addListener(ListChangeListener { change ->
+            while (change.next()) { /* */
+            }
+            layoutSnapLines()
+        })
+
+        setupDragSnapPoints()
     }
 
     fun addLayoutChangeListener(listener: Consumer<LayoutChangeEvent>) {
@@ -75,8 +101,7 @@ class DragLayout : Pane() {
      */
     fun addComponent(node: Node, id: String, layoutPreference: LeafLayoutPreference = LeafLayoutPreference()) {
         layoutRoot.insertNodes(
-            0,
-            mutableListOf(DragLayoutLeaf(component = node, id = id, layoutPreference = layoutPreference))
+            0, mutableListOf(DragLayoutLeaf(component = node, id = id, layoutPreference = layoutPreference))
         )
     }
 
@@ -88,8 +113,7 @@ class DragLayout : Pane() {
     }
 
     private fun onDragOver(e: DragEvent) {
-        if (dragOver(Point2D(e.x, e.y), e.dragboard.string))
-            e.acceptTransferModes(TransferMode.MOVE)
+        if (dragOver(Point2D(e.x, e.y), e.dragboard.string)) e.acceptTransferModes(TransferMode.MOVE)
     }
 
     fun dragExited() {
@@ -99,16 +123,14 @@ class DragLayout : Pane() {
     fun dragOver(p: Point2D, nodeId: String): Boolean {
         dragCueShowing.value = false
         val noteId = decodeNodeId(nodeId) ?: return false
-        val intersectedNode =
-            layoutRoot.intersect(xyToAbsolute(p), getDividerMargin()) ?: return false
+        val intersectedNode = layoutRoot.intersect(xyToAbsolute(p), getDividerMargin()) ?: return false
         if (intersectedNode.boundCache == null) return false
         if (noteId == intersectedNode.id) return false
 
 
         var queBounds = intersectedNode.boundCache!!
         val side = intersectedNode.getSideSections().intersect(p)
-        if (side != null)
-            queBounds = side.first
+        if (side != null) queBounds = side.first
 
         drawCueRect.resizeRelocate(queBounds)
         dragCueShowing.value = true
@@ -157,8 +179,7 @@ class DragLayout : Pane() {
             val targetNode = layoutRoot.findComponentLeaf(target) ?: return
             targetNode.insertAtSide(side, sourceNode)
             layoutRoot.afterTransition()
-            if (sourceLayout != layoutRoot)
-                sourceLayout.afterTransition()
+            if (sourceLayout != layoutRoot) sourceLayout.afterTransition()
             updateChildren()
             layoutChildren()
         }
@@ -228,6 +249,8 @@ class DragLayout : Pane() {
         synchronized(layoutLock) {
             if (!layoutRoot.isEmpty()) {
                 layoutNode(layoutRoot, Rectangle2D(0.0, 0.0, width, height))
+                if (snapPoints.size > 0)
+                    layoutSnapLines()
             }
         }
     }
@@ -255,6 +278,63 @@ class DragLayout : Pane() {
         }
     }
 
+    private fun setupDragSnapPoints() {
+        this.eventEmitter.on(DividerDragStartEvent::class.java) { event ->
+            event as DividerDragStartEvent
+            snapPoints.addAll(event.node.calculateEvenlySpacedDividers().map { SnapPoint(it, SnapPointType.Even) })
+            snapPoints.addAll(
+                event.node.calculateAspectRatioAwareDividers().getOrDefault(emptyList())
+                    .map { SnapPoint(it, SnapPointType.AspectRatioAware) })
+            snapNode = event.node
+            println(snapPoints)
+        }
+        this.eventEmitter.on(DividerDraggedEvent::class.java) {}
+        this.eventEmitter.on(DividerDragEndEvent::class.java) {
+            snapPoints.clear()
+            snapNode = null
+        }
+    }
+
+    private fun layoutSnapLines() {
+        if (snapPointLines.size > snapPoints.size) {
+            for (i in snapPointLines.size - 1 downTo snapPoints.size)
+                snapPointLines.removeAt(i)
+        } else if (snapPointLines.size < snapPoints.size) {
+            for (i in 0 until snapPoints.size - snapPointLines.size)
+                snapPointLines.add(Line())
+        }
+
+        val bounds = snapNode?.boundCache ?: return
+        when (snapNode?.orientation ?: return) {
+            Orientation.HORIZONTAL -> {
+                for (i in snapPoints.indices) {
+                    val x = bounds.width * snapPoints[i].point + bounds.minX
+                    snapPointLines[i].startX = x
+                    snapPointLines[i].endX = x
+                    snapPointLines[i].startY = bounds.minY
+                    snapPointLines[i].endY = bounds.maxY
+                }
+            }
+
+            Orientation.VERTICAL -> {
+                for (i in snapPoints.indices) {
+                    val y = bounds.width * snapPoints[i].point + bounds.minY
+                    snapPointLines[i].startX = bounds.minX
+                    snapPointLines[i].endX = bounds.maxX
+                    snapPointLines[i].startY = y
+                    snapPointLines[i].endY = y
+                }
+            }
+        }
+
+        for (i in snapPointLines.indices) {
+            val line = snapPointLines[i]
+            line.styleClass.setAll(snapPoints[i].type.getStyleClass())
+            line.resizeRelocate(line.boundsInLocal)
+        }
+
+    }
+
     /**
      * Converts a component-based coordinate to an absolute 0 .. 1 scale coordinate
      */
@@ -267,8 +347,10 @@ class DragLayout : Pane() {
     }
 
     private fun decodeNodeId(encoded: String): String? {
-        if (encoded.startsWith("<node-transfer-") && encoded.endsWith(">"))
-            return encoded.substring(15, encoded.length - 1)
+        if (encoded.startsWith("<node-transfer-") && encoded.endsWith(">")) return encoded.substring(
+            15,
+            encoded.length - 1
+        )
         return null
     }
 
@@ -277,8 +359,26 @@ class DragLayout : Pane() {
             return "<node-transfer-$id>"
         }
     }
+
+    enum class SnapPointType {
+        Even,
+        AspectRatioAware;
+
+        fun getStyleClass(): String {
+            return when (this) {
+                Even -> "drag-line-even"
+                AspectRatioAware -> "drag-line-aspect"
+            }
+        }
+    }
+
+    data class SnapPoint(val point: Double, val type: SnapPointType)
 }
 
 fun Node.resizeRelocate(bound: Rectangle2D) {
+    this.resizeRelocate(bound.minX, bound.minY, bound.width, bound.height)
+}
+
+fun Node.resizeRelocate(bound: Bounds) {
     this.resizeRelocate(bound.minX, bound.minY, bound.width, bound.height)
 }

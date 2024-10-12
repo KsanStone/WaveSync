@@ -6,6 +6,9 @@ import javafx.scene.Cursor
 import javafx.scene.layout.Pane
 import javafx.scene.layout.Region
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DividerDragEndEvent
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DividerDragStartEvent
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DividerDraggedEvent
 
 class DragDivider(
     private val orientation: Orientation, private val parent: DragLayoutNode, private val dividerId: Int
@@ -30,6 +33,10 @@ class DragDivider(
         cue.toFront()
         cue.styleClass.add("drag-divider-cue")
 
+        setOnMousePressed {
+            parent.eventEmitter.publish(DividerDragStartEvent(parent, dividerId))
+        }
+
         setOnMouseDragged {
             val local = parent.getEffectiveLayout().get()!!.sceneToLocal(Point2D(it.sceneX, it.sceneY))
             val diff = when (orientation) {
@@ -38,6 +45,11 @@ class DragDivider(
             }
 
             parent.relocateDivider(dividerId, diff)
+            parent.eventEmitter.publish(DividerDraggedEvent(parent, dividerId))
+        }
+
+        setOnMouseReleased {
+            parent.eventEmitter.publish(DividerDragEndEvent(parent, dividerId))
         }
 
         listOf(widthProperty(), heightProperty()).forEach { it.addListener { _ -> layoutCue() } }
