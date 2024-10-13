@@ -28,14 +28,18 @@
 .drag-layout {
 }
 
+.drag-line {
+    -fx-stroke-width: 3px;
+}
+
+.drag-line-secondary {
+    -fx-stroke-dash-array: 7 7;
+}
+
 .drag-line-even {
     -fx-stroke: -color-chart-4;
-    -fx-stroke-width: 3px;
-    -fx-stroke-dasharray: 7 7;
 }
 
 .drag-line-aspect {
     -fx-stroke: -color-chart-5;
-    -fx-stroke-width: 3px;
-    -fx-stroke-dasharray: 7 7;
 }

@@ -4,5 +4,6 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutN
 
 data class DividerDraggedEvent(
     val node: DragLayoutNode,
-    val dividerId: Int
+    val dividerId: Int,
+    val isControlDown: Boolean
 ) : DragLayoutEvent

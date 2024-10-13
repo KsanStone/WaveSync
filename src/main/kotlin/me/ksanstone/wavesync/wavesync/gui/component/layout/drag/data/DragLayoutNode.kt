@@ -14,7 +14,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.LayoutChangeEvent
 import me.ksanstone.wavesync.wavesync.utility.EventEmitter
 import java.lang.ref.WeakReference
-import java.util.Optional
+import java.util.*
 import java.util.function.Consumer
 import java.util.function.Predicate
 import kotlin.jvm.optionals.getOrDefault
@@ -38,6 +38,9 @@ data class DragLayoutNode(
 
     var boundCache: Rectangle2D? = null
 
+    private var evenDividerCache: List<Double>? = null
+    private var aspectRatioAwareDividerCache: Optional<List<Double>>? = null
+
     init {
         children.addListener(ListChangeListener { change ->
             change.next()
@@ -50,6 +53,8 @@ data class DragLayoutNode(
                     it.node?.eventEmitter?.bubbleTo(eventEmitter)
                 }
             }
+            evenDividerCache = null
+            aspectRatioAwareDividerCache = null
             fireChange()
         })
         children.forEach { it.parent = this }
@@ -83,7 +88,7 @@ data class DragLayoutNode(
     /**
      * Relocates the given divider. Its position will be clamped
      */
-    fun relocateDivider(id: Int, newPos: Double) {
+    fun relocateDivider(id: Int, newPos: Double, snap: Boolean) {
         if (boundCache == null) return
 
         val scalar = when (orientation) {
@@ -91,7 +96,20 @@ data class DragLayoutNode(
             Orientation.VERTICAL -> boundCache!!.height
         }
 
-        val newDividerValue = newPos / scalar
+        var newDividerValue = newPos / scalar
+        if(snap) {
+            val points = getSnapPoints()
+            val epsilon = 20 / scalar
+
+            for (point in points) {
+                if (abs(point - newDividerValue) < epsilon) {
+                    newDividerValue = point
+                    break
+                }
+            }
+        }
+
+
         val dividerWidth = DIVIDER_SIZE / scalar
 
         val compPrev = children[id]
@@ -597,13 +615,37 @@ data class DragLayoutNode(
     }
 
     private fun doJustify() {
-        val newDividers = calculateAspectRatioAwareDividers().getOrDefault(calculateEvenlySpacedDividers())
+        val newDividers = getAspectRatioAwareDividers().getOrDefault(getEvenlySpacedDividers())
         this.dividerLocations.clear()
         this.dividerLocations.addAll(newDividers)
     }
 
-    fun calculateAspectRatioAwareDividers(): Optional<List<Double>> {
-         if (boundCache == null || children.size < 2) return Optional.empty()
+    private fun getSnapPoints(): Set<Double> {
+        val points = mutableSetOf<Double>()
+        points.addAll(getEvenlySpacedDividers())
+        if (getAspectRatioAwareDividers().isPresent)
+            points.addAll(getAspectRatioAwareDividers().get())
+        return points
+    }
+
+    /**
+     * Calculates the divider positions while accounting for the preferred aspect ratio of each component.
+     * The positioning isn't always possible, in that case Optional.empty() is returned.
+     *
+     * The positioning is not possible when:
+     * - There is only one child (no dividers).
+     * - The boundCache has not been computed yet.
+     * - No components have predefined aspect ratios.
+     * - The justified components do not fit along with other components in the node.
+     *
+     * @return optional list of calculated divider positions
+     */
+    fun getAspectRatioAwareDividers(): Optional<List<Double>> {
+        if (aspectRatioAwareDividerCache != null) return aspectRatioAwareDividerCache!!
+        if (boundCache == null || children.size < 1) {
+            aspectRatioAwareDividerCache = Optional.empty()
+            return aspectRatioAwareDividerCache!!
+        }
 
         val fixedSize = when (orientation) {
             Orientation.HORIZONTAL -> boundCache!!.height
@@ -626,10 +668,16 @@ data class DragLayoutNode(
             }
         }
 
-        if (justified == 0) return Optional.empty()
+        if (justified == 0) {
+            aspectRatioAwareDividerCache = Optional.empty()
+            return aspectRatioAwareDividerCache!!
+        }
         val nonJustified = justifiedWidths.size - justified
         val pixelJustifiedWidth = justifiedWidths.sum()
-        if (pixelJustifiedWidth > flexibleSize - nonJustified /* some padding */) return Optional.empty()
+        if (pixelJustifiedWidth > flexibleSize - nonJustified /* some padding */) {
+            aspectRatioAwareDividerCache = Optional.empty()
+            return aspectRatioAwareDividerCache!!
+        }
 
         // Compute indexed width
         for (index in justifiedWidths.indices) {
@@ -651,11 +699,20 @@ data class DragLayoutNode(
             newDividers[i] = x
         }
 
-        return Optional.of(newDividers)
+        aspectRatioAwareDividerCache = Optional.of(newDividers)
+        return aspectRatioAwareDividerCache!!
     }
 
-    fun calculateEvenlySpacedDividers(): List<Double> {
-        return generateDividerPositions(this.dividerLocations.size)
+    /**
+     * Generates dividers that evenly size every component.
+     *
+     * @see generateDividerPositions
+     */
+    fun getEvenlySpacedDividers(): List<Double> {
+        if (evenDividerCache != null) return evenDividerCache!!
+        val positions = generateDividerPositions(this.dividerLocations.size)
+        evenDividerCache = positions
+        return positions
     }
 
     /**
@@ -691,6 +748,16 @@ data class DragLayoutNode(
     }
 
     companion object {
+
+        /**
+         * Generate a list of evenly spaced points in the range [0,1],
+         * that divide the range into even chunks.
+         *
+         * - n=1: {0.5}
+         * - n=2: {0.333, 0.666}
+         * - n=3: {0.25, 0.5, 0.75}
+         * ...
+         */
         fun generateDividerPositions(size: Int): List<Double> {
             if (size < 1) return mutableListOf()
             val dividers = mutableListOf<Double>()

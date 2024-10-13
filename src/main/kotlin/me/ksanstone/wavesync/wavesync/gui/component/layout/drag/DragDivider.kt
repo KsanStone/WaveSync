@@ -44,8 +44,8 @@ class DragDivider(
                 Orientation.VERTICAL -> local.x - parent.boundCache!!.minX
             }
 
-            parent.relocateDivider(dividerId, diff)
-            parent.eventEmitter.publish(DividerDraggedEvent(parent, dividerId))
+            parent.relocateDivider(dividerId, diff, it.isControlDown)
+            parent.eventEmitter.publish(DividerDraggedEvent(parent, dividerId, it.isControlDown))
         }
 
         setOnMouseReleased {

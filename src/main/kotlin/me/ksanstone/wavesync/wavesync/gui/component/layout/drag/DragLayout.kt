@@ -281,12 +281,13 @@ class DragLayout : Pane() {
     private fun setupDragSnapPoints() {
         this.eventEmitter.on(DividerDragStartEvent::class.java) { event ->
             event as DividerDragStartEvent
-            snapPoints.addAll(event.node.calculateEvenlySpacedDividers().map { SnapPoint(it, SnapPointType.Even) })
             snapPoints.addAll(
-                event.node.calculateAspectRatioAwareDividers().getOrDefault(emptyList())
-                    .map { SnapPoint(it, SnapPointType.AspectRatioAware) })
+                event.node.getEvenlySpacedDividers()
+                    .mapIndexed { index, d -> SnapPoint(d, SnapPointType.Even, index != event.dividerId) })
+            snapPoints.addAll(
+                event.node.getAspectRatioAwareDividers().getOrDefault(emptyList())
+                    .mapIndexed { index, d -> SnapPoint(d, SnapPointType.AspectRatioAware, index != event.dividerId) })
             snapNode = event.node
-            println(snapPoints)
         }
         this.eventEmitter.on(DividerDraggedEvent::class.java) {}
         this.eventEmitter.on(DividerDragEndEvent::class.java) {
@@ -318,7 +319,7 @@ class DragLayout : Pane() {
 
             Orientation.VERTICAL -> {
                 for (i in snapPoints.indices) {
-                    val y = bounds.width * snapPoints[i].point + bounds.minY
+                    val y = bounds.height * snapPoints[i].point + bounds.minY
                     snapPointLines[i].startX = bounds.minX
                     snapPointLines[i].endX = bounds.maxX
                     snapPointLines[i].startY = y
@@ -329,7 +330,8 @@ class DragLayout : Pane() {
 
         for (i in snapPointLines.indices) {
             val line = snapPointLines[i]
-            line.styleClass.setAll(snapPoints[i].type.getStyleClass())
+            line.styleClass.setAll("drag-line", snapPoints[i].type.getStyleClass())
+            if (snapPoints[i].secondary) line.styleClass.add("drag-line-secondary")
             line.resizeRelocate(line.boundsInLocal)
         }
 
@@ -372,7 +374,7 @@ class DragLayout : Pane() {
         }
     }
 
-    data class SnapPoint(val point: Double, val type: SnapPointType)
+    data class SnapPoint(val point: Double, val type: SnapPointType, val secondary: Boolean)
 }
 
 fun Node.resizeRelocate(bound: Rectangle2D) {

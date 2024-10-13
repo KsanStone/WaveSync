@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service
 @Service
 class FFTTransformerService {
 
-    var fftPlan: fftwf_plan? = null
+    private var fftPlan: fftwf_plan? = null
 
     private lateinit var signal: FloatPointer
     private lateinit var result: FloatPointer
