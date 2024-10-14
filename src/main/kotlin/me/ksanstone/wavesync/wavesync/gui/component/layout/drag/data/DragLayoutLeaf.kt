@@ -37,7 +37,6 @@ data class DragLayoutLeaf(
             // Wrap self in new node with the correct orientation
             val newParent = DragLayoutNode(
                 parent = this,
-                dividerLocations = mutableListOf(),
                 orientation = dir.first,
                 id = ""
             )

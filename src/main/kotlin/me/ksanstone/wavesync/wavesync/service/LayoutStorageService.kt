@@ -65,7 +65,7 @@ open class LayoutStorageService(
                     DragLayoutLeaf(component = wVis, id = "$MAIN_WAVEFORM_VISUALIZER_ID-Channel-0")
                 )
             ),
-            dividerLocations = mutableListOf(0.5),
+            dividerLocations = FXCollections.observableArrayList(0.5),
             id = "",
             dividers = mutableListOf()
         )

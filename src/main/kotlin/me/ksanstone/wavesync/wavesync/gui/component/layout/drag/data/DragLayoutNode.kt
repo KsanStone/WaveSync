@@ -28,7 +28,7 @@ data class DragLayoutNode(
     var id: String,
     var orientation: Orientation = Orientation.HORIZONTAL,
     val children: ObservableList<DragLayoutLeaf> = FXCollections.observableArrayList(),
-    var dividerLocations: MutableList<Double> = mutableListOf(),
+    var dividerLocations: ObservableList<Double> = FXCollections.observableArrayList(),
     var dividers: MutableList<DragDivider> = mutableListOf(),
     var parent: DragLayoutLeaf? = null,
     var layout: WeakReference<DragLayout>? = null,
@@ -58,18 +58,24 @@ data class DragLayoutNode(
             fireChange()
         })
         children.forEach { it.parent = this }
-    }
-
-    private fun fireChange(event: LayoutChangeEvent = LayoutChangeEvent(this)) {
-        eventEmitter.publish(event)
-    }
-
-    /**
-     * Creates [DragDivider] instances for this node, and its children.
-     * Old instances are deleted
-     */
-    fun createDividers() {
-        this.dividers.clear()
+        dividerLocations.addListener(ListChangeListener { change ->
+            change.next()
+            if (dividers.size < dividerLocations.size) {
+                for (i in dividers.size until dividerLocations.size) {
+                    dividers.add(
+                        DragDivider(
+                            orientation.run { if (orientation == Orientation.VERTICAL) Orientation.HORIZONTAL else Orientation.VERTICAL },
+                            this,
+                            i
+                        )
+                    )
+                }
+            } else if (dividers.size > dividerLocations.size) {
+                for (i in dividers.size - 1 downTo dividerLocations.size) {
+                    dividers.removeAt(i)
+                }
+            }
+        })
         this.dividers.addAll(this.dividerLocations.indices.map {
             DragDivider(
                 orientation.run { if (orientation == Orientation.VERTICAL) Orientation.HORIZONTAL else Orientation.VERTICAL },
@@ -77,12 +83,10 @@ data class DragLayoutNode(
                 it
             )
         })
+    }
 
-        this.forEachNode {
-            it.node.createDividers()
-        }
-
-        children.forEach { it.parent = this }
+    private fun fireChange(event: LayoutChangeEvent = LayoutChangeEvent(this)) {
+        eventEmitter.publish(event)
     }
 
     /**
@@ -97,7 +101,7 @@ data class DragLayoutNode(
         }
 
         var newDividerValue = newPos / scalar
-        if(snap) {
+        if (snap) {
             val points = getSnapPoints()
             val epsilon = 20 / scalar
 
@@ -175,7 +179,6 @@ data class DragLayoutNode(
 
     fun afterTransition() {
         simplify()
-        createDividers()
     }
 
     /**
@@ -185,7 +188,7 @@ data class DragLayoutNode(
     private fun validateDividers() {
         if (children.size == 0) return this.dividerLocations.clear()
         if (this.dividerLocations.size + 1 != children.size || !rangeValid(this.dividerLocations))
-            this.dividerLocations = MutableList(children.size - 1) { (it + 1) / children.size.toDouble() }
+            this.dividerLocations.setAll(MutableList(children.size - 1) { (it + 1) / children.size.toDouble() })
     }
 
     private fun rangeValid(numbers: List<Double>, expectedLength: Int = 0): Boolean {

@@ -90,7 +90,7 @@ class DragLayoutSerializerService {
 
         return DragLayoutNode(
             "", children = FXCollections.observableList(children.toMutableList()),
-            dividerLocations = dividers.toMutableList(), orientation = orientation
+            dividerLocations = FXCollections.observableArrayList(dividers), orientation = orientation
         )
     }
 

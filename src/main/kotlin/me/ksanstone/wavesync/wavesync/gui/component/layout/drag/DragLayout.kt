@@ -71,8 +71,7 @@ class DragLayout : Pane() {
         })
 
         snapPoints.addListener(ListChangeListener { change ->
-            while (change.next()) { /* */
-            }
+            while (change.next()) { /* */ }
             layoutSnapLines()
         })
 
@@ -199,7 +198,6 @@ class DragLayout : Pane() {
      */
     private fun updateChildren() {
         this.children.clear()
-        layoutRoot.createDividers()
         layoutRoot.forEachComponent {
             it.node.setOnDragDetected { _ ->
                 if (multiScreen.get()) {
@@ -283,10 +281,10 @@ class DragLayout : Pane() {
             event as DividerDragStartEvent
             snapPoints.addAll(
                 event.node.getEvenlySpacedDividers()
-                    .mapIndexed { index, d -> SnapPoint(d, SnapPointType.Even, index != event.dividerId) })
+                    .mapIndexed { index, d -> SnapPoint(d, SnapPointType.EVEN, index != event.dividerId) })
             snapPoints.addAll(
                 event.node.getAspectRatioAwareDividers().getOrDefault(emptyList())
-                    .mapIndexed { index, d -> SnapPoint(d, SnapPointType.AspectRatioAware, index != event.dividerId) })
+                    .mapIndexed { index, d -> SnapPoint(d, SnapPointType.ASPECT_RATIO_AWARE, index != event.dividerId) })
             snapNode = event.node
         }
         this.eventEmitter.on(DividerDraggedEvent::class.java) {}
@@ -363,15 +361,21 @@ class DragLayout : Pane() {
     }
 
     enum class SnapPointType {
-        Even,
-        AspectRatioAware;
+        EVEN,
+        ASPECT_RATIO_AWARE;
 
         fun getStyleClass(): String {
             return when (this) {
-                Even -> "drag-line-even"
-                AspectRatioAware -> "drag-line-aspect"
+                EVEN -> "drag-line-even"
+                ASPECT_RATIO_AWARE -> "drag-line-aspect"
             }
         }
+    }
+
+    enum class JustifyMode {
+        ASPECT_RATIO_AWARE,
+        EVEN,
+        NONE
     }
 
     data class SnapPoint(val point: Double, val type: SnapPointType, val secondary: Boolean)
