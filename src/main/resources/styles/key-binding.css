@@ -1,0 +1,9 @@
+.keycode {
+    font-family: Consolas, Monaco, Consolas, "Courier New", monospace;
+    -fx-border-color: -color-accent-fg;
+    -fx-border-width: 1px;
+    -fx-background-color: -color-accent-muted;
+    -fx-padding: 10px;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+}

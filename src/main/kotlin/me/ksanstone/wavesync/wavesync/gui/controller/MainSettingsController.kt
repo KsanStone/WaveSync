@@ -1,6 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.controller
 
 import atlantafx.base.controls.ToggleSwitch
+import javafx.application.Platform
 import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.*
@@ -12,6 +13,7 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_END_COL
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FFT_SIZE
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_START_COLOR
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.GlobalColorService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
@@ -65,6 +67,8 @@ class MainSettingsController : Initializable {
     private lateinit var localizationService: LocalizationService
     private lateinit var preferenceService: PreferenceService
     private lateinit var globalColorService: GlobalColorService
+    private lateinit var menuInitializer: MenuInitializer
+    private lateinit var resources: ResourceBundle
 
     private fun changeAudioSystem() {
         audioCaptureService.usedAudioSystem.set(XtSystem.valueOf(audioServerChoiceBox.value))
@@ -72,10 +76,12 @@ class MainSettingsController : Initializable {
     }
 
     override fun initialize(location: URL?, resources: ResourceBundle?) {
+        this.resources = resources!!
         audioCaptureService = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
         localizationService = WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
         preferenceService = WaveSyncBootApplication.applicationContext.getBean(PreferenceService::class.java)
         globalColorService = WaveSyncBootApplication.applicationContext.getBean(GlobalColorService::class.java)
+        menuInitializer = WaveSyncBootApplication.applicationContext.getBean(MenuInitializer::class.java)
 
         startColorPicker.value = globalColorService.startColor.get()
         globalColorService.startColor.bind(startColorPicker.valueProperty())
@@ -209,6 +215,12 @@ class MainSettingsController : Initializable {
     fun resetColors() {
         startColorPicker.value = DEFAULT_START_COLOR
         endColorPicker.value = DEFAULT_END_COLOR
+    }
+
+    fun openKeybinds() {
+        Platform.runLater {
+            menuInitializer.showPopupMenu("layout/keybinds.fxml", resources.getString("keybind.title"))
+        }
     }
 
 }

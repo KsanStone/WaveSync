@@ -19,12 +19,13 @@
             <rowConstraints>
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS"/>
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS"/>
-                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS"/>
-                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS"/>
                 <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS"/>
-                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS"/>
-                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS"/>
-                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" prefHeight="30.0" vgrow="ALWAYS"/>
+                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS"/>
+                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS"/>
+                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS"/>
+                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS"/>
+                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS"/>
+                <RowConstraints maxHeight="1.7976931348623157E308" minHeight="40.0" vgrow="ALWAYS"/>
             </rowConstraints>
             <children>
                 <Label text="%dialog.deviceOptions.theme" GridPane.rowIndex="4">
@@ -67,7 +68,7 @@
                 <ChoiceBox fx:id="audioServerChoiceBox" maxWidth="1.7976931348623157E308" prefWidth="150.0"
                            GridPane.columnIndex="1" GridPane.rowIndex="3"/>
                 <HBox alignment="BOTTOM_RIGHT" spacing="5.0" GridPane.columnIndex="1" GridPane.halignment="RIGHT"
-                      GridPane.rowIndex="7" GridPane.valignment="BOTTOM">
+                      GridPane.rowIndex="8" GridPane.valignment="BOTTOM">
                     <children>
                         <Button mnemonicParsing="false" onAction="#purgeDataDialog" styleClass="danger"
                                 text="%dialog.deviceOptions.purge"/>
@@ -132,6 +133,8 @@
                     </children>
                 </GridPane>
             </children>
+            <Label GridPane.columnIndex="0" GridPane.rowIndex="7" text="%keybind.label"></Label>
+            <Button GridPane.columnIndex="1" GridPane.rowIndex="7" text="%keybind.button" onAction="#openKeybinds"></Button>
             <opaqueInsets>
                 <Insets/>
             </opaqueInsets>

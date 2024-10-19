@@ -15,7 +15,8 @@ import java.lang.ref.WeakReference
 
 @Service
 class RecordingModeService(
-    val preferenceService: PreferenceService
+    val preferenceService: PreferenceService,
+    private val globalKeyBindService: GlobalKeyBindService
 ) {
 
     val recordingMode: BooleanProperty = SimpleBooleanProperty(false)
@@ -28,6 +29,9 @@ class RecordingModeService(
         preferenceService.registerProperty(recordingMode, "recordingMode", this.javaClass)
         recordingMode.addListener { _ -> updateTitle() }
         updateTitle()
+        globalKeyBindService.register("recMode", KeyCode.F6) { _, _ ->
+            recordingMode.value = !recordingMode.value
+        }
     }
 
     private fun updateTitle() {
@@ -39,16 +43,6 @@ class RecordingModeService(
             stage.title = stage.title.replace(titleSuffix, "")
         }
         logger.info("Clean mode ${recordingMode.value}")
-    }
-
-    @EventListener
-    fun stageReady(e: StageReadyEvent) {
-        stageRef = WeakReference(e.stage)
-        e.stage.addEventHandler(KeyEvent.KEY_PRESSED) { keyEvent ->
-            if (KeyCode.F6 == keyEvent.code) {
-                recordingMode.value = !recordingMode.value
-            }
-        }
     }
 
 }

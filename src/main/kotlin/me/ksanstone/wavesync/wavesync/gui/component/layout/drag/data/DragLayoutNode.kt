@@ -60,6 +60,7 @@ data class DragLayoutNode(
         children.forEach { it.parent = this }
         dividerLocations.addListener(ListChangeListener { change ->
             change.next()
+
             if (dividers.size < dividerLocations.size) {
                 for (i in dividers.size until dividerLocations.size) {
                     dividers.add(
@@ -619,8 +620,7 @@ data class DragLayoutNode(
 
     private fun doJustify() {
         val newDividers = getAspectRatioAwareDividers().getOrDefault(getEvenlySpacedDividers())
-        this.dividerLocations.clear()
-        this.dividerLocations.addAll(newDividers)
+        this.dividerLocations.setAll(newDividers)
     }
 
     private fun getSnapPoints(): Set<Double> {

@@ -169,7 +169,7 @@ class AudioCaptureService(
     private fun doFFT() {
         val source = source.get()
         for (i in 0 until fftSampleBuffer.channels())
-            doFFT(i, fftSampleBuffer[i].data.toFloatArrayInterlaced(fftwSignalArray), source.rate)
+            doFFT(i, fftSampleBuffer[i].data.toFloatArrayInterlaced(fftwSignalArray))
 
         fftObservers.forEachIndex {
             if (it < fftResult.channels())
@@ -177,7 +177,7 @@ class AudioCaptureService(
         }
     }
 
-    private fun doFFT(channel: Int, samples: FloatArray, rate: Int) {
+    private fun doFFT(channel: Int, samples: FloatArray) {
         windowFunction!!.applyFunctionInterlaced(samples)
         fftTransformerService.scaleAndPutSamples(samples, windowFunction!!.getSum())
         fftTransformerService.transform()

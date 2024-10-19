@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.initializer
 
+import jakarta.annotation.PostConstruct
 import javafx.beans.value.ChangeListener
 import javafx.fxml.FXMLLoader
 import javafx.scene.Parent
@@ -19,6 +20,7 @@ import me.ksanstone.wavesync.wavesync.service.*
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
+import java.security.Key
 import java.util.function.Consumer
 import kotlin.time.measureTime
 
@@ -30,10 +32,30 @@ class WaveSyncStageInitializer(
     private val stageSizingService: StageSizingService,
     private val audioCaptureService: AudioCaptureService,
     private val stageManager: StageManager,
-    private val layoutStorageService: LayoutStorageService
+    private val layoutStorageService: LayoutStorageService,
+    private val globalKeyBindService: GlobalKeyBindService
 ) : ApplicationListener<StageReadyEvent> {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
+
+    @PostConstruct
+    fun init() {
+        globalKeyBindService.register("fullscreen", KeyCode.F11) { _, stage ->
+            stage.isFullScreen = !stage.isFullScreen
+        }
+        globalKeyBindService.register("togglePause", KeyCode.K) { _, _ ->
+            audioCaptureService.paused.value = !audioCaptureService.paused.value
+        }
+        globalKeyBindService.register("holdPause", KeyCode.L) { _, _ ->
+            audioCaptureService.paused.value = true
+        }
+        globalKeyBindService.register("holdPause", KeyCode.L, KeyEvent.KEY_RELEASED) { _, _ ->
+            audioCaptureService.paused.value = false
+        }
+        globalKeyBindService.register("justify", KeyCode.J) { _, stage ->
+            layoutStorageService.getLayout(stage)?.justify()
+        }
+    }
 
     override fun onApplicationEvent(event: StageReadyEvent) {
         val stageInitTime = measureTime {
@@ -108,28 +130,13 @@ class WaveSyncStageInitializer(
         return stage
     }
 
-    fun registerAccelerators(stage: Stage) {
+    private fun registerAccelerators(stage: Stage) {
         stage.fullScreenExitKeyCombination = KeyCombination.NO_MATCH
-        stage.addEventHandler(KeyEvent.KEY_PRESSED) { keyEvent ->
-            if (KeyCode.F11 == keyEvent.code) {
-                stage.isFullScreen = !stage.isFullScreen
-            } else if (KeyCode.K == keyEvent.code) {
-                audioCaptureService.paused.value = !audioCaptureService.paused.value
-            } else if (KeyCode.L == keyEvent.code) {
-                audioCaptureService.paused.value = true
-            } else if (KeyCode.J == keyEvent.code) {
-                layoutStorageService.getLayout(stage)?.justify()
-            }
-        }
-        stage.addEventHandler(KeyEvent.KEY_RELEASED) { keyEvent ->
-            if (KeyCode.L == keyEvent.code) {
-                audioCaptureService.paused.value = false
-            }
-        }
+        globalKeyBindService.registerForStage(stage)
     }
 
     /**
-     * Register custom controls & take care of the scene
+     * Register custom controls and take care of the scene
      */
     fun customize(stage: Stage) {
         if (stage.scene == null) {
