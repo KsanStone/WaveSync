@@ -44,7 +44,7 @@ import me.ksanstone.wavesync.wavesync.utility.MaxTracker
 import kotlin.math.*
 
 
-class BarVisualizer : AutoCanvas() {
+class BarVisualizer(channel: Int) : AutoCanvas() {
 
     private var smoother: MagnitudeSmoother = ExponentialFalloffSmoother()
     private var rawMaxTracker: MaxTracker
@@ -59,7 +59,6 @@ class BarVisualizer : AutoCanvas() {
     val targetBarWidth: IntegerProperty = SimpleIntegerProperty(DEFAULT_TARGET_BAR_WIDTH)
     val gap: IntegerProperty = SimpleIntegerProperty(DEFAULT_GAP)
     val peakLineVisible: BooleanProperty = SimpleBooleanProperty(DEFAULT_PEAK_LINE_VISIBLE)
-    val channelProperty: IntegerProperty = SimpleIntegerProperty()
 
     val scalarType: ObjectProperty<FFTScalarType> = SimpleObjectProperty(DEFAULT_SCALAR_TYPE)
     val exaggeratedScalar: FloatProperty = SimpleFloatProperty(DEFAULT_BAR_SCALING)
@@ -73,6 +72,7 @@ class BarVisualizer : AutoCanvas() {
     val smoothCurve: BooleanProperty = SimpleBooleanProperty(DEFAULT_SMOOTH_CURVE)
     val showPeak: BooleanProperty = SimpleBooleanProperty(DEFAULT_SHOW_PEAK)
 
+    private val channelProperty: IntegerProperty = SimpleIntegerProperty(channel)
     private val useCssColor: BooleanProperty = SimpleBooleanProperty(DEFAULT_USE_CSS_COLOR)
     private var source: SupportedCaptureSource? = null
     private var rate: Int = 44100

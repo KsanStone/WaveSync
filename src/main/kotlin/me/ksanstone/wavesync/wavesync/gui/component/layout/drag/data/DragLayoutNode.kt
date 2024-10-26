@@ -36,7 +36,15 @@ data class DragLayoutNode(
 
     val eventEmitter = EventEmitter<DragLayoutEvent>()
 
-    var boundCache: Rectangle2D? = null
+    private var _boundCache: Rectangle2D? = null
+    var boundCache: Rectangle2D?
+        set(value) {
+            _boundCache = value
+            evenDividerCache = null
+            aspectRatioAwareDividerCache = null
+        }
+        get() = _boundCache
+
 
     private var evenDividerCache: List<Double>? = null
     private var aspectRatioAwareDividerCache: Optional<List<Double>>? = null

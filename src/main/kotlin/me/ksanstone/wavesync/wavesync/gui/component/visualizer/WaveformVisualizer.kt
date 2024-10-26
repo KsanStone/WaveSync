@@ -31,7 +31,7 @@ import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.roundToInt
 
 
-class WaveformVisualizer : AutoCanvas() {
+class WaveformVisualizer(channel: Int) : AutoCanvas() {
 
     val enableAlign: BooleanProperty = SimpleBooleanProperty(false)
     val autoAlign: BooleanProperty = SimpleBooleanProperty(false)
@@ -41,8 +41,8 @@ class WaveformVisualizer : AutoCanvas() {
     val targetAlignFrequency: DoubleProperty = SimpleDoubleProperty(100.0)
     val renderMode: ObjectProperty<RenderMode> = SimpleObjectProperty(DEFAULT_WAVEFORM_RENDER_MODE)
     val bufferDuration: ObjectProperty<Duration> = SimpleObjectProperty(Duration.millis(60.0))
-    val channelProperty: IntegerProperty = SimpleIntegerProperty()
 
+    private val channelProperty: IntegerProperty = SimpleIntegerProperty(channel)
     private lateinit var buffer: RollingBuffer<Float>
     private val waveColor: StyleableProperty<Color> =
         FACTORY.createStyleableColorProperty(this, "waveColor", "-fx-color") { vis -> vis.waveColor }
@@ -187,16 +187,18 @@ class WaveformVisualizer : AutoCanvas() {
         val rangeBreadth = max - min
         var takeAdjust = 0
 
+        val minDisplaySamples = 10
+
         if (align.get()) {
-            val maxWaves = (width / PIXELS_PER_WAVE).toInt().coerceIn(2, 50)
+            val maxWaves = (width / PIXELS_PER_WAVE).toInt().coerceIn(1, 50)
             val waveSize = frequencySamplesAtRate(alignFrequency.value, sampleRate.get())
-            drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - 50)
+            drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - minDisplaySamples)
             take = (buffer.size - waveSize).coerceIn(1.0, waveSize * maxWaves).roundToInt()
                 .coerceAtMost(buffer.size - drop)
         } else if (bufferDuration.get().greaterThan(Duration.millis(100.0)).and(renderMode.get() == RenderMode.LINE)) {
             // make the line graph less jumpy
             val waveSize = take.toDouble() / width.roundToInt()
-            drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - 50)
+            drop = (waveSize - buffer.written % waveSize).toInt().coerceIn(0, buffer.size - minDisplaySamples)
             takeAdjust = -drop
         }
 

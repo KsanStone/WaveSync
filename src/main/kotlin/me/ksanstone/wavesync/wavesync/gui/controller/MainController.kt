@@ -56,9 +56,9 @@ class MainController : Initializable {
     private var preferenceService: PreferenceService
     private var lastDeviceId: String? = null
     private var barVisualizers: List<BarVisualizer> =
-        List(SUPPORTED_CHANNELS) { BarVisualizer().also { vis -> vis.channelProperty.value = it } }
+        List(SUPPORTED_CHANNELS) { BarVisualizer(it) }
     private var waveformVisualizers: List<WaveformVisualizer> =
-        List(SUPPORTED_CHANNELS) { WaveformVisualizer().also { vis -> vis.channelProperty.value = it } }
+        List(SUPPORTED_CHANNELS) { WaveformVisualizer(it) }
     private var spectrogramVisualizer: SpectrogramVisualizer = SpectrogramVisualizer()
     private var extendedWaveformVisualizer: ExtendedWaveformVisualizer = ExtendedWaveformVisualizer()
     private var vectorScopeVisualizer: VectorScopeVisualizer = VectorScopeVisualizer()
