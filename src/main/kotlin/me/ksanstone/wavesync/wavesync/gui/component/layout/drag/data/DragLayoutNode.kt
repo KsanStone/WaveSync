@@ -261,7 +261,6 @@ data class DragLayoutNode(
         val rangeMid = (rangeStart + rangeEnd) / 2
 
         dividerLocations.removeAt(j)
-        dividers.removeAt(j)
 
         if (dividerLocations.size == 0) return child
         spaceOutScalars(rangeMid, rangeStart, rangeEnd, j, true)
