@@ -102,13 +102,6 @@ open class LayoutStorageService(
         save()
     }
 
-    fun destructLayout(stage: Stage) {
-        val id = stageSizingService.findId(stage)
-        if (id != null) {
-            destructLayout(id)
-        }
-    }
-
     fun getLayout(stage: Stage): DragLayout? {
         val id = stageSizingService.findId(stage) ?: return null
         return layouts.find { it.id == id }?.layout

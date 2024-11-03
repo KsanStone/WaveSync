@@ -5,8 +5,8 @@ class ExponentialFalloffSmoother : MagnitudeSmoother {
     private lateinit var dataArray: FloatArray
 
     override var factor: Double = 1.0
-    var boundMin = 0.0f
-    var boundMax = 1.0f
+    private var boundMin = 0.0f
+    private var boundMax = 1.0f
 
     override var dataSize: Int
         get() = dataTarget.size

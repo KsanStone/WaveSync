@@ -107,7 +107,7 @@ class DragLayout : Pane() {
     /**
      * Calculate the minimum pixel size of the layout where every minimum size constraint is satisfied
      */
-    fun calculateMinSize(): Dimension2D {
+    private fun calculateMinSize(): Dimension2D {
         return layoutRoot.calculateMinSize()
     }
 

@@ -48,7 +48,7 @@ class AudioCaptureService(
     private var windowFunction: WindowFunction? = null
     private val _captureRunning = SimpleBooleanProperty(false)
 
-    val fftResult = FloatChanneledStore()
+    private val fftResult = FloatChanneledStore()
     val samples = FloatChanneledStore()
 
     val peakFrequency = List(SUPPORTED_CHANNELS) { SimpleFloatProperty() }

@@ -77,7 +77,7 @@ class VectorScopeVisualizer : AutoCanvas(false) {
                 nums.add(cos * (1 / sin) to 1.0)
             } else if (a >= Math.PI * 0.75 && a < Math.PI * 1.25) {
                 nums.add(-1.0 to -sin * (1 / cos))
-            } else if (a >= Math.PI * 1.25 && a < Math.PI * 1.75) {
+            } else if (a >= Math.PI * 1.25) {
                 nums.add(-cos * (1 / sin) to -1.0)
             }
         }

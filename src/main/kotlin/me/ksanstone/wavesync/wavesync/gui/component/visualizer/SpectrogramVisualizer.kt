@@ -33,7 +33,6 @@ import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
-import kotlin.math.min
 
 class SpectrogramVisualizer : AutoCanvas() {
 

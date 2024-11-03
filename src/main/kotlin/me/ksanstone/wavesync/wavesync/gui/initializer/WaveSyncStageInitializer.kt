@@ -20,7 +20,6 @@ import me.ksanstone.wavesync.wavesync.service.*
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component
-import java.security.Key
 import java.util.function.Consumer
 import kotlin.time.measureTime
 
@@ -152,7 +151,7 @@ class WaveSyncStageInitializer(
         }
     }
 
-    fun injectControls(stage: Stage) {
+    private fun injectControls(stage: Stage) {
         val parent = stage.scene.root
         val control = MainControl().apply { this.children.add(parent); VBox.setVgrow(parent, Priority.ALWAYS) }
         stage.scene.root = control

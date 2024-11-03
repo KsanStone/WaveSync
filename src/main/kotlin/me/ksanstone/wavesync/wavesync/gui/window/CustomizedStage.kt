@@ -121,7 +121,7 @@ class CustomizedStage(private val stage: Stage, private val config: CaptionConfi
         }
 
         private fun onWmNcMouseMove(hWnd: HWND, msg: Int, wParam: WPARAM, lParam: LPARAM): LRESULT? {
-            // when not using controls this is not needed
+            // when not using controls, this is not needed
             if (!isRootReplaced) return DefWndProc(hWnd, msg, wParam, lParam)
 
             val position = wParam.toInt()

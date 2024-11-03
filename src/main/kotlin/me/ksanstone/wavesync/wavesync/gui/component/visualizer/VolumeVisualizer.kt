@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
+import javafx.beans.binding.DoubleBinding
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.FXCollections
@@ -58,7 +59,7 @@ class VolumeVisualizer : AutoCanvas() {
             "-fx-tick-label-fill"
         ) { vis -> vis.tickLabelFillColor }
 
-    val orientationProperty = SimpleObjectProperty<Orientation>()
+    private val orientationProperty = SimpleObjectProperty<Orientation>()
     var values: List<Double>
         get() = FXCollections.unmodifiableObservableList(valueProperty) as ObservableList<Double>
         set(value) {
@@ -75,11 +76,11 @@ class VolumeVisualizer : AutoCanvas() {
             }
         }
 
-    val rangeMin = SimpleDoubleProperty(-90.0)
-    val rangeMax = SimpleDoubleProperty(0.0)
-    val tickUnit = SimpleDoubleProperty(10.0)
-    val tickMarks = FXCollections.observableArrayList<Pair<Double, String>>()
-    val range = rangeMax.subtract(rangeMin)
+    private val rangeMin = SimpleDoubleProperty(-90.0)
+    private val rangeMax = SimpleDoubleProperty(0.0)
+    private val tickUnit = SimpleDoubleProperty(10.0)
+    private val tickMarks: ObservableList<Pair<Double, String>> = FXCollections.observableArrayList()
+    private val range: DoubleBinding = rangeMax.subtract(rangeMin)
 
     private val valueProperty = FXCollections.observableArrayList<Double>()
     private val labelProperty = FXCollections.observableArrayList<ChannelLabel>()

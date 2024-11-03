@@ -30,7 +30,7 @@ class EventEmitter<T : Any> : IndexedEventEmitter<Class<out T>, T>() {
 
 open class IndexedEventEmitter<I, T : Any> {
 
-    protected val listenerMap: MutableMap<I?, MutableList<Consumer<out T>>> =
+    private val listenerMap: MutableMap<I?, MutableList<Consumer<out T>>> =
         Collections.synchronizedMap(mutableMapOf())
 
     @Synchronized

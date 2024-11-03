@@ -7,7 +7,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.FFTInfoController
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 
-class FFTInfo(private val compact: Boolean = false) : AnchorPane() {
+class FFTInfo(compact: Boolean = false) : AnchorPane() {
 
     private var controller: FFTInfoController
 

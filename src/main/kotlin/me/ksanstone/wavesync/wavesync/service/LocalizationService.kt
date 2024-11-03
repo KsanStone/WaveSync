@@ -20,9 +20,9 @@ class LocalizationService {
 
     @Value("\${:classpath:bundles/*.properties}")
     lateinit var localeResources: Array<Resource>
-    lateinit var locales: List<Locale>
+    private lateinit var locales: List<Locale>
     lateinit var numberFormat: NumberFormat
-    val currentLocaleProperty: ObjectProperty<Locale> = SimpleObjectProperty(Locale.ENGLISH)
+    private val currentLocaleProperty: ObjectProperty<Locale> = SimpleObjectProperty(Locale.ENGLISH)
 
     @PostConstruct
     fun initialize() {
@@ -38,7 +38,7 @@ class LocalizationService {
         numberFormat = NumberFormat.getNumberInstance(currentLocaleProperty.get())
     }
 
-    fun getBundle(locale: Locale): ResourceBundle {
+    private fun getBundle(locale: Locale): ResourceBundle {
         return ResourceBundle.getBundle("bundles/messages", locale)
     }
 

@@ -29,10 +29,4 @@ class CyclicFFTChanneledStore : ChannelStore<RollingBuffer<Float>>() {
         return channelData.size
     }
 
-    fun resizeBuffers(size: Int) {
-        for (channel in channelData) {
-            channel.data = RollingBuffer(size) { 0.0f }
-        }
-    }
-
 }

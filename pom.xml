@@ -13,7 +13,7 @@
         <java.version>17</java.version>
         <kotlin.version>1.9.10</kotlin.version>
         <junit.version>5.10.0</junit.version>
-        <spring.version>6.1.7</spring.version>
+        <spring.version>6.1.14</spring.version>
         <javafx.version>22</javafx.version>
         <project.startClass>me.ksanstone.wavesync.wavesync.WaveSyncApplicationKt</project.startClass>
 

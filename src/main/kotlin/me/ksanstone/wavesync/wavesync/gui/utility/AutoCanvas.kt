@@ -68,7 +68,7 @@ abstract class AutoCanvas(selfDraw: Boolean = false, private val detachable: Boo
     protected val canDraw: Boolean
         get() = isVisible && parent != null && !isPaused
 
-    protected val shouldDraw: Boolean
+    private val shouldDraw: Boolean
         get() = !isDrawing.get() && canDraw
 
     init {

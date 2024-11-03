@@ -4,12 +4,9 @@ import jakarta.annotation.PostConstruct
 import javafx.beans.property.BooleanProperty
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyEvent
 import javafx.stage.Stage
-import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Service
 import java.lang.ref.WeakReference
 

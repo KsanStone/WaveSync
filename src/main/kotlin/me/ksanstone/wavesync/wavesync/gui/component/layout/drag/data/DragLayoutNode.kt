@@ -478,7 +478,7 @@ data class DragLayoutNode(
      *
      * @param callback Callback to be called on each node
      */
-    fun forEachNode(callback: Consumer<NodeCallbackResult>) {
+    private fun forEachNode(callback: Consumer<NodeCallbackResult>) {
         iterateNodesInternal(callback, 0)
     }
 
@@ -496,7 +496,7 @@ data class DragLayoutNode(
      *
      * @param callback Callback to be called on each divider
      */
-    fun forEachDivider(callback: Consumer<DividerCallbackResult>) {
+    private fun forEachDivider(callback: Consumer<DividerCallbackResult>) {
         iterateDividersInternal(callback, 0)
         this.forEachNode {
             // Directly nested nodes will have a depth of 0, however their dividers are at a depth of 1 already
@@ -533,7 +533,7 @@ data class DragLayoutNode(
      * and removes it from children
      * @return [DragLayoutLeaf] or null if no such leaf exists
      */
-    fun cutComponent(predicate: Predicate<DragLayoutLeaf>): DragLayoutLeaf? {
+    private fun cutComponent(predicate: Predicate<DragLayoutLeaf>): DragLayoutLeaf? {
         for (i in children.indices) {
             val it = children[i]
             if (it.isComponent) {

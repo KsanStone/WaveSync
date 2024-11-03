@@ -19,7 +19,4 @@ abstract class AsyncInit {
 
     abstract fun asyncInit()
 
-    fun await() {
-        initLatch.await()
-    }
 }

@@ -41,10 +41,6 @@ class DragLayoutSerializerService {
         }.toMutableList()
     }
 
-    fun serialize(layout: DragLayoutNode): String {
-        return gson.toJson(serializeNode(layout))
-    }
-
     private fun serializeNode(node: DragLayoutNode): JsonElement {
         val children = JsonArray(node.children.size)
         for (child in node.children) {
@@ -75,12 +71,6 @@ class DragLayoutSerializerService {
             obj.add("data", serializeNode(leaf.node!!))
             return obj
         }
-    }
-
-    fun deserialize(input: String, nodeFactory: NodeFactory): DragLayoutNode {
-        if (input == "") throw IllegalArgumentException("Input cannot be empty")
-        val obj = gson.fromJson(input, JsonObject::class.java)
-        return deserializeNode(obj, nodeFactory)
     }
 
     private fun deserializeNode(obj: JsonObject, nodeFactory: NodeFactory): DragLayoutNode {

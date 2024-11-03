@@ -60,17 +60,17 @@ open class GlobalLayoutService(
         return nodes
     }
 
-    fun <T : Node> getNodes(`class`: Class<T>): List<T> {
+    private fun <T : Node> getNodes(`class`: Class<T>): List<T> {
         val nodes = mutableListOf<T>()
         windowList.forEach { nodes.addAll(getNodesOfClass(it.scene.root, `class`)) }
         return nodes
     }
 
-    fun <T : Node> getBoundedNodes(`class`: Class<T>): List<Pair<Bounds, T>> {
+    private fun <T : Node> getBoundedNodes(`class`: Class<T>): List<Pair<Bounds, T>> {
         return getNodes(`class`).map { getScreenBounds(it) to it }
     }
 
-    fun <T : Node> getNode(`class`: Class<T>, p: Point2D): Pair<Bounds, T>? {
+    private fun <T : Node> getNode(`class`: Class<T>, p: Point2D): Pair<Bounds, T>? {
         return getBoundedNodes(`class`).find { it.first.contains(p) }
     }
 
