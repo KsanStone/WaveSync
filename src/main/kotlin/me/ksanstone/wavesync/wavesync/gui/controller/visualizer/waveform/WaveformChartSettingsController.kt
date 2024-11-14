@@ -102,13 +102,13 @@ class WaveformChartSettingsController {
         linkToggleButton.selectedProperty().addListener { _ -> linkAdjust() }
         linkAdjust()
 
-        graphStyleController.yAxisToggle.isSelected = visualizer.canvasContainer.yAxisShown.get()
-        graphStyleController.gridToggle.isSelected = visualizer.canvasContainer.horizontalLinesVisible.get()
+        graphStyleController.yAxisToggle.isSelected = visualizer.graphCanvas.yAxisShown.get()
+        graphStyleController.gridToggle.isSelected = visualizer.graphCanvas.horizontalLinesVisible.get()
         graphStyleController.xAxisToggle.isDisable = true
 
-        visualizer.canvasContainer.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
-        visualizer.canvasContainer.horizontalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
-        visualizer.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
+        visualizer.graphCanvas.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
+        visualizer.graphCanvas.horizontalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
+        visualizer.graphCanvas.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
         visualizer.rangeMax.bind(waveformRangeMaxSpinner.valueFactory.valueProperty().map { it.toFloat() })
         visualizer.rangeMin.bind(waveformRangeMinSpinner.valueFactory.valueProperty().map { it.toFloat() })
         visualizer.bufferDuration.bind(bufferLengthSpinner.valueFactory.valueProperty().map { Duration.millis(it) })

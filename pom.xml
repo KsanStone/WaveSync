@@ -16,9 +16,22 @@
         <spring.version>6.1.14</spring.version>
         <javafx.version>22</javafx.version>
         <project.startClass>me.ksanstone.wavesync.wavesync.WaveSyncApplicationKt</project.startClass>
-
+        <lwjgl.version>3.3.4</lwjgl.version>
+        <lwjgl.natives>natives-windows</lwjgl.natives>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.lwjgl</groupId>
+                <artifactId>lwjgl-bom</artifactId>
+                <version>${lwjgl.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <!-- Spring -->
@@ -100,6 +113,49 @@
             <artifactId>jna-platform</artifactId>
             <version>5.13.0</version>
         </dependency>
+
+        <!-- Render -->
+        <dependency>
+            <groupId>com.huskerdev</groupId>
+            <artifactId>openglfx</artifactId>
+            <version>4.0.5</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-stdlib-jdk8</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.huskerdev</groupId>
+            <artifactId>openglfx-lwjgl</artifactId>
+            <version>4.0.5</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-stdlib-jdk8</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-opengl</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl</artifactId>
+            <classifier>${lwjgl.natives}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.lwjgl</groupId>
+            <artifactId>lwjgl-opengl</artifactId>
+            <classifier>${lwjgl.natives}</classifier>
+        </dependency>
+
 
         <!-- Audio -->
         <dependency>

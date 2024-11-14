@@ -9,7 +9,6 @@ import javafx.collections.ObservableList
 import javafx.geometry.Point2D
 import javafx.geometry.Side
 import javafx.scene.Node
-import javafx.scene.canvas.Canvas
 import javafx.scene.chart.ValueAxis
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane
@@ -24,7 +23,7 @@ import java.lang.Double.isNaN
 class GraphCanvas(
     private var xAxis: ValueAxis<Number>,
     private var yAxis: ValueAxis<Number>,
-    private val canvas: Canvas
+    private val canvas: CanvasContainer
 ) : Pane() {
 
     companion object {
@@ -81,7 +80,7 @@ class GraphCanvas(
             highlightedHorizontalGridLines,
             highlightedVerticalGridLines,
             tooltipCross,
-            canvas,
+            canvas.node,
             tooltipContainer
         )
 

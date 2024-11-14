@@ -116,11 +116,11 @@ class BarVisualizer(channel: Int) : AutoCanvas() {
         smoother.dataSize = 512
         changeSmoother()
         this.smootherType.addListener { _ -> changeSmoother() }
-        canvasContainer.dependOnXAxis.set(true)
-        canvasContainer.highlightedVerticalLines.add(20000.0)
+        graphCanvas.dependOnXAxis.set(true)
+        graphCanvas.highlightedVerticalLines.add(20000.0)
         detachedWindowNameProperty.set("Bar")
-        canvasContainer.tooltipEnabled.set(true)
-        canvasContainer.tooltipContainer.children.add(tooltip)
+        graphCanvas.tooltipEnabled.set(true)
+        graphCanvas.tooltipContainer.children.add(tooltip)
 
         useCssColor.addListener { _ -> colorSwitch() }
         colorSwitch()
@@ -146,7 +146,7 @@ class BarVisualizer(channel: Int) : AutoCanvas() {
         dbMin.addListener { _ -> refreshScalar() }
         peakLineVisible.addListener { _, _, v -> if (v) rawMaxTracker.zero() }
 
-        canvasContainer.tooltipPosition.addListener { _ -> refreshTooltipLabel() }
+        graphCanvas.tooltipPosition.addListener { _ -> refreshTooltipLabel() }
 
         this.styleClass.setAll("bar-visualizer")
         this.stylesheets.add("/styles/bar-visualizer.css")
@@ -224,7 +224,7 @@ class BarVisualizer(channel: Int) : AutoCanvas() {
     }
 
     private fun logarithmicTooltipText() {
-        val x = canvasContainer.tooltipPosition.get().x
+        val x = graphCanvas.tooltipPosition.get().x
         val freq = xAxis.getValueForDisplay(x).toDouble()
         val bin = FourierMath.binOfFrequency(rate, fftSize, freq) + 1 + frequencyBinSkip
         val rawValue = fftDataArray.getOrElse(bin) { _ -> Float.NEGATIVE_INFINITY }
@@ -237,11 +237,11 @@ class BarVisualizer(channel: Int) : AutoCanvas() {
     }
 
     private fun linearTooltipText() {
-        val x = canvasContainer.tooltipPosition.get().x
+        val x = graphCanvas.tooltipPosition.get().x
         val bufferLength = smoother.dataSize
-        val step = calculateStep(targetBarWidth.get(), bufferLength, canvas.width)
+        val step = calculateStep(targetBarWidth.get(), bufferLength, canvasContainer.width)
         val totalBars = floor(bufferLength.toDouble() / step)
-        val barWidth = (canvas.width - (totalBars - 1) * gap.get()) / totalBars
+        val barWidth = (canvasContainer.width - (totalBars - 1) * gap.get()) / totalBars
         val bar = floor(x / barWidth)
         val binStart = floor(bar * step).toInt()
         val binEnd = floor((bar + 1) * step).toInt()
@@ -382,7 +382,7 @@ class BarVisualizer(channel: Int) : AutoCanvas() {
                 RenderMode.BAR -> drawBars(gc, barWidth, padding, height, logarithmic.get())
             }
 
-            if (canvasContainer.tooltipContainer.isVisible) refreshTooltipLabel()
+            if (graphCanvas.tooltipContainer.isVisible) refreshTooltipLabel()
 
             if (showPeak.get() && audioCaptureService.peakValue[channelProperty.value].value != 0.0F) {
                 val s = 4.0

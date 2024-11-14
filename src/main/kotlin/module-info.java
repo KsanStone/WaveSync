@@ -22,4 +22,7 @@ open module wavesync {
     requires org.fusesource.jansi;
     requires ch.qos.logback.core;
     requires ch.qos.logback.classic;
+    requires openglfx;
+    requires openglfx.lwjgl;
+    requires org.lwjgl.opengl;
 }
