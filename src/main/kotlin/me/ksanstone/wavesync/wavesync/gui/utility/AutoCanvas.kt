@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
+import com.huskerdev.openglfx.canvas.GLCanvas
 import javafx.animation.Animation
 import javafx.animation.FadeTransition
 import javafx.animation.KeyFrame
@@ -39,9 +40,9 @@ import kotlin.math.pow
 import kotlin.math.roundToLong
 
 
-abstract class AutoCanvas(selfDraw: Boolean = false, private val detachable: Boolean = false) : AnchorPane() {
+abstract class AutoCanvas(private val useGL: Boolean = false, private val detachable: Boolean = false) : AnchorPane() {
 
-    protected var canvas: Canvas = Canvas()
+    protected var canvas: CanvasContainer = CanvasContainer(useGL)
     protected lateinit var infoPane: GridPane
     protected lateinit var controlPane: HBox
     protected val detachedWindowNameProperty: StringProperty = SimpleStringProperty("AutoCanvas")
@@ -82,8 +83,7 @@ abstract class AutoCanvas(selfDraw: Boolean = false, private val detachable: Boo
         maxWidth = Double.MAX_VALUE
         maxHeight = Double.MAX_VALUE
 
-        if (!selfDraw)
-            initializeDrawLoop()
+        initializeDrawLoop()
         initializeInfoPane()
         initializeControlPane()
         initializeDetacherProperty()

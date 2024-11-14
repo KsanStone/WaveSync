@@ -24,7 +24,7 @@ import java.lang.Double.isNaN
 class GraphCanvas(
     private var xAxis: ValueAxis<Number>,
     private var yAxis: ValueAxis<Number>,
-    private val canvas: Canvas
+    private val canvas: CanvasContainer
 ) : Pane() {
 
     companion object {
@@ -81,7 +81,7 @@ class GraphCanvas(
             highlightedHorizontalGridLines,
             highlightedVerticalGridLines,
             tooltipCross,
-            canvas,
+            canvas.node,
             tooltipContainer
         )
 

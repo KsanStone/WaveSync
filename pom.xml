@@ -101,6 +101,18 @@
             <version>5.13.0</version>
         </dependency>
 
+        <!-- Render -->
+        <dependency>
+            <groupId>com.huskerdev</groupId>
+            <artifactId>openglfx</artifactId>
+            <version>4.0.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.huskerdev</groupId>
+            <artifactId>openglfx-lwjgl2</artifactId>
+            <version>4.0.5</version>
+        </dependency>
+
         <!-- Audio -->
         <dependency>
             <groupId>org.bytedeco</groupId>
