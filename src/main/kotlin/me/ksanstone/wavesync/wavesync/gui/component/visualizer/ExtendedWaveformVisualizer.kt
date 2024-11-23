@@ -47,8 +47,8 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
     private val rmsScalar = LinearFFTScalar()
 
     init {
-        canvasContainer.xAxisShown.value = true
-        canvasContainer.yAxisShown.value = true
+        graphCanvas.xAxisShown.value = true
+        graphCanvas.yAxisShown.value = true
 
         xAxis.minorTickCount = 10
         (xAxis as NumberAxis).tickUnit = 1.0

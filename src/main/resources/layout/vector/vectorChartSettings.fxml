@@ -1,46 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import atlantafx.base.layout.InputGroup?>
+<?import atlantafx.base.layout.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import org.kordamp.ikonli.javafx.FontIcon?>
-<GridPane xmlns:fx="http://javafx.com/fxml/1" hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
-          vgap="10" xmlns="http://javafx.com/javafx/17.0.12"
-          fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.vector.VectorChartSettingsController">
+<?import org.kordamp.ikonli.javafx.*?>
+
+<GridPane hgap="5.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" vgap="10" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="me.ksanstone.wavesync.wavesync.gui.controller.visualizer.vector.VectorChartSettingsController">
     <rowConstraints>
-        <RowConstraints minHeight="30.0" prefHeight="30.0"/>
-        <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0"/>
+        <RowConstraints minHeight="30.0" prefHeight="30.0" />
+      <RowConstraints minHeight="30.0" prefHeight="30.0" />
+        <RowConstraints maxHeight="30.0" minHeight="30.0" prefHeight="30.0" />
     </rowConstraints>
     <columnConstraints>
-        <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0"/>
-        <ColumnConstraints minWidth="10.0"/>
+        <ColumnConstraints halignment="LEFT" hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="150.0" />
+        <ColumnConstraints minWidth="10.0" />
     </columnConstraints>
     <Label text="%visualizer.waveform.settings.displayRange">
         <graphic>
-            <FontIcon iconLiteral="mdal-align_vertical_center"/>
+            <FontIcon iconLiteral="mdal-align_vertical_center" />
         </graphic>
     </Label>
     <HBox alignment="CENTER_LEFT" spacing="5.0" GridPane.columnIndex="1">
         <ToggleButton fx:id="linkToggleButton" mnemonicParsing="false">
             <graphic>
-                <FontIcon iconLiteral="mdal-insert_link"/>
+                <FontIcon iconLiteral="mdal-insert_link" />
             </graphic>
         </ToggleButton>
-        <Spinner fx:id="waveformRangeMinSpinner" editable="true"/>
-        <Spinner fx:id="waveformRangeMaxSpinner" editable="true"/>
+        <Spinner fx:id="waveformRangeMinSpinner" editable="true" />
+        <Spinner fx:id="waveformRangeMaxSpinner" editable="true" />
     </HBox>
-    <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="1">
+    <Label text="%visualizer.bar.settings.graph" GridPane.rowIndex="2">
         <graphic>
-            <FontIcon iconLiteral="mdal-border_outer"/>
+            <FontIcon iconLiteral="mdal-border_outer" />
         </graphic>
     </Label>
-    <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="1">
-        <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml"/>
+    <HBox alignment="CENTER_LEFT" spacing="5" GridPane.columnIndex="1" GridPane.rowIndex="2">
+        <fx:include fx:id="graphStyle" source="/layout/graph/graphStyle.fxml" />
         <InputGroup>
-            <ToggleButton fx:id="skewed" onAction="#renderSkewed" prefHeight="30.0"
-                          text="%visualizer.vector.settings.render.skewed"/>
-            <ToggleButton fx:id="straight" onAction="#renderStraight" prefHeight="30.0"
-                          text="%visualizer.vector.settings.render.straight"/>
+            <ToggleButton fx:id="skewed" onAction="#renderSkewed" prefHeight="30.0" text="%visualizer.vector.settings.render.skewed" />
+            <ToggleButton fx:id="straight" onAction="#renderStraight" prefHeight="30.0" text="%visualizer.vector.settings.render.straight" />
         </InputGroup>
     </HBox>
+   <Label text="%visualizer.vector.settings.render.decay" GridPane.rowIndex="1" />
+   <Slider fx:id="decaySlider" blockIncrement="0.05" majorTickUnit="0.05" max="1.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 </GridPane>

@@ -9,7 +9,6 @@ import javafx.beans.property.*
 import javafx.beans.value.ObservableValue
 import javafx.event.EventHandler
 import javafx.fxml.FXMLLoader
-import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
 import javafx.scene.chart.ValueAxis
@@ -42,7 +41,7 @@ import kotlin.math.roundToLong
 
 abstract class AutoCanvas(private val useGL: Boolean = false, private val detachable: Boolean = false) : AnchorPane() {
 
-    protected var canvas: CanvasContainer = CanvasContainer(useGL)
+    protected var canvasContainer: CanvasContainer = CanvasContainer(useGL)
     protected lateinit var infoPane: GridPane
     protected lateinit var controlPane: HBox
     protected val detachedWindowNameProperty: StringProperty = SimpleStringProperty("AutoCanvas")
@@ -50,7 +49,7 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
     protected var xAxis: ValueAxis<Number> = NumberAxis(0.0, 100.0, 10.0)
     protected var yAxis: ValueAxis<Number> = NumberAxis(0.0, 100.0, 10.0)
 
-    lateinit var canvasContainer: GraphCanvas
+    lateinit var graphCanvas: GraphCanvas
     val framerate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.DEFAULT_REFRESH_RATE)
     val info: BooleanProperty = SimpleBooleanProperty(DEFAULT_INFO_SHOWN)
 
@@ -87,21 +86,22 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
         initializeInfoPane()
         initializeControlPane()
         initializeDetacherProperty()
+        initializeGl()
     }
 
     fun updateXAxis(newAxis: ValueAxis<Number>) {
         xAxis = newAxis
-        canvasContainer.updateXAxis(xAxis)
+        graphCanvas.updateXAxis(xAxis)
         controlPane.toFront()
     }
 
     private fun createGraphCanvas() {
-        canvasContainer = GraphCanvas(xAxis, yAxis, canvas)
-        setBottomAnchor(canvasContainer, 0.0)
-        setRightAnchor(canvasContainer, 0.0)
-        setTopAnchor(canvasContainer, 0.0)
-        setLeftAnchor(canvasContainer, 0.0)
-        children.add(canvasContainer)
+        graphCanvas = GraphCanvas(xAxis, yAxis, canvasContainer)
+        setBottomAnchor(graphCanvas, 0.0)
+        setRightAnchor(graphCanvas, 0.0)
+        setTopAnchor(graphCanvas, 0.0)
+        setLeftAnchor(graphCanvas, 0.0)
+        children.add(graphCanvas)
     }
 
     private fun initializeDrawLoop() {
@@ -147,20 +147,20 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
                         .addListener { _, _, showing -> if (!showing) detachedProperty.set(false) }
                 }
 
-                (detachedStage!!.scene.root as AnchorPane).children.add(canvasContainer)
+                (detachedStage!!.scene.root as AnchorPane).children.add(graphCanvas)
                 (detachedStage!!.scene.root as AnchorPane).children.add(infoPane)
                 (detachedStage!!.scene.root as AnchorPane).children.add(controlPane)
-                children.remove(canvasContainer)
+                children.remove(graphCanvas)
                 children.remove(infoPane)
                 children.remove(controlPane)
                 detachedStage!!.show()
             } else {
                 if (detachedStage == null) return@addListener
                 detachedStage!!.hide()
-                children.add(canvasContainer)
+                children.add(graphCanvas)
                 children.add(infoPane)
                 children.add(controlPane)
-                (detachedStage!!.scene.root as AnchorPane).children.remove(canvasContainer)
+                (detachedStage!!.scene.root as AnchorPane).children.remove(graphCanvas)
                 (detachedStage!!.scene.root as AnchorPane).children.remove(infoPane)
                 (detachedStage!!.scene.root as AnchorPane).children.remove(controlPane)
             }
@@ -237,27 +237,27 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
     }
 
     fun registerGraphSettings(graphStyleController: GraphStyleController) {
-        graphStyleController.yAxisToggle.isSelected = this.canvasContainer.yAxisShown.get()
-        graphStyleController.xAxisToggle.isSelected = this.canvasContainer.xAxisShown.get()
-        graphStyleController.gridToggle.isSelected = this.canvasContainer.horizontalLinesVisible.get()
+        graphStyleController.yAxisToggle.isSelected = this.graphCanvas.yAxisShown.get()
+        graphStyleController.xAxisToggle.isSelected = this.graphCanvas.xAxisShown.get()
+        graphStyleController.gridToggle.isSelected = this.graphCanvas.horizontalLinesVisible.get()
 
-        this.canvasContainer.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
-        this.canvasContainer.xAxisShown.bind(graphStyleController.xAxisToggle.selectedProperty())
-        this.canvasContainer.horizontalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
-        this.canvasContainer.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
+        this.graphCanvas.yAxisShown.bind(graphStyleController.yAxisToggle.selectedProperty())
+        this.graphCanvas.xAxisShown.bind(graphStyleController.xAxisToggle.selectedProperty())
+        this.graphCanvas.horizontalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
+        this.graphCanvas.verticalLinesVisible.bind(graphStyleController.gridToggle.selectedProperty())
     }
 
     fun registerGraphPreferences(id: String, preferenceService: PreferenceService) {
-        preferenceService.registerProperty(canvasContainer.xAxisShown, "xAxisShown", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(graphCanvas.xAxisShown, "xAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(graphCanvas.yAxisShown, "yAxisShown", this.javaClass, id)
         preferenceService.registerProperty(
-            canvasContainer.horizontalLinesVisible,
+            graphCanvas.horizontalLinesVisible,
             "horizontalLinesVisible",
             this.javaClass,
             id
         )
         preferenceService.registerProperty(
-            canvasContainer.verticalLinesVisible,
+            graphCanvas.verticalLinesVisible,
             "verticalLinesVisible",
             this.javaClass,
             id
@@ -275,12 +275,21 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
 
         frameTime.set(deltaT)
         isDrawing.set(true)
-        this.draw(canvas.graphicsContext2D, deltaT, now, canvas.width, canvas.height)
+        if (useGL)
+            this.canvasContainer.repaintGl()
+        else
+            this.draw(canvasContainer.graphicsContext2D, deltaT, now, canvasContainer.width, canvasContainer.height)
         isDrawing.set(false)
         fpsCounter.tick(deltaT)
     }
 
     protected abstract fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double)
+
+    private fun initializeGl() {
+        if (useGL) setupGl(canvasContainer.node as GLCanvas)
+    }
+
+    protected open fun setupGl(canvas: GLCanvas) {}
 
     private var state: Boolean = false
 

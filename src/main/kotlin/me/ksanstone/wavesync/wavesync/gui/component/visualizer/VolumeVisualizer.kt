@@ -96,11 +96,11 @@ class VolumeVisualizer : AutoCanvas() {
         rangeMax.addListener { _, _, v -> smoother.boundMax = v.toFloat() }
 
 
-        canvasContainer.xAxisShown.value = false
-        canvasContainer.yAxisShown.value = false
-        canvasContainer.tooltipEnabled.value = false
-        canvasContainer.verticalLinesVisible.value = false
-        canvasContainer.horizontalLinesVisible.value = false
+        graphCanvas.xAxisShown.value = false
+        graphCanvas.yAxisShown.value = false
+        graphCanvas.tooltipEnabled.value = false
+        graphCanvas.verticalLinesVisible.value = false
+        graphCanvas.horizontalLinesVisible.value = false
 
         this.styleClass.setAll("volume-visualizer")
         this.stylesheets.add("/styles/volume-visualizer.css")

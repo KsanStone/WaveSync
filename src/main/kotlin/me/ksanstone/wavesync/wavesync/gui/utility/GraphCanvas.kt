@@ -9,7 +9,6 @@ import javafx.collections.ObservableList
 import javafx.geometry.Point2D
 import javafx.geometry.Side
 import javafx.scene.Node
-import javafx.scene.canvas.Canvas
 import javafx.scene.chart.ValueAxis
 import javafx.scene.layout.HBox
 import javafx.scene.layout.Pane

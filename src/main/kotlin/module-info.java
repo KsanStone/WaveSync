@@ -23,5 +23,6 @@ open module wavesync {
     requires ch.qos.logback.core;
     requires ch.qos.logback.classic;
     requires openglfx;
-    requires openglfx.lwjgl2;
+    requires openglfx.lwjgl;
+    requires org.lwjgl.opengl;
 }

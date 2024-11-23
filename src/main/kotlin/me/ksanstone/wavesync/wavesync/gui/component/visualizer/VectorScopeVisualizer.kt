@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.component.visualizer
 
+import com.huskerdev.openglfx.canvas.GLCanvas
 import javafx.beans.property.*
 import javafx.css.CssMetaData
 import javafx.css.Styleable
@@ -19,14 +20,18 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_VECTOR_
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.vector.VectorSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.gui.utility.GlUtil
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
+import org.lwjgl.opengl.ARBShaderImageLoadStore.*
+import org.lwjgl.opengl.GL30.*
+import org.lwjgl.opengl.GL43.GL_COMPUTE_SHADER
+import org.lwjgl.opengl.GL43.glDispatchCompute
+import java.nio.ByteBuffer
+import kotlin.math.*
 
-class VectorScopeVisualizer : AutoCanvas(false) {
+class VectorScopeVisualizer : AutoCanvas(true) {
 
     companion object {
 
@@ -51,6 +56,7 @@ class VectorScopeVisualizer : AutoCanvas(false) {
     val rangeX: DoubleProperty = SimpleDoubleProperty(DEFAULT_VECTOR_X_RANGE)
     val rangeY: DoubleProperty = SimpleDoubleProperty(DEFAULT_VECTOR_Y_RANGE)
     val rangeLink: BooleanProperty = SimpleBooleanProperty(DEFAULT_VECTOR_RANGE_LINK)
+    val decay: FloatProperty = SimpleFloatProperty(0.67f)
 
     private var edgePoints: List<Pair<Double, Double>> = emptyList()
 
@@ -97,34 +103,156 @@ class VectorScopeVisualizer : AutoCanvas(false) {
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {
         gc.clearRect(0.0, 0.0, width, height)
         gc.stroke = vectorColor.value
+        if (acs.samples.channels() != 2 + 1) { // combined + L + R
+            return
+        }
+
+        val generator = when (renderMode.value!!) {
+            VectorOrientation.SKEWED -> pointsSkewed(width, height)
+            VectorOrientation.STRAIGTH -> drawVertical(width, height)
+        }
+
+        val first = generator.first()
         gc.beginPath()
-        if (acs.samples.channels() == 2 + 1) { // combined + L + R
-            when (renderMode.value!!) {
-                VectorOrientation.SKEWED -> drawSkewed(gc, width, height)
-                VectorOrientation.STRAIGTH -> drawVertical(gc, width, height)
+        gc.moveTo(first.x, first.y)
+        for (point in generator) {
+            gc.lineTo(point.x, point.y)
+        }
+        gc.closePath()
+        gc.stroke()
+    }
+
+    private fun createImageBuffers(width: Int, height: Int): Pair<Int, Int> {
+        val texture = glGenTextures()
+        glBindTexture(GL_TEXTURE_2D, texture)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, null as ByteBuffer?)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+        val framebuffer = glGenFramebuffers()
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0)
+
+        val rbo = glGenRenderbuffers()
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        return texture to framebuffer
+    }
+
+    override fun setupGl(canvas: GLCanvas) {
+
+        var texture = 0
+        var framebuffer = 0
+        var dimProgram = 0
+
+        canvas.addOnInitEvent { _ ->
+            val res = createImageBuffers(800, 800)
+            texture = res.first
+            framebuffer = res.second
+
+            val shader = GlUtil.compileShader("/shaders/dim.compute.glsl", GL_COMPUTE_SHADER)
+            dimProgram = GlUtil.linkProgram(listOf(shader))
+        }
+
+        canvas.addOnRenderEvent { event ->
+
+            // Camera
+            glMatrixMode(GL_PROJECTION)
+            glLoadIdentity()
+            glOrtho(0.0, event.width.toDouble(), event.height.toDouble(), 0.0, -1.0, 1.0)
+            glMatrixMode(GL_MODELVIEW)
+
+            // Point generator
+            val generator = when (renderMode.value!!) {
+                VectorOrientation.SKEWED -> pointsSkewed(width, height)
+                VectorOrientation.STRAIGTH -> drawVertical(width, height)
             }
+
+            // Clear main framebuffer and bing out custom one
+            glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer)
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            // Draw the lines
+            glBegin(GL_LINES)
+            val color = vectorColor.value
+            var pointA = generator.first()
+            for (pointB in generator) {
+                var len = pointA.distance(pointB)
+                if (len.isNaN()) len = 0.5
+
+                glColor4f(color.red.toFloat(), color.green.toFloat(), color.blue.toFloat(), (1.0 / len).toFloat())
+
+                glVertex2d(pointA.x, pointA.y)
+                glVertex2d(pointB.x, pointB.y)
+                pointA = pointB
+            }
+            glEnd()
+
+            // Run our compute shader on said buffer
+            glUseProgram(dimProgram);
+
+            val lambda = -ln(decay.value) * 60
+            val adjustedDecayFactor = exp(-lambda * event.delta)
+            glUniform1f(1, adjustedDecayFactor.toFloat()); // Decay
+            glBindImageTexture(0, texture, 0, false, 0, GL_READ_WRITE, GL_RGBA32F);
+
+            glDispatchCompute(event.width, event.height, 1)
+            glMemoryBarrier(GL_ALL_BARRIER_BITS)
+
+            // Blit our buffer to the display buffer
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer)
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, event.fbo)
+            glBlitFramebuffer(
+                0,
+                0,
+                event.width,
+                event.height,
+                0,
+                0,
+                event.width,
+                event.height,
+                GL_COLOR_BUFFER_BIT,
+                GL_NEAREST
+            );
+            glBindFramebuffer(GL_FRAMEBUFFER, event.fbo)
+        }
+
+        canvas.addOnReshapeEvent { event ->
+            glDeleteFramebuffers(framebuffer)
+            glDeleteTextures(texture)
+
+            val res = createImageBuffers(event.width, event.height)
+            texture = res.first
+            framebuffer = res.second
+        }
+
+        canvas.addOnDisposeEvent { _ ->
+            glDeleteFramebuffers(framebuffer)
+            glDeleteTextures(texture)
         }
     }
 
-    private fun drawSkewed(gc: GraphicsContext, width: Double, height: Double) {
+    private fun pointsSkewed(width: Double, height: Double) = sequence {
         val sX = 1.0 / rangeX.value
         val sY = 1.0 / rangeY.value
 
         for (i in 0 until acs.samples.sizeHint(0)) {
             val sample = acs.samples[1].data[i]
-            val p = Point2D(
-                (sample.toDouble() * sX + 1.0) * 0.5 * width - 1.0,
-                height - (acs.samples[2].data[i].toDouble() * sY + 1) * height * 0.5
+            yield(
+                Point2D(
+                    (sample.toDouble() * sX + 1.0) * 0.5 * width - 1.0,
+                    height - (acs.samples[2].data[i].toDouble() * sY + 1) * height * 0.5
+                )
             )
-            if (i == 0) {
-                gc.moveTo(p.x, p.y)
-            } else {
-                gc.lineTo(p.x, p.y)
-            }
         }
-
-        gc.closePath()
-        gc.stroke()
     }
 
     private fun rotate45(
@@ -142,7 +270,7 @@ class VectorScopeVisualizer : AutoCanvas(false) {
     }
 
 
-    private fun drawVertical(gc: GraphicsContext, width: Double, height: Double) {
+    private fun drawVertical(width: Double, height: Double) = sequence {
         val sX = 1.0 / rangeX.value
         val sY = 1.0 / rangeY.value
         val dividedWidth = (width - 4) / 2 / ROOT2 * sX
@@ -154,21 +282,15 @@ class VectorScopeVisualizer : AutoCanvas(false) {
             val sample = acs.samples[1].data[i]
             val x = sample.toDouble()
             val y = acs.samples[2].data[i].toDouble()
-            val p = rotate45(x, y, dividedWidth, scaledHeight, xOffset, yOffset)
-            if (i == 0) {
-                gc.moveTo(p.x, p.y)
-            } else {
-                gc.lineTo(p.x, p.y)
-            }
+            yield(rotate45(x, y, dividedWidth, scaledHeight, xOffset, yOffset))
         }
-        gc.closePath()
-        gc.stroke()
-
+        /*
         gc.fill = Color.VIOLET
         for (edge in edgePoints) {
             val p = rotate45(edge.first, edge.second, dividedWidth, scaledHeight, xOffset, yOffset)
             gc.fillRect(p.x - 1.0, p.y - 1.0, 2.0, 2.0)
         }
+        */
     }
 
     override fun registerPreferences(id: String, preferenceService: PreferenceService) {

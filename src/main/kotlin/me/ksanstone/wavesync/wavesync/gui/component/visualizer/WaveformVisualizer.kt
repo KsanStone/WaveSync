@@ -56,10 +56,10 @@ class WaveformVisualizer(channel: Int) : AutoCanvas() {
     init {
         resizeBuffer(bufferDuration.get(), sampleRate.get())
         detachedWindowNameProperty.set("Waveform")
-        canvasContainer.xAxisShown.value = false
-        canvasContainer.forceDrawVerticalAccentLines.value = true
-        canvasContainer.verticalLinesVisible.value = true
-        canvasContainer.highlightedHorizontalLines.addAll(1.0, -1.0)
+        graphCanvas.xAxisShown.value = false
+        graphCanvas.forceDrawVerticalAccentLines.value = true
+        graphCanvas.verticalLinesVisible.value = true
+        graphCanvas.highlightedHorizontalLines.addAll(1.0, -1.0)
         if (yAxis is NumberAxis)
             (yAxis as NumberAxis).tickUnit = 0.2
         if (xAxis is NumberAxis)
@@ -69,7 +69,7 @@ class WaveformVisualizer(channel: Int) : AutoCanvas() {
         yAxis.lowerBoundProperty().bind(rangeMin.map { it.toString().toDouble() })
         yAxis.upperBoundProperty().bind(rangeMax.map { it.toString().toDouble() })
 
-        acs.fftSize.addListener { _, _, v -> canvasContainer.highlightedVerticalLines.setAll(xAxis.upperBound - v.toDouble()) }
+        acs.fftSize.addListener { _, _, v -> graphCanvas.highlightedVerticalLines.setAll(xAxis.upperBound - v.toDouble()) }
 
         autoAlign.addListener { _ -> bindAlign() }
         bindAlign()
@@ -128,15 +128,15 @@ class WaveformVisualizer(channel: Int) : AutoCanvas() {
         preferenceService.registerProperty(rangeMax, "rangeMax", this.javaClass, id)
         preferenceService.registerProperty(rangeMin, "rangeMin", this.javaClass, id)
         preferenceService.registerProperty(rangeLink, "rangeLink", this.javaClass, id)
-        preferenceService.registerProperty(canvasContainer.yAxisShown, "yAxisShown", this.javaClass, id)
+        preferenceService.registerProperty(graphCanvas.yAxisShown, "yAxisShown", this.javaClass, id)
         preferenceService.registerProperty(
-            canvasContainer.horizontalLinesVisible,
+            graphCanvas.horizontalLinesVisible,
             "horizontalLinesVisible",
             this.javaClass,
             id
         )
         preferenceService.registerProperty(
-            canvasContainer.verticalLinesVisible,
+            graphCanvas.verticalLinesVisible,
             "verticalLinesVisible",
             this.javaClass,
             id
@@ -162,7 +162,7 @@ class WaveformVisualizer(channel: Int) : AutoCanvas() {
         val newSize = rate * time.toSeconds()
         this.buffer = RollingBuffer(newSize.toInt()) { 0.0f }
         xAxis.upperBound = newSize
-        canvasContainer.highlightedVerticalLines.setAll(xAxis.upperBound - acs.fftSize.value.toDouble())
+        graphCanvas.highlightedVerticalLines.setAll(xAxis.upperBound - acs.fftSize.value.toDouble())
     }
 
     private fun info(label: Label) {
