@@ -170,8 +170,8 @@ class VectorScopeVisualizer : AutoCanvas(true) {
 
             // Point generator
             val generator = when (renderMode.value!!) {
-                VectorOrientation.SKEWED -> pointsSkewed(width, height)
-                VectorOrientation.STRAIGTH -> drawVertical(width, height)
+                VectorOrientation.SKEWED -> pointsSkewed(event.width.toDouble(), event.height.toDouble())
+                VectorOrientation.STRAIGTH -> drawVertical(event.width.toDouble(), event.height.toDouble())
             }
 
             // Clear main framebuffer and bing out custom one
