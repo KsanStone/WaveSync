@@ -310,7 +310,7 @@ class VectorScopeVisualizer : AutoCanvas(true) {
         val written = (lBuffer.written - lastWritten).coerceAtMost(lBuffer.size.toLong())
         lastWritten = lBuffer.written
 
-        if (lastWritten == 0L)
+        if (written == 0L)
             yield(null)
         else
             yield(Point2D(0.0, 0.0))
@@ -333,6 +333,7 @@ class VectorScopeVisualizer : AutoCanvas(true) {
         preferenceService.registerProperty(renderMode, "renderMode", VectorOrientation::class.java, this.javaClass, id)
         preferenceService.registerProperty(rangeX, "rangeX", this.javaClass, id)
         preferenceService.registerProperty(rangeY, "rangeY", this.javaClass, id)
+        preferenceService.registerProperty(decay, "decay", this.javaClass, id)
         preferenceService.registerProperty(rangeLink, "rangeLink", this.javaClass, id)
         registerGraphPreferences(id, preferenceService)
     }
