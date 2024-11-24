@@ -24,6 +24,7 @@ import me.ksanstone.wavesync.wavesync.gui.utility.GlUtil
 import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
+import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import org.lwjgl.opengl.ARBShaderImageLoadStore.*
 import org.lwjgl.opengl.GL30.*
 import org.lwjgl.opengl.GL43.GL_COMPUTE_SHADER
@@ -58,6 +59,10 @@ class VectorScopeVisualizer : AutoCanvas(true) {
     val rangeLink: BooleanProperty = SimpleBooleanProperty(DEFAULT_VECTOR_RANGE_LINK)
     val decay: FloatProperty = SimpleFloatProperty(0.67f)
 
+    private lateinit var lBuffer: RollingBuffer<Float>
+    private lateinit var rBuffer: RollingBuffer<Float>
+    private var lastWritten: Long = 0
+
     private var edgePoints: List<Pair<Double, Double>> = emptyList()
 
     init {
@@ -89,6 +94,14 @@ class VectorScopeVisualizer : AutoCanvas(true) {
         }
 
         edgePoints = nums
+
+        sizeBuffers()
+        acs.source.addListener { _ -> sizeBuffers() }
+    }
+
+    private fun sizeBuffers() {
+        lBuffer = RollingBuffer(((acs.source.get()?.rate?.toDouble() ?: 100.0) * 0.05).roundToInt()) { 0.0f }
+        rBuffer = RollingBuffer(((acs.source.get()?.rate?.toDouble() ?: 100.0) * 0.05).roundToInt()) { 0.0f }
     }
 
     private fun updateAxis() {
@@ -107,19 +120,22 @@ class VectorScopeVisualizer : AutoCanvas(true) {
             return
         }
 
-        val generator = when (renderMode.value!!) {
+        val iterator = when (renderMode.value!!) {
             VectorOrientation.SKEWED -> pointsSkewed(width, height)
-            VectorOrientation.STRAIGTH -> drawVertical(width, height)
+            VectorOrientation.STRAIGHT -> drawVertical(width, height)
+        }.iterator()
+
+        if (iterator.next() != null) {
+            val first = iterator.next()
+            gc.beginPath()
+            gc.moveTo(first!!.x, first.y)
+            for (point in iterator) {
+                gc.lineTo(point!!.x, point.y)
+            }
+            gc.closePath()
+            gc.stroke()
         }
 
-        val first = generator.first()
-        gc.beginPath()
-        gc.moveTo(first.x, first.y)
-        for (point in generator) {
-            gc.lineTo(point.x, point.y)
-        }
-        gc.closePath()
-        gc.stroke()
     }
 
     private fun createImageBuffers(width: Int, height: Int): Pair<Int, Int> {
@@ -161,6 +177,9 @@ class VectorScopeVisualizer : AutoCanvas(true) {
         }
 
         canvas.addOnRenderEvent { event ->
+            if (acs.samples.channels() != 2 + 1) { // combined + L + R
+                return@addOnRenderEvent
+            }
 
             // Camera
             glMatrixMode(GL_PROJECTION)
@@ -169,10 +188,12 @@ class VectorScopeVisualizer : AutoCanvas(true) {
             glMatrixMode(GL_MODELVIEW)
 
             // Point generator
-            val generator = when (renderMode.value!!) {
+            val iterator = when (renderMode.value!!) {
                 VectorOrientation.SKEWED -> pointsSkewed(event.width.toDouble(), event.height.toDouble())
-                VectorOrientation.STRAIGTH -> drawVertical(event.width.toDouble(), event.height.toDouble())
-            }
+                VectorOrientation.STRAIGHT -> drawVertical(event.width.toDouble(), event.height.toDouble())
+            }.iterator()
+            if (iterator.next() == null)
+                return@addOnRenderEvent
 
             // Clear main framebuffer and bing out custom one
             glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
@@ -183,12 +204,12 @@ class VectorScopeVisualizer : AutoCanvas(true) {
             // Draw the lines
             glBegin(GL_LINES)
             val color = vectorColor.value
-            var pointA = generator.first()
-            for (pointB in generator) {
-                var len = pointA.distance(pointB)
-                if (len.isNaN()) len = 0.5
+            var pointA = iterator.next()!!
+            for (pointB in iterator) {
+                var len = pointA.distance(pointB!!)
+                if (len.isNaN()) len = 0.25
 
-                glColor4f(color.red.toFloat(), color.green.toFloat(), color.blue.toFloat(), (1.0 / len).toFloat())
+                glColor4f(color.red.toFloat(), color.green.toFloat(), color.blue.toFloat(), (2.5 / len).toFloat())
 
                 glVertex2d(pointA.x, pointA.y)
                 glVertex2d(pointB.x, pointB.y)
@@ -243,13 +264,21 @@ class VectorScopeVisualizer : AutoCanvas(true) {
     private fun pointsSkewed(width: Double, height: Double) = sequence {
         val sX = 1.0 / rangeX.value
         val sY = 1.0 / rangeY.value
+        val written = (lBuffer.written - lastWritten).coerceAtMost(lBuffer.size.toLong())
+        lastWritten = lBuffer.written
+        if (written == 0L)
+            yield(null)
+        else
+            yield(Point2D(0.0, 0.0))
 
-        for (i in 0 until acs.samples.sizeHint(0)) {
-            val sample = acs.samples[1].data[i]
+        for (i in lBuffer.size - written until lBuffer.size) {
+            val lSample = lBuffer[i.toInt()]
+            val rSample = rBuffer[i.toInt()]
+
             yield(
                 Point2D(
-                    (sample.toDouble() * sX + 1.0) * 0.5 * width - 1.0,
-                    height - (acs.samples[2].data[i].toDouble() * sY + 1) * height * 0.5
+                    (lSample.toDouble() * sX + 1.0) * 0.5 * width - 1.0,
+                    height - (rSample.toDouble() * sY + 1) * height * 0.5
                 )
             )
         }
@@ -278,11 +307,18 @@ class VectorScopeVisualizer : AutoCanvas(true) {
         val scaledHeight = dividedHeight * sY
         val yOffset = (ROOT2 - 1) * scaledHeight - (scaledHeight - dividedHeight) * ROOT2
         val xOffset = width / 2
-        for (i in 0 until acs.samples.sizeHint(0)) {
-            val sample = acs.samples[1].data[i]
-            val x = sample.toDouble()
-            val y = acs.samples[2].data[i].toDouble()
-            yield(rotate45(x, y, dividedWidth, scaledHeight, xOffset, yOffset))
+        val written = (lBuffer.written - lastWritten).coerceAtMost(lBuffer.size.toLong())
+        lastWritten = lBuffer.written
+
+        if (lastWritten == 0L)
+            yield(null)
+        else
+            yield(Point2D(0.0, 0.0))
+
+        for (i in lBuffer.size - written until lBuffer.size) {
+            val lSample = lBuffer[i.toInt()].toDouble()
+            val rSample = rBuffer[i.toInt()].toDouble()
+            yield(rotate45(lSample, rSample, dividedWidth, scaledHeight, xOffset, yOffset))
         }
         /*
         gc.fill = Color.VIOLET
@@ -317,8 +353,22 @@ class VectorScopeVisualizer : AutoCanvas(true) {
         return FACTORY.cssMetaData
     }
 
+    private fun handleSamples(sampleEvent: AudioCaptureService.SampleEvent) {
+        if (!canDraw) return
+        when (sampleEvent.channel) {
+            1 -> lBuffer
+            2 -> rBuffer
+            else -> null
+        }?.insert(sampleEvent.data.toTypedArray())
+    }
+
+    override fun registerListeners(acs: AudioCaptureService) {
+        acs.registerSampleObserver(1, this::handleSamples)
+        acs.registerSampleObserver(2, this::handleSamples)
+    }
+
     enum class VectorOrientation {
-        STRAIGTH,
+        STRAIGHT,
         SKEWED
     }
 }

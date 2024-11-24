@@ -32,7 +32,7 @@ class CanvasContainer(private val useGL: Boolean) {
 
     init {
         if (useGL) {
-            glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.Core, msaa = 4)
+            glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.Core)
         } else {
             canvas = Canvas()
         }

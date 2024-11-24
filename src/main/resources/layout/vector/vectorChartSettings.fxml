@@ -41,6 +41,10 @@
             <ToggleButton fx:id="straight" onAction="#renderStraight" prefHeight="30.0" text="%visualizer.vector.settings.render.straight" />
         </InputGroup>
     </HBox>
-   <Label text="%visualizer.vector.settings.render.decay" GridPane.rowIndex="1" />
+   <Label text="%visualizer.vector.settings.render.decay" GridPane.rowIndex="1" >
+        <graphic>
+            <FontIcon iconLiteral="mdal-gradient" />
+        </graphic>
+    </Label>
    <Slider fx:id="decaySlider" blockIncrement="0.05" majorTickUnit="0.05" max="1.0" minorTickCount="1" showTickLabels="true" showTickMarks="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 </GridPane>

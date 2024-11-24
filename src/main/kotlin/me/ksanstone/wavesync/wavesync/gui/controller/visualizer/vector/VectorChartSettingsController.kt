@@ -40,7 +40,7 @@ class VectorChartSettingsController {
 
     @FXML
     fun renderStraight() {
-        visualizer.renderMode.set(VectorScopeVisualizer.VectorOrientation.STRAIGTH)
+        visualizer.renderMode.set(VectorScopeVisualizer.VectorOrientation.STRAIGHT)
         skewed.selectedProperty().set(false)
         straight.selectedProperty().set(true)
     }
@@ -50,7 +50,7 @@ class VectorChartSettingsController {
     fun initialize(visualizer: VectorScopeVisualizer) {
         this.visualizer = visualizer
 
-        straight.selectedProperty().set(visualizer.renderMode.get() == VectorScopeVisualizer.VectorOrientation.STRAIGTH)
+        straight.selectedProperty().set(visualizer.renderMode.get() == VectorScopeVisualizer.VectorOrientation.STRAIGHT)
         skewed.selectedProperty().set(visualizer.renderMode.get() == VectorScopeVisualizer.VectorOrientation.SKEWED)
 
         waveformRangeMaxSpinner.valueFactory = DoubleSpinnerValueFactory(
