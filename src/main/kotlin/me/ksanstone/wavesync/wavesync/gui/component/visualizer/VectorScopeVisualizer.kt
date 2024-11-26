@@ -138,42 +138,67 @@ class VectorScopeVisualizer : AutoCanvas(true) {
 
     }
 
-    private fun createImageBuffers(width: Int, height: Int): Pair<Int, Int> {
-        val texture = glGenTextures()
-        glBindTexture(GL_TEXTURE_2D, texture)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, null as ByteBuffer?)
+    data class GlData(
+        val lightnessTexture: Int = 0,
+        val lightnessFramebuffer: Int = 0,
+        val colorTexture: Int = 0,
+        val colorFramebuffer: Int = 0,
+    ) {
+        fun delete() {
+            glDeleteFramebuffers(lightnessFramebuffer)
+            glDeleteFramebuffers(colorFramebuffer)
+            glDeleteTextures(colorTexture)
+            glDeleteTextures(lightnessTexture)
+        }
+    }
+
+    private fun createImageBuffers(width: Int, height: Int): GlData {
+        val lightnessTexture = glGenTextures()
+        glBindTexture(GL_TEXTURE_2D, lightnessTexture)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, null as ByteBuffer?)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
         val framebuffer = glGenFramebuffers()
         glBindFramebuffer(GL_FRAMEBUFFER, framebuffer)
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, lightnessTexture, 0)
 
         val rbo = glGenRenderbuffers()
-        glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+        glBindRenderbuffer(GL_RENDERBUFFER, rbo)
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height)
+        glBindRenderbuffer(GL_RENDERBUFFER, 0)
 
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo)
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
 
-        return texture to framebuffer
+        val colorTexture = glGenTextures()
+        glBindTexture(GL_TEXTURE_2D, colorTexture)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, null as ByteBuffer?)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+        val colorFramebuffer = glGenFramebuffers()
+        glBindFramebuffer(GL_FRAMEBUFFER, colorFramebuffer)
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0)
+
+        return GlData(lightnessTexture, framebuffer, colorTexture, colorFramebuffer)
     }
 
     override fun setupGl(canvas: GLCanvas) {
-
-        var texture = 0
-        var framebuffer = 0
+        var glData = GlData()
         var dimProgram = 0
+        var colorProgram = 0
+
 
         canvas.addOnInitEvent { _ ->
-            val res = createImageBuffers(800, 800)
-            texture = res.first
-            framebuffer = res.second
+            glData = createImageBuffers(800, 800)
 
-            val shader = GlUtil.compileShader("/shaders/dim.compute.glsl", GL_COMPUTE_SHADER)
-            dimProgram = GlUtil.linkProgram(listOf(shader))
+            val dimShader = GlUtil.compileShader("/shaders/dim.compute.glsl", GL_COMPUTE_SHADER)
+            dimProgram = GlUtil.linkProgram(listOf(dimShader))
+
+            val colorShader = GlUtil.compileShader("/shaders/color.compute.glsl", GL_COMPUTE_SHADER)
+            colorProgram = GlUtil.linkProgram(listOf(colorShader))
         }
 
         canvas.addOnRenderEvent { event ->
@@ -197,19 +222,18 @@ class VectorScopeVisualizer : AutoCanvas(true) {
 
             // Clear main framebuffer and bing out custom one
             glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
-            glBindFramebuffer(GL_FRAMEBUFFER, framebuffer)
-            glEnable(GL_BLEND);
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glBindFramebuffer(GL_FRAMEBUFFER, glData.lightnessFramebuffer)
 
             // Draw the lines
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_ONE, GL_ONE) // Additive blending
             glBegin(GL_LINES)
-            val color = vectorColor.value
             var pointA = iterator.next()!!
             for (pointB in iterator) {
                 var len = pointA.distance(pointB!!)
                 if (len.isNaN()) len = 0.25
 
-                glColor4f(color.red.toFloat(), color.green.toFloat(), color.blue.toFloat(), (2.5 / len).toFloat())
+                glColor4f((1 / len).toFloat(), 0.0f, 0.0f, 1.0f)
 
                 glVertex2d(pointA.x, pointA.y)
                 glVertex2d(pointB.x, pointB.y)
@@ -217,19 +241,29 @@ class VectorScopeVisualizer : AutoCanvas(true) {
             }
             glEnd()
 
-            // Run our compute shader on said buffer
-            glUseProgram(dimProgram);
-
+            // Apply dimming
+            glUseProgram(dimProgram)
             val lambda = -ln(decay.value) * 60
             val adjustedDecayFactor = exp(-lambda * event.delta)
-            glUniform1f(1, adjustedDecayFactor.toFloat()); // Decay
-            glBindImageTexture(0, texture, 0, false, 0, GL_READ_WRITE, GL_RGBA32F);
+            glUniform1f(1, adjustedDecayFactor.toFloat())
+            glBindImageTexture(0, glData.lightnessTexture, 0, false, 0, GL_READ_WRITE, GL_R32F)
 
             glDispatchCompute(event.width, event.height, 1)
             glMemoryBarrier(GL_ALL_BARRIER_BITS)
 
-            // Blit our buffer to the display buffer
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffer)
+            // Color the output
+            val color = vectorColor.value
+            glUseProgram(colorProgram)
+            glUniform3f(1, color.red.toFloat(), color.green.toFloat(), color.blue.toFloat())
+
+            glBindImageTexture(0, glData.lightnessTexture, 0, false, 0, GL_READ_WRITE, GL_R32F)
+            glBindImageTexture(1, glData.colorTexture, 0, false, 0, GL_READ_WRITE, GL_RGBA32F)
+
+            glDispatchCompute(event.width, event.height, 1)
+            glMemoryBarrier(GL_ALL_BARRIER_BITS)
+
+            glColorMask(true, true, true, true);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, glData.colorFramebuffer)
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, event.fbo)
             glBlitFramebuffer(
                 0,
@@ -242,24 +276,19 @@ class VectorScopeVisualizer : AutoCanvas(true) {
                 event.height,
                 GL_COLOR_BUFFER_BIT,
                 GL_NEAREST
-            );
-            glBindFramebuffer(GL_FRAMEBUFFER, event.fbo)
+            )
         }
 
         canvas.addOnReshapeEvent { event ->
-            glDeleteFramebuffers(framebuffer)
-            glDeleteTextures(texture)
-
-            val res = createImageBuffers(event.width, event.height)
-            texture = res.first
-            framebuffer = res.second
+            glData.delete()
+            glData = createImageBuffers(event.width, event.height)
         }
 
         canvas.addOnDisposeEvent { _ ->
-            glDeleteFramebuffers(framebuffer)
-            glDeleteTextures(texture)
+            glData.delete()
         }
     }
+
 
     private fun pointsSkewed(width: Double, height: Double) = sequence {
         val sX = 1.0 / rangeX.value
