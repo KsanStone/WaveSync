@@ -1,6 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.component.layout.drag
 
 import javafx.beans.property.SimpleBooleanProperty
+import javafx.beans.property.SimpleObjectProperty
 import javafx.collections.FXCollections
 import javafx.collections.ListChangeListener
 import javafx.collections.ObservableList
@@ -29,6 +30,7 @@ import kotlin.jvm.optionals.getOrDefault
 class DragLayout : Pane() {
 
     var layoutRoot: DragLayoutNode = DragLayoutNode("root", layout = WeakReference(this))
+    var justifyModeProperty: SimpleObjectProperty<JustifyMode> = SimpleObjectProperty(JustifyMode.NONE)
 
     private val dragCueShowing = SimpleBooleanProperty(false)
     private val drawCueRect: Pane = Pane()
@@ -57,6 +59,7 @@ class DragLayout : Pane() {
             val minSize = calculateMinSize()
             minWidth = minSize.width
             minHeight = minSize.height
+            layoutChanged = true
         }
 
         snapPointLines.addListener(ListChangeListener { change ->
@@ -71,7 +74,8 @@ class DragLayout : Pane() {
         })
 
         snapPoints.addListener(ListChangeListener { change ->
-            while (change.next()) { /* */ }
+            while (change.next()) { /* */
+            }
             layoutSnapLines()
         })
 
@@ -243,12 +247,25 @@ class DragLayout : Pane() {
         return params
     }
 
+    private var lastSize: Dimension2D = Dimension2D(0.0, 0.0)
+    private var layoutChanged: Boolean = false
+
     override fun layoutChildren() {
         synchronized(layoutLock) {
             if (!layoutRoot.isEmpty()) {
-                layoutNode(layoutRoot, Rectangle2D(0.0, 0.0, width, height))
-                if (snapPoints.size > 0)
-                    layoutSnapLines()
+                if (lastSize != Dimension2D(width, height) || layoutChanged) {
+                    layoutNode(layoutRoot, Rectangle2D(0.0, 0.0, width, height))
+                    when (justifyModeProperty.value!!) {
+                        JustifyMode.ASPECT_RATIO_AWARE -> layoutRoot.justify(true)
+                        JustifyMode.EVEN -> layoutRoot.justify(true)
+                        JustifyMode.NONE -> {}
+                    }
+
+                    if (snapPoints.size > 0)
+                        layoutSnapLines()
+                }
+                lastSize = Dimension2D(width, height)
+                layoutChanged = false
             }
         }
     }
@@ -284,7 +301,13 @@ class DragLayout : Pane() {
                     .mapIndexed { index, d -> SnapPoint(d, SnapPointType.EVEN, index != event.dividerId) })
             snapPoints.addAll(
                 event.node.getAspectRatioAwareDividers().getOrDefault(emptyList())
-                    .mapIndexed { index, d -> SnapPoint(d, SnapPointType.ASPECT_RATIO_AWARE, index != event.dividerId) })
+                    .mapIndexed { index, d ->
+                        SnapPoint(
+                            d,
+                            SnapPointType.ASPECT_RATIO_AWARE,
+                            index != event.dividerId
+                        )
+                    })
             snapNode = event.node
         }
         this.eventEmitter.on(DividerDraggedEvent::class.java) {}

@@ -131,7 +131,7 @@ open class LayoutStorageService(
     }
 
     private fun save() {
-        logger.info("Saving layout")
+        logger.trace("Saving layout")
         layoutStorageProperty.set(layoutSerializerService.serializeFull(layouts))
     }
 
