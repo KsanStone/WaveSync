@@ -1,5 +1,6 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
+import org.lwjgl.opengl.ARBFramebufferObject.GL_INVALID_FRAMEBUFFER_OPERATION
 import org.lwjgl.opengl.GL20.*
 
 object GlUtil {
@@ -48,5 +49,23 @@ object GlUtil {
 
         return programId
     }
+
+    fun checkGLError(tag: String = "OpenGL") {
+        var errorCode: Int
+        while (glGetError().also { errorCode = it } != GL_NO_ERROR) {
+            val errorString = when (errorCode) {
+                GL_INVALID_ENUM -> "GL_INVALID_ENUM"
+                GL_INVALID_VALUE -> "GL_INVALID_VALUE"
+                GL_INVALID_OPERATION -> "GL_INVALID_OPERATION"
+                GL_STACK_OVERFLOW -> "GL_STACK_OVERFLOW"
+                GL_STACK_UNDERFLOW -> "GL_STACK_UNDERFLOW"
+                GL_OUT_OF_MEMORY -> "GL_OUT_OF_MEMORY"
+                GL_INVALID_FRAMEBUFFER_OPERATION -> "GL_INVALID_FRAMEBUFFER_OPERATION"
+                else -> "UNKNOWN_ERROR"
+            }
+            println("$tag: OpenGL Error: $errorString (Code: $errorCode)")
+        }
+    }
+
 
 }
