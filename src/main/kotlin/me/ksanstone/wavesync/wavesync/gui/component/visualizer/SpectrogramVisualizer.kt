@@ -33,7 +33,10 @@ import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalar
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalarParameters
 import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalar
-import me.ksanstone.wavesync.wavesync.utility.*
+import me.ksanstone.wavesync.wavesync.utility.FreeRangeMapper
+import me.ksanstone.wavesync.wavesync.utility.LogRangeMapper
+import me.ksanstone.wavesync.wavesync.utility.RangeMapper
+import me.ksanstone.wavesync.wavesync.utility.size
 import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL30.*
 import java.nio.ByteBuffer
@@ -57,22 +60,11 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
     val rangeMax: FloatProperty = SimpleFloatProperty(DEFAULT_DB_MAX)
     val logarithmic: BooleanProperty = SimpleBooleanProperty(DEFAULT_LOGARITHMIC_MODE)
 
-    private val fftArraySize: IntegerBinding =
-        WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftSize.divide(2)
-    private val fftRate: IntegerProperty =
-        WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java).fftRate
+    private val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
+    private val fftArraySize: IntegerBinding = acs.fftSize.divide(2)
+    private val fftRate: IntegerProperty = acs.fftRate
     private val gradientSerializer: GradientSerializer =
         WaveSyncBootApplication.applicationContext.getBean(GradientSerializer::class.java)
-
-    private var lastWritten = 0L
-    private var bufferPos = 0
-    private var stripeStepAccumulator = 0.0
-    private var processedStripe = FloatArray(1)
-    private var stripeMapper: CachingRangeMapper = CachingRangeMapper(FreeRangeMapper(0..1, 2..4))
-    private var mapperLog: Boolean = false
-
-    private var canvasWidth = 0
-    private var canvasHeight = 0
 
     private val scalar = DeciBelFFTScalar()
     private var source: SupportedCaptureSource? = null
@@ -86,18 +78,15 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
 
         fftRate.addListener { _, _, _ ->
             updateBuffer()
-            renderParamUpdate()
         }
 
         bufferDuration.addListener { _, _, _ ->
             updateBuffer()
-            renderParamUpdate()
             sizeAxis()
         }
 
         listOf(orientation, highPass, lowPass, effectiveLogarithmic).forEach {
             it.addListener { _ ->
-                renderParamUpdate()
                 sizeAxis()
             }
         }
@@ -105,15 +94,14 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
         listOf(effectiveRangeMax, effectiveRangeMin).forEach {
             it.addListener { _ ->
                 scalar.update(DeciBelFFTScalarParameters(effectiveRangeMin.value, effectiveRangeMax.value))
-                renderParamUpdate()
                 sizeAxis()
             }
         }
 
         sizeAxis()
         gradient.addListener { _ ->
-            renderParamUpdate()
             sizeAxis()
+            if (::glData.isInitialized) glData.scheduleSettingChange(changeGradient = true)
         }
     }
 
@@ -198,153 +186,6 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
         )
     }
 
-//    private fun drawChunk(isHorizontal: Boolean) {
-//        val size = if (isHorizontal) canvasWidth else canvasHeight
-//
-//        val chunkStep = buffer.size.toDouble() / size
-//        val chunksWritten = (buffer.written - lastWritten).coerceIn(0, buffer.size.toLong()).toInt()
-//        lastWritten = buffer.written
-//        bufferPos -= chunksWritten
-//        bufferPos = bufferPos.coerceAtLeast(0)
-//        val chunksLeft = buffer.size - bufferPos
-//
-//        val stripesToDraw = floor(chunksLeft / chunkStep).toInt()
-//
-//        for (i in 0 until stripesToDraw) {
-//            var iterationsDone = 0
-//
-//            // First iteration done separately to fill the buffer.
-//            if (bufferPos < buffer.size && stripeStepAccumulator < chunkStep) {
-//                val currentRes = buffer[bufferPos]
-//                System.arraycopy(currentRes, 0, stripeBuffer, 0, stripeBuffer.size)
-//                stripeStepAccumulator++
-//                iterationsDone++
-//                bufferPos++
-//            }
-//
-//            while (stripeStepAccumulator < chunkStep) {
-//                if (bufferPos >= buffer.size) break
-//                val currentRes = buffer[bufferPos]
-//                for (j in stripeBuffer.indices) {
-//                    stripeBuffer[j] += currentRes[j]
-//                }
-//
-//                stripeStepAccumulator++
-//                iterationsDone++
-//                bufferPos++
-//            }
-//
-//            stripeStepAccumulator -= chunkStep
-//
-//            if (iterationsDone == 0) continue
-//
-//            val avgFactor = 1.0F / iterationsDone.coerceAtLeast(1)
-//            for (j in stripeBuffer.indices) {
-//                stripeBuffer[j] *= avgFactor
-//            }
-//
-//            val stripeWidth = 1.0 / chunkStep
-//            drawStripe(stripeBuffer, stripeWidth, isHorizontal, effectiveLogarithmic.value)
-//        }
-//    }
-//
-//    private var justSwitched = false
-//
-//    private fun drawStripe(stripe: FloatArray, width: Double, isHorizontal: Boolean, isLog: Boolean) {
-//        if (source == null) return
-//        val stripePixelLength: Int
-//        val size: Int
-//        var realWidth = width
-//
-//        if (isHorizontal) {
-//            stripePixelLength = canvasHeight
-//            size = canvasWidth
-//        } else {
-//            stripePixelLength = canvasWidth
-//            size = canvasHeight
-//        }
-//
-//        if (justSwitched) {
-//            if (imageOffset != 0) {
-//                realWidth += imageOffset
-//                imageOffset = 0
-//            }
-//            justSwitched = false
-//        }
-//
-//        var effectiveStripeLength = source!!.trimResultTo(stripe.size * 2, effectiveHighPass.get())
-//        val frequencyBinSkip = source!!.bufferBeginningSkipFor(effectiveLowPass.get(), stripe.size * 2)
-//        effectiveStripeLength -= frequencyBinSkip
-//
-//
-//        val rate = source!!.rate
-//        val fftSize = stripe.size * 2
-//        val startFreq = FourierMath.frequencyOfBin(frequencyBinSkip, rate, fftSize)
-//        val endFreq = FourierMath.frequencyOfBin(frequencyBinSkip + effectiveStripeLength, rate, fftSize)
-//
-//        val resizeStripe = processedStripe.size != stripePixelLength
-//        if (resizeStripe)
-//            processedStripe = FloatArray(stripePixelLength)
-//
-//        val secRangeEqual = stripeMapper.to.first == startFreq && stripeMapper.to.last == endFreq
-//        if (resizeStripe || !secRangeEqual || isLog != mapperLog) {
-//            val newToRange = startFreq..endFreq
-//            stripeMapper = CachingRangeMapper(
-//                if (isLog) {
-//                    LogRangeMapper(processedStripe.indices, newToRange)
-//                } else {
-//                    FreeRangeMapper(processedStripe.indices, newToRange)
-//                },
-//            ) { FourierMath.binOfFrequency(rate, fftSize, it) }
-//            mapperLog = isLog
-//        }
-//
-//        for (i in processedStripe.indices) {
-//            val rMin = stripeMapper.forwards(i)
-//            val rMax = if (i + 1 == processedStripe.size) stripe.size - 1
-//            else (stripeMapper.forwards(i + 1)) - 1
-//
-//            var value = 0.0F
-//            for (j in rMin..rMax.coerceAtLeast(rMin)) {
-//                value = max(value, stripe[j])
-//            }
-//            processedStripe[i] = scalar.scale(value)
-//        }
-//
-//        val writer = imageTop.pixelWriter
-//        val effectiveGradient = gradient.value
-//        val realOffset = ceil(realWidth).toInt().coerceIn(1, size - imageOffset)
-//
-//        try {
-//            for (offset in 0 until realOffset) {
-//                if (isHorizontal) {
-//                    for (i in 0 until stripePixelLength) {
-//                        writer.setArgb(
-//                            imageOffset + offset,
-//                            stripePixelLength - i - 1,
-//                            effectiveGradient.argb(processedStripe[i])
-//                        )
-//                    }
-//                } else {
-//                    for (i in 0 until stripePixelLength) {
-//                        writer.setArgb(
-//                            i,
-//                            (imageTop.height - imageOffset - 1 + offset).toInt(),
-//                            effectiveGradient.argb(processedStripe[i])
-//                        )
-//                    }
-//                }
-//            }
-//        } catch (ignored: IndexOutOfBoundsException) {
-//        }
-//
-//        imageOffset += realOffset
-//        if (imageOffset >= size) {
-//            imageOffset %= size
-//            justSwitched = true
-//        }
-//    }
-
     private lateinit var glData: GlData
 
     /**
@@ -369,8 +210,14 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
 
         var gradientBuffer: Int = 0,
 
-        var sendBuffer: Queue<FloatArray> = ConcurrentLinkedQueue()
+        var sendBuffer: Queue<FloatArray> = ConcurrentLinkedQueue(),
+        var resizeBuffer: Boolean = false,
+        var changeGradient: Boolean = true, // initial setup
     ) {
+
+        companion object {
+            const val GRADIENT_TEXTURE_SIZE = 1024
+        }
 
         init {
             sampleBuffer = glGenTextures()
@@ -379,13 +226,25 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
             val vertexShader = GlUtil.compileShader("/shaders/spectrogram.vert", GL_VERTEX_SHADER)
             val fragmentShader = GlUtil.compileShader("/shaders/spectrogram.frag", GL_FRAGMENT_SHADER)
             program = GlUtil.linkProgram(listOf(vertexShader, fragmentShader))
+
+            glBindTexture(GL_TEXTURE_1D, gradientBuffer)
+            glTexImage1D(GL_TEXTURE_1D, 0, GL_RGBA32F, GRADIENT_TEXTURE_SIZE, 0, GL_RGBA, GL_FLOAT, null as ByteBuffer?)
+            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
         }
 
-        fun sampleBuffer(length: Int, sampleSize: Int) {
+        fun scheduleSettingChange(resizeBuffer: Boolean = false, changeGradient: Boolean = false) {
+            if (resizeBuffer) this.resizeBuffer = true
+            if (changeGradient) this.changeGradient = true
+        }
+
+        private fun sampleBuffer(length: Int, sampleSize: Int) {
             glBindTexture(GL_TEXTURE_2D, sampleBuffer)
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, sampleSize, length, 0, GL_RED, GL_FLOAT, null as ByteBuffer?)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
             sampleBufferWidth = length
             sampleBufferHeight = sampleSize
             sampleBufferPosition = 0
@@ -406,12 +265,31 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
                 IntArray(mapper.from.size()) { mapper.forwards(it) })
             glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
             glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+            glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
             GlUtil.checkGLError("mapper buffer")
             glBindTexture(GL_TEXTURE_1D, 0)
         }
 
-        fun setGradient(gradient: SGradient) {
-
+        private fun setGradient(gradient: SGradient) {
+            val textureData = FloatArray(GRADIENT_TEXTURE_SIZE * 4)
+            for (i in 0 until GRADIENT_TEXTURE_SIZE) {
+                val pos = i.toFloat() / (GRADIENT_TEXTURE_SIZE - 1)
+                val color = gradient[pos]
+                textureData[i * 4 + 0] = color.red.toFloat()
+                textureData[i * 4 + 1] = color.green.toFloat()
+                textureData[i * 4 + 2] = color.blue.toFloat()
+                textureData[i * 4 + 3] = color.opacity.toFloat()
+            }
+            glBindTexture(GL_TEXTURE_1D, gradientBuffer)
+            glTexSubImage1D(
+                GL_TEXTURE_1D,
+                0,
+                0,
+                GRADIENT_TEXTURE_SIZE,
+                GL_RGBA,
+                GL_FLOAT,
+                textureData,
+            )
         }
 
         fun scheduleSendRow(row: FloatArray) {
@@ -419,11 +297,21 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
                 sendBuffer.add(row)
         }
 
-        fun sendScheduled() {
+        private fun sendScheduled() {
             var elem: FloatArray?
             while (sendBuffer.poll().also { elem = it } != null) {
                 sendSampleRow(elem!!)
             }
+        }
+
+        fun changeScheduled(fftRate: Int, bufferDuration: Duration, fftArraySize: Int, gradient: SGradient) {
+            if (resizeBuffer) sampleBuffer((fftRate * bufferDuration.toSeconds()).toInt(), fftArraySize)
+            if (changeGradient) setGradient(gradient)
+
+            resizeBuffer = false
+            changeGradient = false
+
+            sendScheduled()
         }
 
         private fun sendSampleRow(row: FloatArray) {
@@ -467,17 +355,20 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
         canvas.addOnRenderEvent {
             if (source == null) return@addOnRenderEvent
 
-            val displayEntrySize = it.width
+            val displayEntrySize = if (orientation.value == Orientation.VERTICAL) it.width else it.height
             var effectiveStripeLength = source!!.trimResultTo(fftArraySize.value * 2, effectiveHighPass.get())
             val frequencyBinSkip = source!!.bufferBeginningSkipFor(effectiveLowPass.get(), fftArraySize.value * 2)
             effectiveStripeLength -= frequencyBinSkip
 
-            val mapper = LogRangeMapper(0 until displayEntrySize, frequencyBinSkip until frequencyBinSkip + effectiveStripeLength)
-            if (mapper.from != glData.mapper.from || mapper.to != glData.mapper.to) {
+            val fromRange = 0 until displayEntrySize
+            val toRange = frequencyBinSkip until frequencyBinSkip + effectiveStripeLength
+            val mapper = if (effectiveLogarithmic.value) LogRangeMapper(fromRange, toRange) else FreeRangeMapper(fromRange, toRange)
+            if (mapper.from != glData.mapper.from || mapper.to != glData.mapper.to || mapper.javaClass != glData.mapper.javaClass) {
+                // the javaClass check checks for the LogRange vs FreeRange mapper type without storing additional booleans
                 glData.entryMapperBuffer(mapper)
             }
 
-            glData.sendScheduled()
+            glData.changeScheduled(fftRate.value, bufferDuration.get(), fftArraySize.value, gradient.value)
             glUseProgram(glData.program)
 
             glActiveTexture(GL_TEXTURE0)
@@ -487,11 +378,15 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
             glActiveTexture(GL_TEXTURE1)
             glBindTexture(GL_TEXTURE_1D, glData.entryMapperBuffer)
             glUniform1i(glGetUniformLocation(glData.program, "coordMapTex"), 1)
-            GlUtil.checkGLError("tex bind")
+
+            glActiveTexture(GL_TEXTURE2)
+            glBindTexture(GL_TEXTURE_1D, glData.gradientBuffer)
+            glUniform1i(glGetUniformLocation(glData.program, "gradientTex"), 2)
 
             glUniform2i(glGetUniformLocation(glData.program, "size"), it.width, it.height)
             glUniform1i(glGetUniformLocation(glData.program, "bufferSize"), glData.sampleBufferWidth)
             glUniform1i(glGetUniformLocation(glData.program, "headOffset"), glData.sampleBufferPosition)
+            glUniform1i(glGetUniformLocation(glData.program, "isVertical"), if (orientation.value == Orientation.VERTICAL) 1 else 0)
 
             glBegin(GL_QUADS)
             glVertex2d(-1.0, -1.0)
@@ -510,23 +405,11 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
 
     private fun updateBuffer() {
         if (::glData.isInitialized) {
-            glData.sampleBuffer((fftRate.value * bufferDuration.get().toSeconds()).toInt(), fftArraySize.value)
+            glData.scheduleSettingChange(resizeBuffer = true)
         }
-    }
-
-    private fun renderParamUpdate() {
-//        lastWritten = buffer.written - (canvasWidth + canvasHeight).toLong()
-        stripeStepAccumulator = 0.0
-        bufferPos = 0
     }
 
     override fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double) {}
-
-    override fun usedState(state: Boolean) {
-        if (state) {
-            renderParamUpdate()
-        }
-    }
 
     override fun registerListeners(acs: AudioCaptureService) {
         acs.registerFFTObserver(0, this::handleFFT)
