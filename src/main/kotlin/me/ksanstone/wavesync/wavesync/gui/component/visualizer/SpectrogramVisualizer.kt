@@ -108,6 +108,7 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
         graphCanvas.tooltipEnabled.value = true
         graphCanvas.tooltipContainer.children.add(tooltip)
         tooltip.textProperty().bind(graphCanvas.tooltipPosition.map {
+            if (!::glData.isInitialized) { return@map "" }
             val pos = when (orientation.value!!) {
                 Orientation.HORIZONTAL -> it.y
                 Orientation.VERTICAL -> it.x

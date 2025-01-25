@@ -32,7 +32,7 @@ class GraphCanvas(
 
     val tooltipContainer = HBox()
     val tooltipEnabled = SimpleBooleanProperty(false)
-    val tooltipPosition = SimpleObjectProperty<Point2D>()
+    val tooltipPosition = SimpleObjectProperty(Point2D(0.0, 0.0))
 
     val xAxisShown = SimpleBooleanProperty(true)
     val yAxisShown = SimpleBooleanProperty(true)
