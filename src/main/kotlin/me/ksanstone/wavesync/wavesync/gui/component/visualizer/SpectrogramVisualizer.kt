@@ -4,11 +4,13 @@ import com.huskerdev.openglfx.canvas.GLCanvas
 import javafx.application.Platform
 import javafx.beans.binding.IntegerBinding
 import javafx.beans.property.*
+import javafx.beans.value.ObservableValue
 import javafx.fxml.FXMLLoader
 import javafx.geometry.Orientation
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.chart.NumberAxis
 import javafx.scene.chart.ValueAxis
+import javafx.scene.control.Label
 import javafx.scene.layout.Background
 import javafx.scene.layout.HBox
 import javafx.scene.paint.CycleMethod
@@ -26,10 +28,7 @@ import me.ksanstone.wavesync.wavesync.gui.gradient.pure.GradientSerializer
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SGradient
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.gui.utility.GlUtil
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
-import me.ksanstone.wavesync.wavesync.service.LocalizationService
-import me.ksanstone.wavesync.wavesync.service.PreferenceService
-import me.ksanstone.wavesync.wavesync.service.SupportedCaptureSource
+import me.ksanstone.wavesync.wavesync.service.*
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalar
 import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalarParameters
 import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalar
@@ -37,7 +36,6 @@ import me.ksanstone.wavesync.wavesync.utility.FreeRangeMapper
 import me.ksanstone.wavesync.wavesync.utility.LogRangeMapper
 import me.ksanstone.wavesync.wavesync.utility.RangeMapper
 import me.ksanstone.wavesync.wavesync.utility.size
-import org.lwjgl.opengl.GL11
 import org.lwjgl.opengl.GL30.*
 import java.nio.ByteBuffer
 import java.util.*
@@ -63,9 +61,12 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
     private val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
     private val fftArraySize: IntegerBinding = acs.fftSize.divide(2)
     private val fftRate: IntegerProperty = acs.fftRate
+    private val captureRate: ObservableValue<Int> = acs.source.map { it?.rate ?: 10 }
     private val gradientSerializer: GradientSerializer =
         WaveSyncBootApplication.applicationContext.getBean(GradientSerializer::class.java)
-
+    private var localizationService: LocalizationService =
+        WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
+    private val tooltip = Label()
     private val scalar = DeciBelFFTScalar()
     private var source: SupportedCaptureSource? = null
 
@@ -103,6 +104,21 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
             sizeAxis()
             if (::glData.isInitialized) glData.scheduleSettingChange(changeGradient = true)
         }
+
+        graphCanvas.tooltipEnabled.value = true
+        graphCanvas.tooltipContainer.children.add(tooltip)
+        tooltip.textProperty().bind(graphCanvas.tooltipPosition.map {
+            val pos = when (orientation.value!!) {
+                Orientation.HORIZONTAL -> it.y
+                Orientation.VERTICAL -> it.x
+            }
+            val scaledBin1 = glData.mapper.forwards(pos.toInt())
+            val freq1 = FourierMath.frequencyOfBin(scaledBin1, captureRate.value, fftArraySize.value * 2)
+            val scaledBin2 = glData.mapper.forwards(pos.toInt()).plus(1).coerceAtMost(glData.mapper.to.last)
+            val freq2 = FourierMath.frequencyOfBin(scaledBin2, captureRate.value, fftArraySize.value * 2)
+
+            return@map "${localizationService.formatNumber(freq1, "Hz")} ${localizationService.formatNumber(freq2, "Hz")}"
+        })
     }
 
     override fun initializeSettingMenu() {
@@ -335,8 +351,10 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
 
         fun dispose() {
             glDeleteTextures(sampleBuffer)
-            GL11.glDeleteTextures(entryMapperBuffer)
+            glDeleteTextures(entryMapperBuffer)
+            glDeleteTextures(gradientBuffer)
             glDeleteProgram(program)
+            sendBuffer.clear()
         }
     }
 
@@ -362,7 +380,10 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
 
             val fromRange = 0 until displayEntrySize
             val toRange = frequencyBinSkip until frequencyBinSkip + effectiveStripeLength
-            val mapper = if (effectiveLogarithmic.value) LogRangeMapper(fromRange, toRange) else FreeRangeMapper(fromRange, toRange)
+            val mapper = if (effectiveLogarithmic.value) LogRangeMapper(fromRange, toRange) else FreeRangeMapper(
+                fromRange,
+                toRange
+            )
             if (mapper.from != glData.mapper.from || mapper.to != glData.mapper.to || mapper.javaClass != glData.mapper.javaClass) {
                 // the javaClass check checks for the LogRange vs FreeRange mapper type without storing additional booleans
                 glData.entryMapperBuffer(mapper)
@@ -386,7 +407,10 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
             glUniform2i(glGetUniformLocation(glData.program, "size"), it.width, it.height)
             glUniform1i(glGetUniformLocation(glData.program, "bufferSize"), glData.sampleBufferWidth)
             glUniform1i(glGetUniformLocation(glData.program, "headOffset"), glData.sampleBufferPosition)
-            glUniform1i(glGetUniformLocation(glData.program, "isVertical"), if (orientation.value == Orientation.VERTICAL) 1 else 0)
+            glUniform1i(
+                glGetUniformLocation(glData.program, "isVertical"),
+                if (orientation.value == Orientation.VERTICAL) 1 else 0
+            )
 
             glBegin(GL_QUADS)
             glVertex2d(-1.0, -1.0)

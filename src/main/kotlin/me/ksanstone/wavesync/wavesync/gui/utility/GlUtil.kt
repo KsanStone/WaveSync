@@ -2,8 +2,12 @@ package me.ksanstone.wavesync.wavesync.gui.utility
 
 import org.lwjgl.opengl.ARBFramebufferObject.GL_INVALID_FRAMEBUFFER_OPERATION
 import org.lwjgl.opengl.GL20.*
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 object GlUtil {
+
+    val logger: Logger = LoggerFactory.getLogger(javaClass)
 
     fun compileShader(resourcePath: String, shaderType: Int): Int {
         val shaderSource = this::class.java.getResource(resourcePath)?.readText()
@@ -63,7 +67,7 @@ object GlUtil {
                 GL_INVALID_FRAMEBUFFER_OPERATION -> "GL_INVALID_FRAMEBUFFER_OPERATION"
                 else -> "UNKNOWN_ERROR"
             }
-            println("$tag: OpenGL Error: $errorString (Code: $errorCode)")
+            logger.warn("$tag: OpenGL Error: $errorString (Code: $errorCode)")
         }
     }
 

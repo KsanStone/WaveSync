@@ -296,6 +296,11 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
     private fun setUsedState(state: Boolean) {
         if (this.state != state) {
             this.state = state
+            val canvasNeedsReplacement = canvasContainer.updateUsedState(state)
+            if (canvasNeedsReplacement) {
+                graphCanvas.updateCanvas()
+                setupGl(canvasContainer.node as GLCanvas)
+            }
             usedState(state)
         }
     }

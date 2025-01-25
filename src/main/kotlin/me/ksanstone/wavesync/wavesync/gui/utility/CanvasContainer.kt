@@ -32,7 +32,7 @@ class CanvasContainer(private val useGL: Boolean) {
 
     init {
         if (useGL) {
-            glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.Core)
+            createGlCanvas()
         } else {
             canvas = Canvas()
         }
@@ -58,5 +58,29 @@ class CanvasContainer(private val useGL: Boolean) {
 
     fun repaintGl() {
         glCanvas.repaint()
+    }
+
+    private var disposed: Boolean = false
+    private var initialized: Boolean = false
+
+    /**
+     * Returns true if the canvas needs to be replaced
+     */
+    fun updateUsedState(state: Boolean): Boolean {
+        if (!state && useGL && !disposed && initialized) { // Free up resources for background canvases
+            glCanvas.dispose()
+            disposed = true
+            initialized = false
+        } else if (state && useGL && disposed && !initialized) { // Create new canvas instance, old one was disposed
+            createGlCanvas()
+            disposed = false
+            return true
+        }
+        return false
+    }
+
+    private fun createGlCanvas() {
+        glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.Core)
+        glCanvas.addOnInitEvent { initialized = true }
     }
 }

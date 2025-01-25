@@ -348,6 +348,11 @@ class GraphCanvas(
         }
     }
 
+    fun updateCanvas() {
+        children.removeAt(children.size - 2)
+        children.add(children.size - 1, canvas.node)
+    }
+
     fun updateXAxis(axis: ValueAxis<Number>) {
         xAxis.childrenUnmodifiable.removeListener(xAxisChildListener)
         unregisterCommon(xAxis)
