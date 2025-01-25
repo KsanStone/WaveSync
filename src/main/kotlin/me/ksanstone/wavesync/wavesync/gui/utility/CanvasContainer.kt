@@ -1,7 +1,7 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
+import com.huskerdev.grapl.gl.GLProfile
 import com.huskerdev.openglfx.canvas.GLCanvas
-import com.huskerdev.openglfx.canvas.GLProfile
 import com.huskerdev.openglfx.lwjgl.LWJGLExecutor
 import javafx.beans.property.ReadOnlyBooleanProperty
 import javafx.event.EventHandler
@@ -80,7 +80,7 @@ class CanvasContainer(private val useGL: Boolean) {
     }
 
     private fun createGlCanvas() {
-        glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.Core)
+        glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.CORE, swapBuffers = 1)
         glCanvas.addOnInitEvent { initialized = true }
     }
 }
