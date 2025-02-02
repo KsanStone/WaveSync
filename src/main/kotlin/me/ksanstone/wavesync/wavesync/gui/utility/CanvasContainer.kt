@@ -1,7 +1,8 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
-import com.huskerdev.grapl.gl.GLProfile
+//import com.huskerdev.grapl.gl.GLProfile
 import com.huskerdev.openglfx.canvas.GLCanvas
+import com.huskerdev.openglfx.canvas.GLProfile
 import com.huskerdev.openglfx.lwjgl.LWJGLExecutor
 import javafx.beans.property.ReadOnlyBooleanProperty
 import javafx.event.EventHandler
@@ -57,30 +58,31 @@ class CanvasContainer(private val useGL: Boolean) {
     }
 
     fun repaintGl() {
-        glCanvas.repaint()
+        if (!disposed && initialized)
+            glCanvas.repaint()
     }
 
     private var disposed: Boolean = false
     private var initialized: Boolean = false
 
     /**
-     * Returns true if the canvas needs to be replaced
+     * Returns the old canvas to be disposed
      */
-    fun updateUsedState(state: Boolean): Boolean {
+    fun updateUsedState(state: Boolean): Pair<GLCanvas?, Boolean> {
         if (!state && useGL && !disposed && initialized) { // Free up resources for background canvases
-            glCanvas.dispose()
             disposed = true
             initialized = false
+            return glCanvas to false
         } else if (state && useGL && disposed && !initialized) { // Create new canvas instance, old one was disposed
             createGlCanvas()
             disposed = false
-            return true
+            return null to true
         }
-        return false
+        return null to false
     }
 
     private fun createGlCanvas() {
-        glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.CORE, swapBuffers = 1)
+        glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.Core)
         glCanvas.addOnInitEvent { initialized = true }
     }
 }

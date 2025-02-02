@@ -118,7 +118,7 @@
         <dependency>
             <groupId>com.huskerdev</groupId>
             <artifactId>openglfx</artifactId>
-            <version>4.1.19</version>
+            <version>4.0.5</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jetbrains.kotlin</groupId>
@@ -129,7 +129,7 @@
         <dependency>
             <groupId>com.huskerdev</groupId>
             <artifactId>openglfx-lwjgl</artifactId>
-            <version>4.1.19</version>
+            <version>4.0.5</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.jetbrains.kotlin</groupId>

@@ -348,8 +348,11 @@ class GraphCanvas(
         }
     }
 
-    fun updateCanvas() {
+    fun removeCanvas() {
         children.removeAt(children.size - 2)
+    }
+
+    fun addCanvas() {
         children.add(children.size - 1, canvas.node)
     }
 

@@ -40,6 +40,7 @@ import org.lwjgl.opengl.GL30.*
 import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.locks.ReentrantLock
 
 class SpectrogramVisualizer : AutoCanvas(useGL = true) {
 
@@ -108,7 +109,9 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
         graphCanvas.tooltipEnabled.value = true
         graphCanvas.tooltipContainer.children.add(tooltip)
         tooltip.textProperty().bind(graphCanvas.tooltipPosition.map {
-            if (!::glData.isInitialized) { return@map "" }
+            if (!::glData.isInitialized) {
+                return@map ""
+            }
             val pos = when (orientation.value!!) {
                 Orientation.HORIZONTAL -> it.y
                 Orientation.VERTICAL -> it.x
@@ -118,7 +121,12 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
             val scaledBin2 = glData.mapper.forwards(pos.toInt()).plus(1).coerceAtMost(glData.mapper.to.last)
             val freq2 = FourierMath.frequencyOfBin(scaledBin2, captureRate.value, fftArraySize.value * 2)
 
-            return@map "${localizationService.formatNumber(freq1, "Hz")} ${localizationService.formatNumber(freq2, "Hz")}"
+            return@map "${localizationService.formatNumber(freq1, "Hz")} ${
+                localizationService.formatNumber(
+                    freq2,
+                    "Hz"
+                )
+            }"
         })
     }
 
@@ -230,6 +238,8 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
         var sendBuffer: Queue<FloatArray> = ConcurrentLinkedQueue(),
         var resizeBuffer: Boolean = false,
         var changeGradient: Boolean = true, // initial setup
+
+        var disposed: Boolean = false
     ) {
 
         companion object {
@@ -351,6 +361,7 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
         }
 
         fun dispose() {
+            disposed = true
             glDeleteTextures(sampleBuffer)
             glDeleteTextures(entryMapperBuffer)
             glDeleteTextures(gradientBuffer)
@@ -359,8 +370,7 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
         }
     }
 
-
-    override fun setupGl(canvas: GLCanvas) {
+    override fun setupGl(canvas: GLCanvas, drawLock: ReentrantLock) {
         canvas.addOnInitEvent {
             try {
                 glData = GlData(scalar)
@@ -372,7 +382,7 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
         }
 
         canvas.addOnRenderEvent {
-            if (source == null) return@addOnRenderEvent
+            if (source == null || glData.disposed) return@addOnRenderEvent
 
             val displayEntrySize = if (orientation.value == Orientation.VERTICAL) it.width else it.height
             var effectiveStripeLength = source!!.trimResultTo(fftArraySize.value * 2, effectiveHighPass.get())

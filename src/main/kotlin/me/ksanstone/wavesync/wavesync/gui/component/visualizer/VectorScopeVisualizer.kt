@@ -30,6 +30,7 @@ import org.lwjgl.opengl.GL30.*
 import org.lwjgl.opengl.GL43.GL_COMPUTE_SHADER
 import org.lwjgl.opengl.GL43.glDispatchCompute
 import java.nio.ByteBuffer
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.*
 
 class VectorScopeVisualizer : AutoCanvas(true) {
@@ -185,7 +186,7 @@ class VectorScopeVisualizer : AutoCanvas(true) {
         return GlData(lightnessTexture, framebuffer, colorTexture, colorFramebuffer)
     }
 
-    override fun setupGl(canvas: GLCanvas) {
+    override fun setupGl(canvas: GLCanvas, drawLock: ReentrantLock) {
         var glData = GlData()
         var dimProgram = 0
         var colorProgram = 0

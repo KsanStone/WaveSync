@@ -34,7 +34,10 @@ import me.ksanstone.wavesync.wavesync.service.RecordingModeService
 import me.ksanstone.wavesync.wavesync.utility.FPSCounter
 import org.kordamp.ikonli.javafx.FontIcon
 import org.springframework.beans.factory.getBean
+import org.springframework.util.concurrent.FutureUtils
+import java.lang.Thread.sleep
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.pow
 import kotlin.math.roundToLong
 
@@ -45,6 +48,7 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
     protected lateinit var infoPane: GridPane
     protected lateinit var controlPane: HBox
     protected val detachedWindowNameProperty: StringProperty = SimpleStringProperty("AutoCanvas")
+    protected val drawLock = ReentrantLock()
 
     protected var xAxis: ValueAxis<Number> = NumberAxis(0.0, 100.0, 10.0)
     protected var yAxis: ValueAxis<Number> = NumberAxis(0.0, 100.0, 10.0)
@@ -275,9 +279,9 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
 
         frameTime.set(deltaT)
         isDrawing.set(true)
-        if (useGL)
+        if (useGL) {
             this.canvasContainer.repaintGl()
-        else
+        } else
             this.draw(canvasContainer.graphicsContext2D, deltaT, now, canvasContainer.width, canvasContainer.height)
         isDrawing.set(false)
         fpsCounter.tick(deltaT)
@@ -286,20 +290,24 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
     protected abstract fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double)
 
     private fun initializeGl() {
-        if (useGL) setupGl(canvasContainer.node as GLCanvas)
+        if (useGL) setupGl(canvasContainer.node as GLCanvas, drawLock)
     }
 
-    protected open fun setupGl(canvas: GLCanvas) {}
+    protected open fun setupGl(canvas: GLCanvas, drawLock: ReentrantLock) {}
 
     private var state: Boolean = false
 
     private fun setUsedState(state: Boolean) {
         if (this.state != state) {
             this.state = state
-            val canvasNeedsReplacement = canvasContainer.updateUsedState(state)
-            if (canvasNeedsReplacement) {
-                graphCanvas.updateCanvas()
-                setupGl(canvasContainer.node as GLCanvas)
+            val res = canvasContainer.updateUsedState(state)
+            if (res.first != null) {
+                graphCanvas.removeCanvas()
+                res.first!!.dispose()
+            }
+            if (res.second) {
+                graphCanvas.addCanvas()
+                setupGl(canvasContainer.node as GLCanvas, drawLock)
             }
             usedState(state)
         }
