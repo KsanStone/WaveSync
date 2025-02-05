@@ -456,6 +456,19 @@ data class DragLayoutNode(
     }
 
     /**
+     * Get the node id's of all components.
+     * Used to check if the component with the given id is already present
+     * in the component tree to prevent re-adding it.
+     */
+    fun collectComponentIds(): List<String> {
+        val ids = mutableListOf<String>()
+        forEachComponent {
+            ids.add(it.nodeId)
+        }
+        return ids
+    }
+
+    /**
      * Recursively iterates over every javafx [Node] in this layout node
      *
      * @param callback Callback to be called on each node

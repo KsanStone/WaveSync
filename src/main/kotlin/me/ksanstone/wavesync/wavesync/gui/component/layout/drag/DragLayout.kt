@@ -50,6 +50,7 @@ class DragLayout : Pane() {
 
         drawCueRect.visibleProperty().bind(dragCueShowing)
         drawCueRect.styleClass.add("drag-cue")
+        drawCueRect.id = "drawCueRect"
         styleClass.setAll("drag-layout")
         stylesheets.add("/styles/drag-layout.css")
 
@@ -201,8 +202,15 @@ class DragLayout : Pane() {
      * Ensures all the layout child nodes are added to this component's children list
      */
     private fun updateChildren() {
-        this.children.clear()
+        // Retain only the components which still exist
+        // without removing them (prevent resets)
+        // Also remove the dividers
+        val expectedIds = layoutRoot.collectComponentIds().toSet()
+        val existingIds = children.map { it.id }.toSet()
+        children.retainAll { expectedIds.contains(it.id) }
+
         layoutRoot.forEachComponent {
+            // Reset listeners anyway as properties might have changed
             it.node.setOnDragDetected { _ ->
                 if (multiScreen.get()) {
                     gls.startTransaction(it.nodeId, this)
@@ -219,7 +227,10 @@ class DragLayout : Pane() {
             it.node.setOnMouseReleased { e ->
                 if (multiScreen.get()) gls.finishTransaction(Point2D(e.screenX, e.screenY))
             }
-            this.children.add(it.node)
+
+            // If this component is new, add it
+            if(!existingIds.contains(it.node.id))
+                this.children.add(it.node)
         }
 
         // Lay out dividers in depth to prevent overlap

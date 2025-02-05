@@ -9,6 +9,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutN
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DividerDragEndEvent
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DividerDragStartEvent
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DividerDraggedEvent
+import java.util.UUID
 
 class DragDivider(
     private val orientation: Orientation, private val parent: DragLayoutNode, private val dividerId: Int
@@ -22,6 +23,7 @@ class DragDivider(
         cue.maxWidth = Double.MAX_VALUE
         cue.maxHeight = Double.MAX_VALUE
         cue.isManaged = false
+        id = "divider-" + UUID.randomUUID().toString()
 
         cursor = when (orientation) {
             Orientation.HORIZONTAL -> Cursor.V_RESIZE

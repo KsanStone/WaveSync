@@ -7,12 +7,19 @@ import javafx.geometry.Side
 import javafx.scene.Node
 import java.util.*
 
-data class DragLayoutLeaf(
-    var component: Node? = null,
+class DragLayoutLeaf(
+    component: Node? = null,
     var layoutPreference: LeafLayoutPreference = LeafLayoutPreference(),
     var node: DragLayoutNode? = null,
-    var id: String = UUID.randomUUID().toString(),
+    var id: String = "leaf-" + UUID.randomUUID().toString(),
 ) {
+
+    private var _component: Node? = component
+
+    var component: Node?
+        get() = _component
+        set(value) { _component = value; adjustComponentId() }
+
 
     var parent: DragLayoutNode? = null
     var boundCache: Rectangle2D? = null
@@ -21,11 +28,17 @@ data class DragLayoutLeaf(
         if ((isComponent && isNode) || (!isComponent && !isNode))
             throw IllegalArgumentException("The leaf must contain exactly one type")
         adjustParent()
+        adjustComponentId()
     }
 
     private fun adjustParent() {
         if (isNode)
             this.node!!.parent = this
+    }
+
+    private fun adjustComponentId() {
+        if (isComponent)
+            component!!.id = id
     }
 
     private fun findOrientedParent(dir: Pair<Orientation, Int>): Pair<DragLayoutNode, Int> {
