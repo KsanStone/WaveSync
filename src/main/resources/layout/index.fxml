@@ -28,6 +28,7 @@
                             </graphic>
                         </Button>
                         <Label fx:id="deviceInfoLabel" text="No device" HBox.hgrow="SOMETIMES"/>
+                        <Label fx:id="fpsInfoLabel" HBox.hgrow="SOMETIMES"/>
                         <Label maxWidth="Infinity" HBox.hgrow="ALWAYS"/> <!-- Padding -->
                         <MenuButton mnemonicParsing="false" text="%nav.window" fx:id="componentToggles">
                             <items>

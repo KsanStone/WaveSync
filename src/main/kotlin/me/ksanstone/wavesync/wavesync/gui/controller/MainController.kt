@@ -7,7 +7,9 @@ import javafx.fxml.Initializable
 import javafx.scene.Node
 import javafx.scene.control.*
 import javafx.scene.layout.HBox
+import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.SUPPORTED_CHANNELS
+import me.ksanstone.wavesync.wavesync.WaveSyncApplication
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
@@ -16,6 +18,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.LeafLayoutP
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.*
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
+import me.ksanstone.wavesync.wavesync.gui.utility.roundTo
 import me.ksanstone.wavesync.wavesync.service.*
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_BAR_VISUALIZER_ID
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_EXTENDED_WAVEFORM_VISUALIZER_ID
@@ -47,6 +50,9 @@ class MainController : Initializable {
 
     @FXML
     lateinit var deviceInfoLabel: Label
+
+    @FXML
+    lateinit var fpsInfoLabel: Label
 
     private val deviceList: MutableList<SupportedCaptureSource> = ArrayList()
     private var audioCaptureService: AudioCaptureService
@@ -331,6 +337,22 @@ class MainController : Initializable {
         bottomBar.children.add(masterVolumeVisualizer)
         bottomBar.visibleProperty().bind(recordingModeService.recordingMode.not())
         bottomBar.managedProperty().bind(bottomBar.visibleProperty())
+
+        fpsInfoLabel.textProperty().bind(
+            WaveSyncApplication.counter.averagedFrameTimeProperty.map {
+                if (!infoShown.value) return@map ""
+                val frameTime = "${
+                    Duration.millis(
+                        WaveSyncApplication.counter.averagedFrameTimeProperty.value.times(1000).roundTo(1)
+                    )
+                } ${
+                    Duration.millis(
+                        WaveSyncApplication.counter.maxFrameTimeProperty.value.times(1000).roundTo(1)
+                    )
+                } ${Duration.millis(WaveSyncApplication.counter.minFrameTimeProperty.value.times(1000).roundTo(1))}"
+                return@map String.format("%.2f FPS %s", WaveSyncApplication.counter.current.value, frameTime)
+            }
+        )
     }
 
     companion object {

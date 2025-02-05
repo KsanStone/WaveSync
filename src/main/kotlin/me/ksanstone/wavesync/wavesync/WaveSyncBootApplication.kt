@@ -28,18 +28,17 @@ open class WaveSyncBootApplication(
 
     @PostConstruct
     fun initialize() {
-        CompletableFuture.runAsync {
-            targetRefreshRate = findHighestRefreshRate()
-            logger.info("Detected framerate: $targetRefreshRate")
-        }
+        CompletableFuture.runAsync { findHighestRefreshRate() }
     }
 
     fun findHighestRefreshRate(): Int {
         return try {
             val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
             val gs = ge.screenDevices
-            gs.map { it.displayMode.refreshRate }.filter { it != DisplayMode.REFRESH_RATE_UNKNOWN }.maxOrNull()
+            val detected = gs.map { it.displayMode.refreshRate }.filter { it != DisplayMode.REFRESH_RATE_UNKNOWN }.maxOrNull()
                 ?: DEFAULT_REFRESH_RATE
+            logger.info("Detected: $detected FPS Pulse: ${WaveSyncApplication.jfxPulseFrequency}/sec")
+            detected.coerceAtMost(WaveSyncApplication.jfxPulseFrequency.toInt())
         } catch (e: HeadlessException) {
             logger.warn("Headless exception")
             DEFAULT_REFRESH_RATE
