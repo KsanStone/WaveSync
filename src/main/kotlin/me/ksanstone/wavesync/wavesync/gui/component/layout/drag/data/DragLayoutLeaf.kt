@@ -5,21 +5,26 @@ import javafx.geometry.Point2D
 import javafx.geometry.Rectangle2D
 import javafx.geometry.Side
 import javafx.scene.Node
+import org.slf4j.LoggerFactory
 import java.util.*
 
 class DragLayoutLeaf(
     component: Node? = null,
     var layoutPreference: LeafLayoutPreference = LeafLayoutPreference(),
     var node: DragLayoutNode? = null,
-    var id: String = "leaf-" + UUID.randomUUID().toString(),
+    id: String = "leaf-" + UUID.randomUUID().toString(),
 ) {
 
     private var _component: Node? = component
+    private var _id: String = id
 
     var component: Node?
         get() = _component
         set(value) { _component = value; adjustComponentId() }
 
+    var id: String
+        get() = _id
+        set(value) { _id = value; adjustComponentId() }
 
     var parent: DragLayoutNode? = null
     var boundCache: Rectangle2D? = null
@@ -86,16 +91,22 @@ class DragLayoutLeaf(
     }
 
     fun swapOnto(other: DragLayoutLeaf) {
+        logger.debug("#swapOnto this={} {} other={} {}", this.id, this.component?.id, other.id, other.component?.id)
+
         val tempNode = other.node
         val tempComp = other.component
         val tempId = other.id
         val tempParent = other.parent
         val tempPreference = other.layoutPreference
+
+        other.component = null
         other.node = node
         other.component = component
         other.id = id
         other.parent = tempParent
         other.layoutPreference = layoutPreference
+
+        component = null // prevent bogus id's
         id = tempId
         node = tempNode
         component = tempComp
@@ -103,6 +114,8 @@ class DragLayoutLeaf(
         layoutPreference = tempPreference
         this.adjustParent()
         other.adjustParent()
+
+        logger.debug("  swapped this={} {} other={} {}", this.id, this.component?.id, other.id, other.component?.id)
     }
 
     /**
@@ -143,4 +156,8 @@ class DragLayoutLeaf(
 
     val isNode: Boolean
         get() = node != null
+
+    companion object {
+        private val logger = LoggerFactory.getLogger("DragLayoutLeaf")
+    }
 }

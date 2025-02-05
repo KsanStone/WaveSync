@@ -22,6 +22,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.LeafLayoutP
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.*
 import me.ksanstone.wavesync.wavesync.service.GlobalLayoutService
 import me.ksanstone.wavesync.wavesync.utility.EventEmitter
+import org.slf4j.LoggerFactory
 import java.lang.ref.WeakReference
 import java.util.function.Consumer
 import java.util.stream.Collectors
@@ -32,6 +33,7 @@ class DragLayout : Pane() {
     var layoutRoot: DragLayoutNode = DragLayoutNode("root", layout = WeakReference(this))
     var justifyModeProperty: SimpleObjectProperty<JustifyMode> = SimpleObjectProperty(JustifyMode.NONE)
 
+    private val logger = LoggerFactory.getLogger("DragLayout")
     private val dragCueShowing = SimpleBooleanProperty(false)
     private val drawCueRect: Pane = Pane()
     private val layoutLock = Object()
@@ -206,7 +208,10 @@ class DragLayout : Pane() {
         // without removing them (prevent resets)
         // Also remove the dividers
         val expectedIds = layoutRoot.collectComponentIds().toSet()
-        val existingIds = children.map { it.id }.toSet()
+        val existingIds =
+            children.filtered { !it.id.startsWith("divider-") }.filtered { it.id != "drawCueRect" }.map { it.id }
+                .toSet()
+        logger.debug("#updateChildren expectedIds={} existingIds={}", expectedIds, existingIds)
         children.retainAll { expectedIds.contains(it.id) }
 
         layoutRoot.forEachComponent {
@@ -229,9 +234,12 @@ class DragLayout : Pane() {
             }
 
             // If this component is new, add it
-            if(!existingIds.contains(it.node.id))
+            if (!existingIds.contains(it.node.id)) {
                 this.children.add(it.node)
+                logger.debug("#updateChildren ++ {}", it.node.id)
+            }
         }
+
 
         // Lay out dividers in depth to prevent overlap
         val dividers = layoutRoot.collectDividers()

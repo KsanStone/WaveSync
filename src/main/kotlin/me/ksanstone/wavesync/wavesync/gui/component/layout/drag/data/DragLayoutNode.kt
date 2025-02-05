@@ -13,6 +13,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.DragLayoutEvent
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.event.LayoutChangeEvent
 import me.ksanstone.wavesync.wavesync.utility.EventEmitter
+import org.slf4j.LoggerFactory
 import java.lang.ref.WeakReference
 import java.util.*
 import java.util.function.Consumer
@@ -464,6 +465,7 @@ data class DragLayoutNode(
         val ids = mutableListOf<String>()
         forEachComponent {
             ids.add(it.nodeId)
+            if (it.nodeId != it.node.id) logger.debug("Node-Component ID-Mismatch: leaf {} -> {}", it.nodeId, it.node.id)
         }
         return ids
     }
@@ -771,6 +773,7 @@ data class DragLayoutNode(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger("DragLayoutNode")
 
         /**
          * Generate a list of evenly spaced points in the range [0,1],
