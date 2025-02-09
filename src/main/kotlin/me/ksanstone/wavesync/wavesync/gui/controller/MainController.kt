@@ -11,6 +11,7 @@ import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.SUPPORTED_CHANNELS
 import me.ksanstone.wavesync.wavesync.WaveSyncApplication
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
+import me.ksanstone.wavesync.wavesync.gui.component.control.LayoutPresetSelector
 import me.ksanstone.wavesync.wavesync.gui.component.info.FFTInfo
 import me.ksanstone.wavesync.wavesync.gui.component.info.RuntimeInfo
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
@@ -89,10 +90,10 @@ class MainController : Initializable {
 
     @FXML
     fun audioDevicePicker() {
-        setByName(audioDeviceListComboBox.value ?: "")
+        setAudioSourceByName(audioDeviceListComboBox.value ?: "")
     }
 
-    private fun setByName(name: String) {
+    private fun setAudioSourceByName(name: String) {
         val source = deviceList.find { it.name == name } ?: return
         CompletableFuture.runAsync {
             lastDeviceId = source.id
@@ -142,7 +143,7 @@ class MainController : Initializable {
                 return@runAsync
             }
 
-            setByName(similarDevice.name)
+            setAudioSourceByName(similarDevice.name)
         }
         isRefreshing.set(false)
     }
@@ -157,7 +158,7 @@ class MainController : Initializable {
     private fun selectDefaultDevice() {
         val default = audioCaptureService.findDefaultAudioSource(deviceList)
         if (default != null) {
-            setByName(default.name)
+            setAudioSourceByName(default.name)
         }
     }
 
@@ -167,7 +168,7 @@ class MainController : Initializable {
         lateinit var check: CheckMenuItem
     }
 
-    private fun setupComponent(layout: DragLayout, component: CompComponentToggle, nested: Boolean): MenuItem {
+    private fun setupComponent(component: CompComponentToggle, nested: Boolean): MenuItem {
         val item = if (nested) {
             val label = CheckMenuItem()
             label.textProperty().bind(audioCaptureService.getChannelLabelProperty(component.channelId).map { it.label })
@@ -182,13 +183,12 @@ class MainController : Initializable {
         component.check = item
         component.check.selectedProperty().set(globalLayoutService.queryComponentOfExists(component.id))
         component.check.selectedProperty().addListener { _, _, v ->
-            if (v) layout.addComponent(
+            if (v) globalLayoutService.addComponent(
                 component.node,
                 component.id,
                 layoutService.nodeFactory.createNode(component.id)!!.layoutPreference
             )
-            else globalLayoutService.removeComponent(component.id)
-            layout.fullUpdate()
+            else globalLayoutService.removeComponent(component.id, true)
         }
         return item
     }
@@ -208,15 +208,15 @@ class MainController : Initializable {
         }
     }
 
-    private fun initializeWindowControls(layout: DragLayout, list: List<List<CompComponentToggle>>) {
+    private fun initializeWindowControls(list: List<List<CompComponentToggle>>) {
         list.forEach {
             if (it.size == 1) {
-                componentToggles.items.add(setupComponent(layout, it[0], false))
+                componentToggles.items.add(setupComponent(it[0], false))
             } else {
                 val menu = Menu(it[0].menuName)
                 val label = FontIcon()
                 for (child in it) {
-                    val comp = setupComponent(layout, child, true)
+                    val comp = setupComponent(child, true)
                     (comp as CheckMenuItem).selectedProperty().addListener { _, _, _ ->
                         updateLabel(label, menu)
                     }
@@ -266,6 +266,11 @@ class MainController : Initializable {
         }
     }
 
+    fun replaceLayout(newCentral: DragLayout) {
+        visualizerPane.items.clear()
+        visualizerPane.items.add(newCentral)
+    }
+
     @FXML
     override fun initialize(location: URL?, resources: ResourceBundle?) {
         this.resources = resources!!
@@ -313,13 +318,9 @@ class MainController : Initializable {
 
         preferenceService.registerProperty(infoShown, "graphInfoShown", this.javaClass)
 
-        layoutService.loadLayouts()
-        val layout = layoutService.getMainLayout()
-
-        initializeWindowControls(layout, list)
-        visualizerPane.items.add(layout)
-        globalLayoutService.noAutoRemove.add(layout)
         globalLayoutService.loadLayouts()
+        initializeWindowControls(list)
+        visualizerPane.items.add(globalLayoutService.mainLayout)
 
         val masterVolumeVisualizer = VolumeVisualizer()
         audioCaptureService.channelVolumes.listeners.add { store ->
@@ -333,6 +334,7 @@ class MainController : Initializable {
         quickInfo.managedProperty().bind(quickInfo.visibleProperty())
         quickInfo.maxHeight = 20.0
         quickInfo.maxWidth = 100.0
+        bottomBar.children.add(LayoutPresetSelector())
         bottomBar.children.add(quickInfo)
         bottomBar.children.add(masterVolumeVisualizer)
         bottomBar.visibleProperty().bind(recordingModeService.recordingMode.not())

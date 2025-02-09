@@ -24,7 +24,7 @@ class PreferenceService(
         rootPreferences = Preferences.userNodeForPackage(this.javaClass)
     }
 
-    private fun getPreferences(clazz: Class<*>? = null, id: String = DEFAULT_ID): Preferences {
+    fun getPreferences(clazz: Class<*>? = null, id: String = DEFAULT_ID): Preferences {
         if (clazz == null) return rootPreferences
         return Preferences.userNodeForPackage(clazz).node(clazz.simpleName).node("-$id-")
     }

@@ -15,11 +15,13 @@ import javafx.stage.Stage
 import javafx.stage.Window
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutNode
+import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.LeafLayoutPreference
 import me.ksanstone.wavesync.wavesync.gui.initializer.AutoDisposalMode
 import me.ksanstone.wavesync.wavesync.gui.initializer.WaveSyncStageInitializer
 import org.springframework.stereotype.Service
 import java.util.*
 import java.util.function.Consumer
+import kotlin.properties.Delegates
 
 @Service
 open class GlobalLayoutService(
@@ -33,6 +35,8 @@ open class GlobalLayoutService(
     var noAutoRemove = mutableSetOf<DragLayout>()
     private val stageMap = mutableMapOf<DragLayout, Stage>()
     val layoutRemovalListeners = mutableListOf<Consumer<DragLayout>>()
+
+    var mainLayout: DragLayout by Delegates.notNull()
 
     @PostConstruct
     fun initialize() {
@@ -158,18 +162,20 @@ open class GlobalLayoutService(
         }
     }
 
-    fun loadLayouts() {
+    fun loadLayouts(id: String = "layout") {
+        layoutStorageService.loadLayouts(id)
+        mainLayout = layoutStorageService.getMainLayout()
+
         Platform.runLater {
-            layoutStorageService.layouts.stream().filter { it.windowId != null }.forEach(this::reOpenSideLayout)
+            layoutStorageService.activeLayouts.stream().filter { it.windowId != null }.forEach(this::reOpenSideLayout)
         }
     }
-
 
     /**
      * Same deal as DragLayoutNode.queryComponentOfClassExists buf across all layouts
      */
     fun queryComponentOfExists(id: String): Boolean {
-        for (layout in layoutStorageService.layouts) {
+        for (layout in layoutStorageService.activeLayouts) {
             if (layout.layout.layoutRoot.queryComponentExists(id)) return true
         }
         return false
@@ -178,13 +184,22 @@ open class GlobalLayoutService(
     /**
      * Same deal as DragLayoutNode.removeComponent buf across all layouts
      */
-    fun removeComponent(id: String) {
-        for (layout in layoutStorageService.layouts) {
+    fun removeComponent(id: String, performFullUpdate: Boolean = false) {
+        for (layout in layoutStorageService.activeLayouts) {
             if (layout.layout.layoutRoot.removeComponent(id)) {
+                if (performFullUpdate) layout.layout.fullUpdate()
                 tryRemoveEmpty(layout.layout)
                 return
             }
         }
+    }
+
+    /**
+     * Adds a component to the main layout
+     */
+    fun addComponent(node: Node, id: String, layoutPreference: LeafLayoutPreference = LeafLayoutPreference()) {
+        mainLayout.addComponent(node, id, layoutPreference)
+        mainLayout.fullUpdate()
     }
 
     private fun reOpenSideLayout(appLayout: AppLayout) {

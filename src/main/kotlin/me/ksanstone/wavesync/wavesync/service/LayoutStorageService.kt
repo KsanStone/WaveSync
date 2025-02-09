@@ -1,9 +1,8 @@
 package me.ksanstone.wavesync.wavesync.service
 
 import jakarta.annotation.PostConstruct
-import javafx.beans.property.SimpleStringProperty
-import javafx.beans.property.StringProperty
 import javafx.collections.FXCollections
+import javafx.collections.MapChangeListener
 import javafx.geometry.Orientation
 import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.DragLayout
@@ -22,15 +21,23 @@ open class LayoutStorageService(
 ) {
 
     private val logger = LoggerFactory.getLogger(this.javaClass)
-    private val layoutStorageProperty: StringProperty = SimpleStringProperty("")
-
     lateinit var nodeFactory: DragLayoutSerializerService.NodeFactory
 
-    val layouts: MutableList<AppLayout> = mutableListOf()
+    val storedLayouts = FXCollections.observableHashMap<String, String>()
+    var activeLayoutSetId: String = "layout"
+    val activeLayouts: MutableList<AppLayout> = mutableListOf()
 
     @PostConstruct
     fun init() {
-        preferenceService.registerProperty(layoutStorageProperty, "layout", this::class.java, "main")
+        val preferences = preferenceService.getPreferences(this::class.java).also {
+            it.keys().forEach { child -> it[child, null]?.apply { storedLayouts[child] = this } }
+        }
+
+        storedLayouts.addListener(MapChangeListener {
+            if (it.wasAdded()) preferences.put(it.key, it.valueAdded)
+            if (it.wasRemoved()) preferences.remove(it.key)
+        })
+        logger.debug("Fetched ${storedLayouts.size} layouts")
     }
 
     fun registerNodeFactory(
@@ -39,19 +46,25 @@ open class LayoutStorageService(
         this.nodeFactory = factory
     }
 
-    fun loadLayouts() {
+    fun loadLayouts(id: String = activeLayoutSetId) {
         try {
-            val layoutData = layoutSerializerService.deserializeFull(layoutStorageProperty.get(), nodeFactory)
+            activeLayouts.clear()
+            logger.debug("Loading layout: $id")
+            val layoutData = layoutSerializerService.deserializeFull(storedLayouts[id]!!, nodeFactory)
             layoutData.forEach {
-                layouts.add(
+                activeLayouts.add(
                     AppLayout(it.first, it.second, createLayout(it.third.toLeaf())).apply {
                         this.layout.addLayoutChangeListener { save() }
                     }
                 )
             }
+            activeLayoutSetId = id
         } catch (e: Exception) {
             if (e.message != "Input cannot be empty")
                 logger.warn("Layout load fail", e)
+            logger.debug("Creating a default layout")
+            val newMain = getMainLayout()
+            save()
         }
     }
 
@@ -72,7 +85,7 @@ open class LayoutStorageService(
     }
 
     fun getMainLayout(): DragLayout {
-        return layouts.stream().filter { it.id == "main" }.findFirst().orElseGet {
+        return activeLayouts.stream().filter { it.id == "main" }.findFirst().orElseGet {
             val node = constructDefaultLayout(
                 nodeFactory.createNode("$MAIN_WAVEFORM_VISUALIZER_ID-Channel-0")?.node as WaveformVisualizer,
                 nodeFactory.createNode("$MAIN_BAR_VISUALIZER_ID-Channel-0")?.node as BarVisualizer
@@ -82,7 +95,7 @@ open class LayoutStorageService(
             layout.layoutRoot.simplify()
             AppLayout("main", null, layout).also { al ->
                 layout.addLayoutChangeListener { layoutChanged() }
-                layouts.add(al)
+                activeLayouts.add(al)
             }
         }.layout
     }
@@ -91,25 +104,25 @@ open class LayoutStorageService(
         val newLayout = createLayout(cutNode)
         AppLayout(windowId, windowId, newLayout).also { al ->
             newLayout.addLayoutChangeListener { layoutChanged() }
-            layouts.add(al)
+            activeLayouts.add(al)
         }
         save()
         return newLayout
     }
 
     fun destructLayout(layout: DragLayout) {
-        layouts.removeIf { it.layout == layout }
+        activeLayouts.removeIf { it.layout == layout }
         save()
     }
 
     fun getLayout(stage: Stage): DragLayout? {
         val id = stageSizingService.findId(stage) ?: return null
-        return layouts.find { it.id == id }?.layout
+        return activeLayouts.find { it.id == id }?.layout
     }
 
     fun destructLayout(windowId: String): DragLayout? {
         var ret: DragLayout? = null
-        layouts.removeIf {
+        activeLayouts.removeIf {
             if (it.windowId == windowId) {
                 ret = it.layout; return@removeIf true
             }
@@ -127,12 +140,13 @@ open class LayoutStorageService(
     }
 
     private fun layoutChanged() {
-        save()
+        save(activeLayoutSetId)
     }
 
-    private fun save() {
+    fun save(targetId: String = "layout") {
         logger.trace("Saving layout")
-        layoutStorageProperty.set(layoutSerializerService.serializeFull(layouts))
+        storedLayouts[targetId] = layoutSerializerService.serializeFull(activeLayouts)
+        activeLayoutSetId = targetId
     }
 
     companion object {
