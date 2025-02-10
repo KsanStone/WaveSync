@@ -191,7 +191,6 @@ class VectorScopeVisualizer : AutoCanvas(true) {
         var dimProgram = 0
         var colorProgram = 0
 
-
         canvas.addOnInitEvent { _ ->
             glData = createImageBuffers(800, 800)
 

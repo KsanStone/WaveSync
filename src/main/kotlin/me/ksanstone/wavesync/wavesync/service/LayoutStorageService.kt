@@ -34,8 +34,14 @@ open class LayoutStorageService(
         }
 
         storedLayouts.addListener(MapChangeListener {
-            if (it.wasAdded()) preferences.put(it.key, it.valueAdded)
-            if (it.wasRemoved()) preferences.remove(it.key)
+            if (it.wasRemoved()) {
+                logger.info("--: ${it.key}")
+                preferences.remove(it.key)
+            }
+            if (it.wasAdded()) {
+                logger.info("++: ${it.key}")
+                preferences.put(it.key, it.valueAdded)
+            }
         })
         logger.debug("Fetched ${storedLayouts.size} layouts")
     }
@@ -140,7 +146,7 @@ open class LayoutStorageService(
     }
 
     private fun layoutChanged() {
-        save(activeLayoutSetId)
+        save() // save to the default, presets are presets
     }
 
     fun save(targetId: String = "layout") {

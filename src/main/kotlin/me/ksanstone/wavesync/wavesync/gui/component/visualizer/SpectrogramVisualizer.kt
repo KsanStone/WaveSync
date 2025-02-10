@@ -41,6 +41,7 @@ import java.nio.ByteBuffer
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.time.measureTime
 
 class SpectrogramVisualizer : AutoCanvas(useGL = true) {
 
@@ -372,13 +373,15 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
 
     override fun setupGl(canvas: GLCanvas, drawLock: ReentrantLock) {
         canvas.addOnInitEvent {
-            try {
-                glData = GlData(scalar)
-                updateBuffer()
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                Platform.exit()
-            }
+            logger.debug("Spectrogram glInit {}", measureTime {
+                try {
+                    glData = GlData(scalar)
+                    updateBuffer()
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                    Platform.exit()
+                }
+            })
         }
 
         canvas.addOnRenderEvent {

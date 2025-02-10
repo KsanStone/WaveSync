@@ -33,16 +33,18 @@ import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.RecordingModeService
 import me.ksanstone.wavesync.wavesync.utility.FPSCounter
 import org.kordamp.ikonli.javafx.FontIcon
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.getBean
-import org.springframework.util.concurrent.FutureUtils
-import java.lang.Thread.sleep
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.pow
 import kotlin.math.roundToLong
+import kotlin.time.measureTime
 
 
 abstract class AutoCanvas(private val useGL: Boolean = false, private val detachable: Boolean = false) : AnchorPane() {
+
+    protected val logger = LoggerFactory.getLogger(javaClass)
 
     protected var canvasContainer: CanvasContainer = CanvasContainer(useGL)
     protected lateinit var infoPane: GridPane
@@ -290,7 +292,13 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
     protected abstract fun draw(gc: GraphicsContext, deltaT: Double, now: Long, width: Double, height: Double)
 
     private fun initializeGl() {
-        if (useGL) setupGl(canvasContainer.node as GLCanvas, drawLock)
+        if (useGL) doSetupGl(canvasContainer.node as GLCanvas, drawLock)
+    }
+
+    private fun doSetupGl(canvas: GLCanvas, drawLock: ReentrantLock) {
+        logger.debug("setupGl took: {}", measureTime {
+            setupGl(canvas, drawLock)
+        })
     }
 
     protected open fun setupGl(canvas: GLCanvas, drawLock: ReentrantLock) {}
@@ -307,7 +315,7 @@ abstract class AutoCanvas(private val useGL: Boolean = false, private val detach
             }
             if (res.second) {
                 graphCanvas.addCanvas()
-                setupGl(canvasContainer.node as GLCanvas, drawLock)
+                doSetupGl(canvasContainer.node as GLCanvas, drawLock)
             }
             usedState(state)
         }

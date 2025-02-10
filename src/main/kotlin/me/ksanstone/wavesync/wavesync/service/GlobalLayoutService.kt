@@ -18,6 +18,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.DragLayoutN
 import me.ksanstone.wavesync.wavesync.gui.component.layout.drag.data.LeafLayoutPreference
 import me.ksanstone.wavesync.wavesync.gui.initializer.AutoDisposalMode
 import me.ksanstone.wavesync.wavesync.gui.initializer.WaveSyncStageInitializer
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.util.*
 import java.util.function.Consumer
@@ -30,12 +31,19 @@ open class GlobalLayoutService(
     private val stageSizingService: StageSizingService
 ) {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     private lateinit var windowList: ObservableList<Window>
     private var currentTransaction: NodeTransaction? = null
     var noAutoRemove = mutableSetOf<DragLayout>()
     private val stageMap = mutableMapOf<DragLayout, Stage>()
     val layoutRemovalListeners = mutableListOf<Consumer<DragLayout>>()
 
+    /**
+     * When true, suppresses layout saving when closing previous layout windows
+     */
+    @Volatile
+    var isInTransition: Boolean = false
     var mainLayout: DragLayout by Delegates.notNull()
 
     @PostConstruct
@@ -163,11 +171,30 @@ open class GlobalLayoutService(
     }
 
     fun loadLayouts(id: String = "layout") {
-        layoutStorageService.loadLayouts(id)
-        mainLayout = layoutStorageService.getMainLayout()
+        try {
+            isInTransition = true
+            // toList needed to avoid concurrent modifications...
+            stageMap.keys.toList().forEach {
+                if (it != mainLayout) {
+                    stageMap[it]!!.hide()
+                    logger.debug("Hiding auxiliary stage")
+                }
+            }
 
-        Platform.runLater {
-            layoutStorageService.activeLayouts.stream().filter { it.windowId != null }.forEach(this::reOpenSideLayout)
+            layoutStorageService.loadLayouts(id)
+            mainLayout = layoutStorageService.getMainLayout()
+            noAutoRemove.clear()
+            noAutoRemove.add(mainLayout)
+
+            Platform.runLater {
+                layoutStorageService.activeLayouts.stream().filter { it.windowId != null }
+                    .forEach(this::reOpenSideLayout)
+            }
+        } catch (e: Exception) {
+            logger.error("#loadLayouts failed in GLS")
+            e.printStackTrace()
+        } finally {
+            isInTransition = false
         }
     }
 
@@ -206,13 +233,18 @@ open class GlobalLayoutService(
         val stage = waveSyncStageInitializer.createGeneralPurposeAppFrame(
             appLayout.windowId!!,
             AutoDisposalMode.USER
-        ) { layoutStorageService.destructLayout(appLayout.layout); fireLayoutGone(appLayout.layout) }
+        ) {
+            if (!isInTransition) layoutStorageService.destructLayout(appLayout.layout);
+            fireLayoutGone(appLayout.layout)
+        }
+        stageMap[appLayout.layout] = stage
         stage.scene = Scene(appLayout.layout)
         stage.show()
     }
 
     private fun fireLayoutGone(layout: DragLayout) {
         layoutRemovalListeners.forEach { it.accept(layout) }
+        stageMap.remove(layout)
     }
 
     data class NodeTransaction(

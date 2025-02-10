@@ -1,8 +1,8 @@
 package me.ksanstone.wavesync.wavesync.gui.utility
 
-//import com.huskerdev.grapl.gl.GLProfile
 import com.huskerdev.openglfx.canvas.GLCanvas
 import com.huskerdev.openglfx.canvas.GLProfile
+import com.huskerdev.openglfx.internal.GLInteropType
 import com.huskerdev.openglfx.lwjgl.LWJGLExecutor
 import javafx.beans.property.ReadOnlyBooleanProperty
 import javafx.event.EventHandler
@@ -11,8 +11,12 @@ import javafx.scene.Node
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
 import javafx.scene.input.MouseEvent
+import org.slf4j.LoggerFactory
+import kotlin.time.measureTime
 
 class CanvasContainer(private val useGL: Boolean) {
+
+    private val logger = LoggerFactory.getLogger(CanvasContainer::class.java)
 
     private lateinit var canvas: Canvas
     private lateinit var glCanvas: GLCanvas
@@ -82,7 +86,9 @@ class CanvasContainer(private val useGL: Boolean) {
     }
 
     private fun createGlCanvas() {
-        glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.Core)
-        glCanvas.addOnInitEvent { initialized = true }
+        logger.debug("Supported Interop: {}, Took: {}", GLInteropType.supported, measureTime {
+            glCanvas = GLCanvas(LWJGLExecutor.LWJGL_MODULE, profile = GLProfile.Core)
+            glCanvas.addOnInitEvent { initialized = true }
+        })
     }
 }
