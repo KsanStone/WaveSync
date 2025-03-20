@@ -8,8 +8,8 @@
       <TextField fx:id="field" layoutX="138.0" layoutY="91.0" prefHeight="25.0" prefWidth="325.0" promptText="Preset name" AnchorPane.leftAnchor="25.0" AnchorPane.rightAnchor="25.0" AnchorPane.topAnchor="25.0" />
       <ButtonBar layoutX="138.0" layoutY="346.0" prefHeight="40.0" prefWidth="453.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0">
         <buttons>
-          <Button cancelButton="true" mnemonicParsing="false" onAction="#cancel" text="Button" />
-            <Button defaultButton="true" mnemonicParsing="false" onAction="#create" text="Button" />
+          <Button cancelButton="true" mnemonicParsing="false" onAction="#cancel" text="Cancel" />
+            <Button defaultButton="true" mnemonicParsing="false" onAction="#create" text="Create" />
         </buttons>
       </ButtonBar>
    </children>

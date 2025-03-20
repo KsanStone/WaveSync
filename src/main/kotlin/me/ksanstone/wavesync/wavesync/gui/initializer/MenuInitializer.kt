@@ -9,6 +9,7 @@ import javafx.scene.layout.AnchorPane
 import javafx.stage.Modality
 import javafx.stage.Stage
 import me.ksanstone.wavesync.wavesync.WaveSyncApplication
+import me.ksanstone.wavesync.wavesync.gui.utility.ResettableForm
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import org.springframework.stereotype.Component
 
@@ -18,7 +19,7 @@ class MenuInitializer(
     private val waveSyncStageInitializer: WaveSyncStageInitializer
 ) {
 
-    private var dialogWindows: MutableMap<String, Stage> = mutableMapOf()
+    private var dialogWindows: MutableMap<String, Pair<Stage, FXMLLoader>> = mutableMapOf()
 
     @Synchronized
     fun <T> showPopupMenuWithController(fxml: String, title: String = "Dialog"): Pair<Stage, T> {
@@ -29,14 +30,17 @@ class MenuInitializer(
     }
 
     @Synchronized
-    fun showPopupMenu(fxml: String, title: String = "Dialog") {
+    fun showPopupMenu(fxml: String, title: String = "Dialog", reset: Boolean = false) {
         if (dialogWindows.containsKey(fxml)) {
-            dialogWindows[fxml]!!.show()
+            if (reset && dialogWindows[fxml]!!.second.getController<Any>() is ResettableForm) {
+                dialogWindows[fxml]!!.second.getController<ResettableForm>().reset()
+            }
+            dialogWindows[fxml]!!.first.show()
         } else {
-            val stage = createDialogStage(fxml, title).first
+            val stage = createDialogStage(fxml, title)
             dialogWindows[fxml] = stage
-            waveSyncStageInitializer.customize(stage)
-            stage.show()
+            waveSyncStageInitializer.customize(stage.first)
+            stage.first.show()
         }
     }
 

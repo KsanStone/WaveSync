@@ -8,19 +8,36 @@ import org.springframework.stereotype.Service
 @Service
 class LayoutPresetService(
     val storageService: LayoutStorageService,
-    val globalLayoutService: GlobalLayoutService
+    val globalLayoutService: GlobalLayoutService,
+    val layoutSerializerService: DragLayoutSerializerService,
 ) {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     fun deletePreset(name: String) {
-        if (storageService.storedLayouts.remove(name) != null)
-            logger.info("Removed layout preset: $name")
+        if (storageService.storedLayouts.remove(name) != null) logger.info("Removed layout preset: $name")
     }
 
     fun saveCurrentAsPreset(name: String) {
         storageService.save(name)
         logger.info("Saved current layout as preset: $name")
+    }
+
+    /**
+     * Export the preset in JSON format.
+     */
+    fun exportPreset(name: String): String? {
+        return storageService.storedLayouts[name]
+    }
+
+    /**
+     * Import a preset JSON, replacing an existing layout if it exists.
+     * @throws IllegalArgumentException if the content and/or name is invalid
+     * @throws NullPointerException if any leaf contains a component of an unknown, id
+     */
+    fun importPreset(name: String, content: String) {
+        layoutSerializerService.deserializeFull(content, storageService.nodeFactory)
+        storageService.storedLayouts[name] = content
     }
 
     fun loadPreset(name: String) {

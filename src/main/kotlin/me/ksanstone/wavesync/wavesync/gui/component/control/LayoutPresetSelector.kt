@@ -11,6 +11,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.LayoutPresetService
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService
+import org.kordamp.ikonli.javafx.FontIcon
 
 class LayoutPresetSelector : HBox() {
 
@@ -31,16 +32,25 @@ class LayoutPresetSelector : HBox() {
         update()
     }
 
-    fun openNewDialog() {
+    private fun openNewDialog() {
         menuInitializer.showPopupMenu("layout/presetName.fxml", "New Preset")
+    }
+
+    private fun openLoadDialog() {
+        menuInitializer.showPopupMenu("layout/presetImportExport.fxml", "Preset Import / Export", reset = true)
     }
 
     fun update() {
         menuButton.text = "Load preset"
         menuButton.items.clear()
-        menuButton.items.add(MenuItem("new").apply {
+        menuButton.items.add(MenuItem("New from current layout",  FontIcon("mdmz-plus")).apply {
             setOnAction {
                 openNewDialog()
+            }
+        })
+        menuButton.items.add(MenuItem("Import/Export", FontIcon("mdomz-menu_open")).apply {
+            setOnAction {
+                openLoadDialog()
             }
         })
         // skip the default layout
@@ -48,7 +58,8 @@ class LayoutPresetSelector : HBox() {
             menuButton.items.add(
                 MenuItem(
                     it,
-                    Button("kill").apply {
+                    Button().apply {
+                        graphic = FontIcon("mdoal-delete")
                         styleClass += "danger"; this.isDisable = it == layoutPresetService.getCurrent()
                         onAction = EventHandler { _ ->
                             layoutPresetService.deletePreset(it)
