@@ -11,12 +11,15 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
 import me.ksanstone.wavesync.wavesync.service.LayoutPresetService
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService
+import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import org.kordamp.ikonli.javafx.FontIcon
 
 class LayoutPresetSelector : HBox() {
 
     private val menuButton = MenuButton()
 
+    private val localizationService: LocalizationService =
+        WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     private val layoutPresetService =
         WaveSyncBootApplication.applicationContext.getBean(LayoutPresetService::class.java)
     private val layoutStorageService =
@@ -33,22 +36,22 @@ class LayoutPresetSelector : HBox() {
     }
 
     private fun openNewDialog() {
-        menuInitializer.showPopupMenu("layout/presetName.fxml", "New Preset")
+        menuInitializer.showPopupMenu("layout/presetName.fxml", localizationService.get("preset.new"))
     }
 
     private fun openLoadDialog() {
-        menuInitializer.showPopupMenu("layout/presetImportExport.fxml", "Preset Import / Export", reset = true)
+        menuInitializer.showPopupMenu("layout/presetImportExport.fxml", localizationService.get("preset.io"), reset = true)
     }
 
     fun update() {
         menuButton.text = "Load preset"
         menuButton.items.clear()
-        menuButton.items.add(MenuItem("New from current layout",  FontIcon("mdmz-plus")).apply {
+        menuButton.items.add(MenuItem(localizationService.get("preset.menu.new"), FontIcon("mdmz-plus")).apply {
             setOnAction {
                 openNewDialog()
             }
         })
-        menuButton.items.add(MenuItem("Import/Export", FontIcon("mdomz-menu_open")).apply {
+        menuButton.items.add(MenuItem(localizationService.get("preset.menu.io"), FontIcon("mdomz-menu_open")).apply {
             setOnAction {
                 openLoadDialog()
             }
@@ -57,19 +60,17 @@ class LayoutPresetSelector : HBox() {
         layoutPresetService.getPresets().filter { it != "layout" }.forEach {
             menuButton.items.add(
                 MenuItem(
-                    it,
-                    Button().apply {
-                        graphic = FontIcon("mdoal-delete")
-                        styleClass += "danger"; this.isDisable = it == layoutPresetService.getCurrent()
-                        onAction = EventHandler { _ ->
-                            layoutPresetService.deletePreset(it)
-                        }
-                    }
-                ).apply {
+                it, Button().apply {
+                    graphic = FontIcon("mdoal-delete")
+                    styleClass += "danger"; this.isDisable = it == layoutPresetService.getCurrent()
                     onAction = EventHandler { _ ->
-                        layoutPresetService.loadPreset(it)
+                        layoutPresetService.deletePreset(it)
                     }
-                })
+                }).apply {
+                onAction = EventHandler { _ ->
+                    layoutPresetService.loadPreset(it)
+                }
+            })
         }
     }
 

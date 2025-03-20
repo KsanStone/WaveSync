@@ -9,12 +9,12 @@
         <VBox AnchorPane.bottomAnchor="5" AnchorPane.leftAnchor="5" AnchorPane.rightAnchor="5" AnchorPane.topAnchor="5">
             <TabPane layoutX="25.0" layoutY="25.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
                 <tabs>
-                    <Tab closable="false" text="Import">
+                    <Tab closable="false" text="%preset.import">
                         <content>
                             <VBox spacing="5.0">
                                 <children>
-                                    <TextField fx:id="importedLayoutName" prefHeight="25.0" prefWidth="325.0" promptText="Preset name" />
-                                    <TextArea fx:id="layoutInputField" prefHeight="100.0" prefWidth="200.0" promptText="Paste layout code here." wrapText="true" VBox.vgrow="SOMETIMES" />
+                                    <TextField fx:id="importedLayoutName" prefHeight="25.0" prefWidth="325.0" promptText="%preset.import.name" />
+                                    <TextArea fx:id="layoutInputField" prefHeight="100.0" prefWidth="200.0" promptText="%preset.import.code" wrapText="true" VBox.vgrow="SOMETIMES" />
                            <Label fx:id="importErrorMessage" styleClass="danger" />
                                 </children>
                                 <padding>
@@ -23,14 +23,14 @@
                             </VBox>
                         </content>
                     </Tab>
-                    <Tab closable="false" text="Export">
+                    <Tab closable="false" text="%preset.export">
                         <content>
                             <VBox spacing="5.0">
                                 <children>
-                                    <TextArea fx:id="exportedLayoutField" editable="false" prefHeight="100.0" prefWidth="200.0" promptText="Exported layout json" wrapText="true" VBox.vgrow="SOMETIMES" />
+                                    <TextArea fx:id="exportedLayoutField" editable="false" prefHeight="100.0" prefWidth="200.0" promptText="%preset.export.json" wrapText="true" VBox.vgrow="SOMETIMES" />
                                     <HBox alignment="CENTER_LEFT" spacing="5.0">
                                         <children>
-                                            <Label text="Layout to export" />
+                                            <Label text="%preset.export.chooser" />
                                             <ChoiceBox fx:id="exportChooser">
                                             </ChoiceBox>
                                         </children>
@@ -46,8 +46,8 @@
             </TabPane>
             <ButtonBar layoutX="138.0" layoutY="346.0" prefHeight="40.0" prefWidth="453.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="5.0" AnchorPane.rightAnchor="5.0">
                 <buttons>
-                    <Button cancelButton="true" mnemonicParsing="false" onAction="#cancel" text="Cancel" />
-                    <Button defaultButton="true" mnemonicParsing="false" onAction="#create" text="Import" />
+                    <Button cancelButton="true" mnemonicParsing="false" onAction="#cancel" text="%preset.create.cancel" />
+                    <Button defaultButton="true" mnemonicParsing="false" onAction="#create" text="%preset.import.import" />
                 </buttons>
             </ButtonBar>
         </VBox>

@@ -9,10 +9,11 @@ import javafx.scene.control.TextField
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.utility.ResettableForm
 import me.ksanstone.wavesync.wavesync.service.LayoutPresetService
+import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import java.net.URL
 import java.util.*
 
-class PresetImportExport: Initializable, ResettableForm {
+class PresetImportExport : Initializable, ResettableForm {
 
     @FXML
     private lateinit var importErrorMessage: Label
@@ -32,17 +33,19 @@ class PresetImportExport: Initializable, ResettableForm {
 
     private val layoutPresetService =
         WaveSyncBootApplication.applicationContext.getBean(LayoutPresetService::class.java)
+    private val localizationService =
+        WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
 
     @FXML
     fun create() {
         if (importedLayoutName.text.isBlank()) {
-            importErrorMessage.text = "Invalid name"
+            importErrorMessage.text = localizationService.get("preset.import.error.name")
             return
         }
         try {
             layoutPresetService.importPreset(importedLayoutName.text, layoutInputField.text)
         } catch (e: Exception) {
-            importErrorMessage.text = "Provide a valid JSON encoded layout."
+            importErrorMessage.text = localizationService.get("preset.import.error.layout")
             return
         }
         close()
