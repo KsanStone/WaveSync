@@ -90,6 +90,11 @@ class BarChartSettingsController : Initializable {
     @FXML
     fun setMaxFreqOnVisualizer() {
         val maxFreq = audioCaptureService.source.get()?.getMaxFrequency() ?: 96000
+        maxFreqSpinner.valueFactory = SpinnerValueFactory.IntegerSpinnerValueFactory(
+            ApplicationSettingDefaults.DEFAULT_MIN_UI_VISUALIZER_WINDOW,
+            maxFreq,
+            visualizer.highPass.get()
+        )
         maxFreqSpinner.valueFactory.value = maxFreq
     }
 
