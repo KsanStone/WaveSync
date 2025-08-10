@@ -18,6 +18,7 @@ import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.GlobalColorService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
+import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtAudioSystem
 import me.ksanstone.wavesync.wavesync.service.audio.windowing.WindowFunctionType
 import xt.audio.Enums.XtSystem
 import java.net.URL
@@ -71,7 +72,7 @@ class MainSettingsController : Initializable {
     private lateinit var resources: ResourceBundle
 
     private fun changeAudioSystem() {
-        audioCaptureService.usedAudioSystem.set(XtSystem.valueOf(audioServerChoiceBox.value))
+        audioCaptureService.usedAudioSystem.set(XtAudioSystem(XtSystem.valueOf(audioServerChoiceBox.value)))
         MainController.instance.refreshDeviceList()
     }
 

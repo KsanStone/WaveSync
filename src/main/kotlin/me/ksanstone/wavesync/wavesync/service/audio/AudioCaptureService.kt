@@ -3,16 +3,7 @@ package me.ksanstone.wavesync.wavesync.service.audio
 import com.sun.jna.Platform
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
-import javafx.beans.property.BooleanProperty
-import javafx.beans.property.IntegerProperty
-import javafx.beans.property.ObjectProperty
-import javafx.beans.property.ReadOnlyBooleanProperty
-import javafx.beans.property.SimpleBooleanProperty
-import javafx.beans.property.SimpleFloatProperty
-import javafx.beans.property.SimpleIntegerProperty
-import javafx.beans.property.SimpleObjectProperty
-import javafx.beans.property.SimpleStringProperty
-import javafx.beans.property.StringProperty
+import javafx.beans.property.*
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.audio.backend.AudioBackend
@@ -22,24 +13,13 @@ import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtAudioBackend
 import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtAudioSystem
 import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtCaptureSource
 import me.ksanstone.wavesync.wavesync.service.audio.interpolation.ParabolicInterpolator
-import me.ksanstone.wavesync.wavesync.service.audio.windowing.BlackmanHarrisWindowFunction
-import me.ksanstone.wavesync.wavesync.service.audio.windowing.HammingWindowFunction
-import me.ksanstone.wavesync.wavesync.service.audio.windowing.HannWindowFunction
-import me.ksanstone.wavesync.wavesync.service.audio.windowing.WindowFunction
-import me.ksanstone.wavesync.wavesync.service.audio.windowing.WindowFunctionType
-import me.ksanstone.wavesync.wavesync.utility.AsyncInit
-import me.ksanstone.wavesync.wavesync.utility.ChannelLabel
-import me.ksanstone.wavesync.wavesync.utility.CommonChannel
-import me.ksanstone.wavesync.wavesync.utility.CyclicFFTChanneledStore
-import me.ksanstone.wavesync.wavesync.utility.FloatChanneledStore
-import me.ksanstone.wavesync.wavesync.utility.IndexedEventEmitter
-import me.ksanstone.wavesync.wavesync.utility.toFloatArrayInterlaced
+import me.ksanstone.wavesync.wavesync.service.audio.windowing.*
+import me.ksanstone.wavesync.wavesync.utility.*
 import org.bytedeco.javacpp.FloatPointer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import xt.audio.Enums
-import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 import kotlin.math.log10
 
@@ -98,6 +78,8 @@ class AudioCaptureService(
             usedAudioSystem.set(null)
         }
 
+        logger.info("Using audio system ${usedAudioSystem.get()?.name ?: "null"}")
+
         preferenceService.registerProperty(fftSize, "fftSize", this.javaClass)
         preferenceService.registerProperty(
             usedWindowingFunction,
@@ -123,7 +105,10 @@ class AudioCaptureService(
                 usedAudioSystem.set(wasapi)
             }
         }
-        if (!audioSystems.contains(usedAudioSystem.get())) {
+
+        logger.info("Detected audio systems: ${audioSystems.joinToString(",")}")
+
+        if (audioSystems.all { it.name != usedAudioSystem.get()?.name }) {
             usedAudioSystem.set(null)
             logger.warn("No audio system selected")
         }
