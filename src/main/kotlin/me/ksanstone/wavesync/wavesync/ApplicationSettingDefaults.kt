@@ -5,8 +5,8 @@ import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.VectorScopeVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.WaveformVisualizer
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.DefaultGradient
-import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalarType
-import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.FFTScalarType
+import me.ksanstone.wavesync.wavesync.service.audio.windowing.WindowFunctionType
 
 object ApplicationSettingDefaults {
     const val DEFAULT_BAR_SMOOTHING = 0.91F

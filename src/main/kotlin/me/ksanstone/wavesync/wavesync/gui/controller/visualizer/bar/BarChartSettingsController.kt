@@ -8,9 +8,9 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
-import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalarType
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.FFTScalarType
 import java.net.URL
 import java.util.*
 

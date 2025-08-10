@@ -28,6 +28,8 @@ import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAI
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_SPECTROGRAM_ID
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_VECTORSCOPE_ID
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_WAVEFORM_VISUALIZER_ID
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.backend.CaptureSource
 import org.kordamp.ikonli.javafx.FontIcon
 import java.net.URL
 import java.util.*
@@ -55,7 +57,7 @@ class MainController : Initializable {
     @FXML
     lateinit var fpsInfoLabel: Label
 
-    private val deviceList: MutableList<SupportedCaptureSource> = ArrayList()
+    private val deviceList: MutableList<CaptureSource> = ArrayList()
     private var audioCaptureService: AudioCaptureService
     private var recordingModeService: RecordingModeService
     private var localizationService: LocalizationService

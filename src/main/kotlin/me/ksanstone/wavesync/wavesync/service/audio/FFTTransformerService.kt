@@ -1,9 +1,8 @@
-package me.ksanstone.wavesync.wavesync.service
+package me.ksanstone.wavesync.wavesync.service.audio
 
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import org.bytedeco.fftw.global.fftw3
-import org.bytedeco.fftw.global.fftw3.*
 import org.bytedeco.javacpp.FloatPointer
 import org.bytedeco.javacpp.Loader
 import org.springframework.stereotype.Service
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Service
 @Service
 class FFTTransformerService {
 
-    private var fftPlan: fftwf_plan? = null
+    private var fftPlan: fftw3.fftwf_plan? = null
 
     private lateinit var signal: FloatPointer
     private lateinit var result: FloatPointer
@@ -20,8 +19,8 @@ class FFTTransformerService {
 
     fun initializePlan(signal1: FloatPointer, resultReal: FloatPointer, numPoints1: Int) {
         if (fftPlan != null)
-            fftwf_destroy_plan(fftPlan)
-        fftPlan = fftwf_plan_dft_1d(numPoints1, signal1, resultReal, FFTW_FORWARD, FFTW_ESTIMATE)
+            fftw3.fftwf_destroy_plan(fftPlan)
+        fftPlan = fftw3.fftwf_plan_dft_1d(numPoints1, signal1, resultReal, fftw3.FFTW_FORWARD, fftw3.FFTW_ESTIMATE)
         signal = signal1
         result = resultReal
         numPoints = numPoints1
@@ -45,7 +44,7 @@ class FFTTransformerService {
     }
 
     fun transform() {
-        fftwf_execute(fftPlan)
+        fftw3.fftwf_execute(fftPlan)
     }
 
     @PostConstruct
@@ -56,7 +55,7 @@ class FFTTransformerService {
     @PreDestroy
     fun cleanup() {
         if (fftPlan != null)
-            fftwf_destroy_plan(fftPlan)
+            fftw3.fftwf_destroy_plan(fftPlan)
     }
 
 

@@ -1,7 +1,12 @@
-package me.ksanstone.wavesync.wavesync.service
+package me.ksanstone.wavesync.wavesync.service.audio
 
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
-import kotlin.math.*
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 object FourierMath {
 

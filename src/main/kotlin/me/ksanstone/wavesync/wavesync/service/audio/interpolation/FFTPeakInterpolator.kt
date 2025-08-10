@@ -1,4 +1,4 @@
-package me.ksanstone.wavesync.wavesync.service.interpolation
+package me.ksanstone.wavesync.wavesync.service.audio.interpolation
 
 interface FFTPeakInterpolator {
     fun calcPeak(samples: FloatArray, peakIndex: Int, rate: Int): Float

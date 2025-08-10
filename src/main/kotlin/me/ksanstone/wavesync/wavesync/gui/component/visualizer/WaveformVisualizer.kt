@@ -22,9 +22,9 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.waveform.WaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.gui.utility.roundTo
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
-import me.ksanstone.wavesync.wavesync.service.FourierMath
-import me.ksanstone.wavesync.wavesync.service.FourierMath.frequencySamplesAtRate
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.FourierMath
+import me.ksanstone.wavesync.wavesync.service.audio.FourierMath.frequencySamplesAtRate
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
@@ -266,7 +266,7 @@ class WaveformVisualizer(channel: Int) : AutoCanvas() {
 
     fun handleSamples(event: AudioCaptureService.SampleEvent) {
         if (isPaused) return
-        sampleRate.value = event.source.rate
+        sampleRate.value = event.source.sampleRate
         buffer.insert(event.data.toTypedArray())
     }
 

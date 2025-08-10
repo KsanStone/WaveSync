@@ -15,7 +15,7 @@ import me.ksanstone.wavesync.wavesync.gui.component.util.GradientPicker
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.BarVisualizer
 import me.ksanstone.wavesync.wavesync.gui.component.visualizer.SpectrogramVisualizer
 import me.ksanstone.wavesync.wavesync.gui.controller.GraphStyleController
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService
 import me.ksanstone.wavesync.wavesync.service.LayoutStorageService.Companion.MAIN_BAR_VISUALIZER_ID
 import me.ksanstone.wavesync.wavesync.service.PreferenceService

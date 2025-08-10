@@ -1,4 +1,4 @@
-package me.ksanstone.wavesync.wavesync.service.smoothing
+package me.ksanstone.wavesync.wavesync.service.audio.smoothing
 
 interface MagnitudeSmoother {
     var dataSize: Int

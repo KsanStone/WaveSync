@@ -1,4 +1,4 @@
-package me.ksanstone.wavesync.wavesync.service.fftScaling
+package me.ksanstone.wavesync.wavesync.service.audio.fftScaling
 
 interface FFTScalar<E : Any> {
     fun scale(res: Float): Float

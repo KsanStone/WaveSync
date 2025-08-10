@@ -1,6 +1,6 @@
 package me.ksanstone.wavesync.wavesync.benchmark;
 
-import me.ksanstone.wavesync.wavesync.service.FourierMath;
+import me.ksanstone.wavesync.wavesync.service.audio.FourierMath;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;

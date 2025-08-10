@@ -17,6 +17,7 @@ import me.ksanstone.wavesync.wavesync.event.StageReadyEvent
 import me.ksanstone.wavesync.wavesync.gui.component.control.MainControl
 import me.ksanstone.wavesync.wavesync.gui.window.CaptionConfiguration
 import me.ksanstone.wavesync.wavesync.service.*
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationListener
 import org.springframework.stereotype.Component

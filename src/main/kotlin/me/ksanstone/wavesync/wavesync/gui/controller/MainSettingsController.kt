@@ -14,11 +14,11 @@ import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_FFT_SIZ
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults.DEFAULT_START_COLOR
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.initializer.MenuInitializer
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.GlobalColorService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
-import me.ksanstone.wavesync.wavesync.service.windowing.WindowFunctionType
+import me.ksanstone.wavesync.wavesync.service.audio.windowing.WindowFunctionType
 import xt.audio.Enums.XtSystem
 import java.net.URL
 import java.util.*
@@ -157,7 +157,7 @@ class MainSettingsController : Initializable {
     private fun updateFftRateInfoLabel() {
         if (audioCaptureService.source.get() != null) {
             val rate = fftRateSpinner.value
-            val captureRate = audioCaptureService.source.get().rate
+            val captureRate = audioCaptureService.source.get().sampleRate
             val effectiveRate = max(rate, (captureRate.toDouble() / audioCaptureService.fftSize.get()).toInt())
             val frameMs = (1.0 / effectiveRate) * 1000
             val frameSamples = (1.0 / effectiveRate) * captureRate

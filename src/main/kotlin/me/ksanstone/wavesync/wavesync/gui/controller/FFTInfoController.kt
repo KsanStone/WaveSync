@@ -5,9 +5,9 @@ import javafx.fxml.FXML
 import javafx.fxml.Initializable
 import javafx.scene.control.Label
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
-import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalar
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.DeciBelFFTScalar
 import java.net.URL
 import java.text.DecimalFormat
 import java.util.*

@@ -1,4 +1,4 @@
-package me.ksanstone.wavesync.wavesync.service.windowing
+package me.ksanstone.wavesync.wavesync.service.audio.windowing
 
 import kotlin.math.cos
 

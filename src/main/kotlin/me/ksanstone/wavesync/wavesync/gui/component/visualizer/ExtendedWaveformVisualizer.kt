@@ -17,12 +17,12 @@ import javafx.util.Duration
 import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.extendedWaveform.ExtendedWaveformSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
-import me.ksanstone.wavesync.wavesync.service.FourierMath
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.FourierMath
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
-import me.ksanstone.wavesync.wavesync.service.fftScaling.LinearFFTScalar
-import me.ksanstone.wavesync.wavesync.service.fftScaling.LinearFFTScalarParams
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.LinearFFTScalar
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.LinearFFTScalarParams
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
 import kotlin.math.max
 import kotlin.math.min
@@ -101,11 +101,11 @@ class ExtendedWaveformVisualizer : AutoCanvas() {
 
     fun handleSamples(event: AudioCaptureService.SampleEvent) {
         if (isPaused) return
-        if (event.source.rate != sourceRate.get()) sourceRate.set(event.source.rate)
-        if (event.source.rate <= effectiveBufferSampleRate) {
+        if (event.source.sampleRate != sourceRate.get()) sourceRate.set(event.source.sampleRate)
+        if (event.source.sampleRate <= effectiveBufferSampleRate) {
             buffer.insert(event.data.toTypedArray())
         } else {
-            val scaleDownFactor = event.source.rate / effectiveBufferSampleRate
+            val scaleDownFactor = event.source.sampleRate / effectiveBufferSampleRate
             for (i in event.data.indices step scaleDownFactor)
                 buffer.insert(event.data[i])
         }

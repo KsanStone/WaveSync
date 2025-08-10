@@ -36,10 +36,20 @@ import me.ksanstone.wavesync.wavesync.gui.component.util.LogarithmicAxis
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.bar.BarSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.service.*
-import me.ksanstone.wavesync.wavesync.service.fftScaling.*
-import me.ksanstone.wavesync.wavesync.service.smoothing.ExponentialFalloffSmoother
-import me.ksanstone.wavesync.wavesync.service.smoothing.MagnitudeSmoother
-import me.ksanstone.wavesync.wavesync.service.smoothing.MultiplicativeSmoother
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.FourierMath
+import me.ksanstone.wavesync.wavesync.service.audio.backend.CaptureSource
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.DeciBelFFTScalar
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.DeciBelFFTScalarParameters
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.ExaggeratedFFTScalar
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.ExaggeratedFFTScalarParams
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.FFTScalar
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.FFTScalarType
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.LinearFFTScalar
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.LinearFFTScalarParams
+import me.ksanstone.wavesync.wavesync.service.audio.smoothing.ExponentialFalloffSmoother
+import me.ksanstone.wavesync.wavesync.service.audio.smoothing.MagnitudeSmoother
+import me.ksanstone.wavesync.wavesync.service.audio.smoothing.MultiplicativeSmoother
 import me.ksanstone.wavesync.wavesync.utility.MaxTracker
 import kotlin.math.*
 
@@ -74,7 +84,7 @@ class BarVisualizer(channel: Int) : AutoCanvas() {
 
     private val channelProperty: IntegerProperty = SimpleIntegerProperty(channel)
     private val useCssColor: BooleanProperty = SimpleBooleanProperty(DEFAULT_USE_CSS_COLOR)
-    private var source: SupportedCaptureSource? = null
+    private var source: CaptureSource? = null
     private var rate: Int = 44100
     private var fftSize: Int = 1024
     private var frequencyBinSkip: Int = 0
@@ -245,8 +255,8 @@ class BarVisualizer(channel: Int) : AutoCanvas() {
         val bar = floor(x / barWidth)
         val binStart = floor(bar * step).toInt()
         val binEnd = floor((bar + 1) * step).toInt()
-        val minFreq = FourierMath.frequencyOfBin(binStart, source!!.rate, fftSize)
-        val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.rate, fftSize)
+        val minFreq = FourierMath.frequencyOfBin(binStart, source!!.sampleRate, fftSize)
+        val maxFreq = FourierMath.frequencyOfBin(binEnd, source!!.sampleRate, fftSize)
         val maxValue = rawMaxTracker.data.slice(binStart..binEnd).max()
         val rawValue = fftDataArray.slice(binStart + frequencyBinSkip..binEnd + frequencyBinSkip).max()
         tooltip.text =
@@ -330,7 +340,7 @@ class BarVisualizer(channel: Int) : AutoCanvas() {
         val source = event.source
         val oldFftSize = this.fftSize
         this.fftSize = event.data.size * 2
-        this.rate = source.rate
+        this.rate = source.sampleRate
         if (source != this.source || oldFftSize != this.fftSize) {
             this.source = source
             sizeFrequencyAxis()

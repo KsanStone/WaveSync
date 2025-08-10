@@ -21,7 +21,7 @@ import me.ksanstone.wavesync.wavesync.WaveSyncBootApplication
 import me.ksanstone.wavesync.wavesync.gui.controller.visualizer.vector.VectorSettingsController
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.gui.utility.GlUtil
-import me.ksanstone.wavesync.wavesync.service.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
 import me.ksanstone.wavesync.wavesync.service.LocalizationService
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.utility.RollingBuffer
@@ -101,8 +101,8 @@ class VectorScopeVisualizer : AutoCanvas(true) {
     }
 
     private fun sizeBuffers() {
-        lBuffer = RollingBuffer(((acs.source.get()?.rate?.toDouble() ?: 100.0) * 0.05).roundToInt()) { 0.0f }
-        rBuffer = RollingBuffer(((acs.source.get()?.rate?.toDouble() ?: 100.0) * 0.05).roundToInt()) { 0.0f }
+        lBuffer = RollingBuffer(((acs.source.get()?.sampleRate?.toDouble() ?: 100.0) * 0.05).roundToInt()) { 0.0f }
+        rBuffer = RollingBuffer(((acs.source.get()?.sampleRate?.toDouble() ?: 100.0) * 0.05).roundToInt()) { 0.0f }
     }
 
     private fun updateAxis() {

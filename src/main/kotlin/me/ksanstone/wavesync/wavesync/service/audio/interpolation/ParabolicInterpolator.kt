@@ -1,7 +1,7 @@
-package me.ksanstone.wavesync.wavesync.service.interpolation
+package me.ksanstone.wavesync.wavesync.service.audio.interpolation
 
-import me.ksanstone.wavesync.wavesync.service.FourierMath
-import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalar
+import me.ksanstone.wavesync.wavesync.service.audio.FourierMath
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.DeciBelFFTScalar
 
 class ParabolicInterpolator : FFTPeakInterpolator {
 

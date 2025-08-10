@@ -1,4 +1,4 @@
-package me.ksanstone.wavesync.wavesync.service.fftScaling
+package me.ksanstone.wavesync.wavesync.service.audio.fftScaling
 
 import kotlin.math.ln
 import kotlin.math.sqrt

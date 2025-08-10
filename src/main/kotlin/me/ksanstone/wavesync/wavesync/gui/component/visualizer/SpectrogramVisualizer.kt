@@ -28,10 +28,14 @@ import me.ksanstone.wavesync.wavesync.gui.gradient.pure.GradientSerializer
 import me.ksanstone.wavesync.wavesync.gui.gradient.pure.SGradient
 import me.ksanstone.wavesync.wavesync.gui.utility.AutoCanvas
 import me.ksanstone.wavesync.wavesync.gui.utility.GlUtil
-import me.ksanstone.wavesync.wavesync.service.*
-import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalar
-import me.ksanstone.wavesync.wavesync.service.fftScaling.DeciBelFFTScalarParameters
-import me.ksanstone.wavesync.wavesync.service.fftScaling.FFTScalar
+import me.ksanstone.wavesync.wavesync.service.LocalizationService
+import me.ksanstone.wavesync.wavesync.service.PreferenceService
+import me.ksanstone.wavesync.wavesync.service.audio.AudioCaptureService
+import me.ksanstone.wavesync.wavesync.service.audio.FourierMath
+import me.ksanstone.wavesync.wavesync.service.audio.backend.CaptureSource
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.DeciBelFFTScalar
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.DeciBelFFTScalarParameters
+import me.ksanstone.wavesync.wavesync.service.audio.fftScaling.FFTScalar
 import me.ksanstone.wavesync.wavesync.utility.FreeRangeMapper
 import me.ksanstone.wavesync.wavesync.utility.LogRangeMapper
 import me.ksanstone.wavesync.wavesync.utility.RangeMapper
@@ -63,14 +67,14 @@ class SpectrogramVisualizer : AutoCanvas(useGL = true) {
     private val acs = WaveSyncBootApplication.applicationContext.getBean(AudioCaptureService::class.java)
     private val fftArraySize: IntegerBinding = acs.fftSize.divide(2)
     private val fftRate: IntegerProperty = acs.fftRate
-    private val captureRate: ObservableValue<Int> = acs.source.map { it?.rate ?: 10 }
+    private val captureRate: ObservableValue<Int> = acs.source.map { it?.sampleRate ?: 10 }
     private val gradientSerializer: GradientSerializer =
         WaveSyncBootApplication.applicationContext.getBean(GradientSerializer::class.java)
     private var localizationService: LocalizationService =
         WaveSyncBootApplication.applicationContext.getBean(LocalizationService::class.java)
     private val tooltip = Label()
     private val scalar = DeciBelFFTScalar()
-    private var source: SupportedCaptureSource? = null
+    private var source: CaptureSource? = null
 
     init {
         scalar.update(DeciBelFFTScalarParameters(rangeMin.value, rangeMax.value))

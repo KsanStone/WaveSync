@@ -1,8 +1,8 @@
 package me.ksanstone.wavesync.wavesync
 
-import me.ksanstone.wavesync.wavesync.service.windowing.BlackmanHarrisWindowFunction
-import me.ksanstone.wavesync.wavesync.service.windowing.HammingWindowFunction
-import me.ksanstone.wavesync.wavesync.service.windowing.HannWindowFunction
+import me.ksanstone.wavesync.wavesync.service.audio.windowing.BlackmanHarrisWindowFunction
+import me.ksanstone.wavesync.wavesync.service.audio.windowing.HammingWindowFunction
+import me.ksanstone.wavesync.wavesync.service.audio.windowing.HannWindowFunction
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Test
 
