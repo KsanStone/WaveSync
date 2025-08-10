@@ -2,6 +2,7 @@ package me.ksanstone.wavesync.wavesync.service.audio.backend
 
 import javafx.beans.property.ObjectProperty
 import javafx.beans.property.ReadOnlyBooleanProperty
+import me.ksanstone.wavesync.wavesync.utility.ChannelLabel
 
 /**
  * Talks to {@link AudioSystem}s, and marshalls samples.
@@ -9,7 +10,7 @@ import javafx.beans.property.ReadOnlyBooleanProperty
 interface AudioBackend {
 
     val captureRunning: ReadOnlyBooleanProperty
-    val currentAudioSystem: ObjectProperty<out AudioSystem?>
+    val currentAudioSystem: ObjectProperty<AudioSystem?>
 
     fun detectSupportedAudioSystems(): List<AudioSystem>
 
@@ -23,14 +24,12 @@ interface AudioBackend {
 
     fun stopCapture()
 
-    @FunctionalInterface
-    interface SampleProcessor {
+    fun interface SampleProcessor {
         fun process(samples: FloatArray, frames: Int)
     }
 
-    @FunctionalInterface
-    interface PreCaptureCallback {
-        fun onPreCapture(frames: Int)
+    fun interface PreCaptureCallback {
+        fun onPreCapture(frames: Int, channelLabels: List<ChannelLabel>)
     }
 
 }

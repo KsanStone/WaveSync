@@ -53,11 +53,11 @@ interface CaptureSource {
         return Duration.seconds(1.0 / sampleRate * samples)
     }
 
-    enum class NativeFormat {
-        UINT8,
-        INT16,
-        INT24,
-        INT32,
-        FLOAT32;
+    enum class NativeFormat(val bytesPerSample: Int) {
+        UINT8(1),
+        INT16(2),
+        INT24(3),
+        INT32(4),
+        FLOAT32(4);
     }
 }

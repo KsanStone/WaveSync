@@ -34,7 +34,10 @@ class XtAudioBackend : AudioBackend {
 
     override val captureRunning: ReadOnlyBooleanProperty =
         ReadOnlyBooleanProperty.readOnlyBooleanProperty(_captureRunning)
-    override val currentAudioSystem: ObjectProperty<XtAudioSystem?> = SimpleObjectProperty()
+    override val currentAudioSystem: ObjectProperty<AudioSystem?> = SimpleObjectProperty()
+
+    private val _currentAudioSystem: XtAudioSystem
+        get() = currentAudioSystem.get() as XtAudioSystem
 
     override fun detectSupportedAudioSystems(): List<AudioSystem> {
         XtAudio.init(null, Pointer.NULL).use { platform ->
@@ -46,7 +49,7 @@ class XtAudioBackend : AudioBackend {
         val supported = ArrayList<XtCaptureSource>()
         try {
             XtAudio.init(null, Pointer.NULL).use { platform ->
-                val service = platform.getService(currentAudioSystem.get()!!.system)
+                val service = platform.getService(_currentAudioSystem.system)
                 try {
                     service.openDeviceList(EnumSet.of(Enums.XtEnumFlags.ALL)).use { list ->
                         for (i in 0 until list.count) {
@@ -105,7 +108,7 @@ class XtAudioBackend : AudioBackend {
     override fun findDefaultCaptureSource(devices: List<CaptureSource>): CaptureSource? {
         try {
             XtAudio.init(null, Pointer.NULL).use { platform ->
-                val service = platform.getService(currentAudioSystem.get()!!.system)
+                val service = platform.getService(_currentAudioSystem.system)
                 val device = service.getDefaultDeviceId(true) ?: return null
                 val extractedId = extractDeviceUUID(device)
                 return devices.find { extractDeviceUUID(it.id) == extractedId }
@@ -126,7 +129,7 @@ class XtAudioBackend : AudioBackend {
         recordingFuture = CompletableFuture.runAsync {
             lock = CountDownLatch(1)
             XtAudio.init(null, Pointer.NULL).use { platform ->
-                val service = platform.getService(currentAudioSystem.get()!!.system)
+                val service = platform.getService(_currentAudioSystem.system)
                 logger.info("Selected device $xtSource")
                 service.openDevice(xtSource.id).use { device ->
                     val format = xtSource.format
@@ -141,7 +144,7 @@ class XtAudioBackend : AudioBackend {
                     val sample = deviceParams.format.mix.sample
                     val channelLabels =
                         (0 until channels).map { idx ->
-                            ChannelLabel.Companion.resolve(
+                            ChannelLabel.resolve(
                                 device.getChannelName(
                                     false,
                                     idx
@@ -154,17 +157,7 @@ class XtAudioBackend : AudioBackend {
                         logger.info("Stream opened Input latency ${stream.latency.input}")
                         logger.info("Channels: $channelLabels")
                         XtSafeBuffer.register(stream).use { _ ->
-                            preCaptureCallback.onPreCapture(stream.frames)
-//                            setScanWindowSize(fftSize.get())
-//                            pcmDataBuffer = ByteArray(
-//                                stream.frames * channels * XtAudio.getSampleAttributes(sample).size
-//                            )
-//                            samples.resize(1 + channels, stream.frames).label(*defaultChannelLabels.plus(channelLabels))
-//                            channelVolumes.resize(1 + channels, 1).label(*defaultChannelLabels.plus(channelLabels))
-//                            fftSampleBuffer.resize(1 + channels, fftSize.get())
-//                                .label(*defaultChannelLabels.plus(channelLabels))
-//                            setScanWindowSize(fftSize.get())
-//                            updateLabels()
+                            preCaptureCallback.onPreCapture(stream.frames, channelLabels)
                             logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
                             _captureRunning.set(true)
                             stream.start()

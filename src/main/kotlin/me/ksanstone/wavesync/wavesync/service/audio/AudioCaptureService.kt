@@ -1,7 +1,6 @@
 package me.ksanstone.wavesync.wavesync.service.audio
 
 import com.sun.jna.Platform
-import com.sun.jna.Pointer
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import javafx.beans.property.BooleanProperty
@@ -12,10 +11,15 @@ import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleFloatProperty
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleObjectProperty
+import javafx.beans.property.SimpleStringProperty
+import javafx.beans.property.StringProperty
 import me.ksanstone.wavesync.wavesync.ApplicationSettingDefaults
 import me.ksanstone.wavesync.wavesync.service.PreferenceService
+import me.ksanstone.wavesync.wavesync.service.audio.backend.AudioBackend
+import me.ksanstone.wavesync.wavesync.service.audio.backend.AudioSystem
 import me.ksanstone.wavesync.wavesync.service.audio.backend.CaptureSource
 import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtAudioBackend
+import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtAudioSystem
 import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtCaptureSource
 import me.ksanstone.wavesync.wavesync.service.audio.interpolation.ParabolicInterpolator
 import me.ksanstone.wavesync.wavesync.service.audio.windowing.BlackmanHarrisWindowFunction
@@ -35,14 +39,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import xt.audio.Enums
-import xt.audio.Structs
-import xt.audio.XtAudio
-import xt.audio.XtSafeBuffer
-import xt.audio.XtStream
-import java.util.ArrayList
-import java.util.EnumSet
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
 import java.util.function.Consumer
 import kotlin.math.log10
 
@@ -50,45 +47,58 @@ import kotlin.math.log10
 class AudioCaptureService(
     private val preferenceService: PreferenceService,
     private var fftTransformerService: FFTTransformerService,
-    private val xtAudioBackend: XtAudioBackend
+    xtAudioBackend: XtAudioBackend
 ) : AsyncInit() {
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
 
+    private val audioBackend: AudioBackend = xtAudioBackend
     private lateinit var pcmDataBuffer: ByteArray
     private lateinit var fftwSignal: FloatPointer
     private lateinit var fftwResult: FloatPointer
     private lateinit var fftwSignalArray: FloatArray
     private var fftSampleBuffer: CyclicFFTChanneledStore = CyclicFFTChanneledStore()
-    private var lock: CountDownLatch = CountDownLatch(0)
-    private var recordingFuture: CompletableFuture<Void>? = null
     private var fftObservers: IndexedEventEmitter<Int, FftEvent> = IndexedEventEmitter()
     private var sampleObservers: IndexedEventEmitter<Int, SampleEvent> = IndexedEventEmitter()
     private var windowFunction: WindowFunction? = null
-    private val _captureRunning = SimpleBooleanProperty(false)
-
     private val fftResult = FloatChanneledStore()
     val samples = FloatChanneledStore()
 
     val peakFrequency = List(ApplicationSettingDefaults.SUPPORTED_CHANNELS) { SimpleFloatProperty() }
     val peakValue = List(ApplicationSettingDefaults.SUPPORTED_CHANNELS) { SimpleFloatProperty() }
-    val captureRunning: ReadOnlyBooleanProperty = ReadOnlyBooleanProperty.readOnlyBooleanProperty(_captureRunning)
+    val captureRunning: ReadOnlyBooleanProperty
+        get() = audioBackend.captureRunning
     val channelVolumes = FloatChanneledStore()
 
-    val source: ObjectProperty<XtCaptureSource> = SimpleObjectProperty()
+    val source: ObjectProperty<CaptureSource> = SimpleObjectProperty()
     val fftSize: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.DEFAULT_FFT_SIZE)
     val fftRate: IntegerProperty = SimpleIntegerProperty(ApplicationSettingDefaults.DEFAULT_FFT_RATE)
-    val usedAudioSystem: ObjectProperty<Enums.XtSystem> = SimpleObjectProperty()
+    val usedAudioSystem: ObjectProperty<AudioSystem?>
+        get() = audioBackend.currentAudioSystem
+    val audioSystemDataProxy: StringProperty = SimpleStringProperty(usedAudioSystem.get()?.name ?: "")
     val usedWindowingFunction: ObjectProperty<WindowFunctionType> =
         SimpleObjectProperty(ApplicationSettingDefaults.DEFAULT_WINDOWING_FUNCTION)
     val paused: BooleanProperty = SimpleBooleanProperty(false)
-    var audioSystems: List<Enums.XtSystem> = listOf()
+    var audioSystems: List<AudioSystem> = listOf()
 
     private val defaultChannelLabels = arrayOf(CommonChannel.MASTER.label)
 
     @PostConstruct
     override fun init() {
+        usedAudioSystem.addListener { _, _, v -> audioSystemDataProxy.set(v?.name ?: "") }
+        preferenceService.registerProperty(audioSystemDataProxy, "audioSystem", this.javaClass)
+
+        val storedSystem = audioSystemDataProxy.get()
+        if (storedSystem.isNotBlank()) {
+            if (audioBackend is XtAudioBackend) {
+                usedAudioSystem.set(XtAudioSystem(Enums.XtSystem.valueOf(storedSystem)))
+            } else {
+                usedAudioSystem.set(null)
+            }
+        } else {
+            usedAudioSystem.set(null)
+        }
+
         preferenceService.registerProperty(fftSize, "fftSize", this.javaClass)
-        preferenceService.registerProperty(usedAudioSystem, "audioSystem", Enums.XtSystem::class.java, this.javaClass)
         preferenceService.registerProperty(
             usedWindowingFunction,
             "windowingFunction",
@@ -106,9 +116,11 @@ class AudioCaptureService(
     override fun asyncInit() {
         setScanWindowSize(512)
         detectSupportedAudioSystems()
+        audioBackend.setSampleProcessor(this::processSamples)
         if (usedAudioSystem.get() == null) {
-            if (Platform.isWindows() && audioSystems.contains(Enums.XtSystem.WASAPI)) {
-                usedAudioSystem.set(Enums.XtSystem.WASAPI)
+            if (Platform.isWindows() && audioSystems.any { it.name == "WASAPI" }) {
+                val wasapi: AudioSystem = XtAudioSystem(Enums.XtSystem.WASAPI)
+                usedAudioSystem.set(wasapi)
             }
         }
         if (!audioSystems.contains(usedAudioSystem.get())) {
@@ -121,30 +133,15 @@ class AudioCaptureService(
     }
 
     private fun detectSupportedAudioSystems() {
-        XtAudio.init(null, Pointer.NULL).use { platform ->
-            audioSystems = platform.systems.toList()
-        }
-    }
-
-    fun onBuffer(stream: XtStream, buffer: Structs.XtBuffer, user: Any?): Int {
-        val safe = XtSafeBuffer.get(stream) ?: return 0
-        safe.lock(buffer)
-
-        processSamples(marshalSamples(safe.input, stream.format), buffer.frames)
-
-        safe.unlock(buffer)
-        return 0
-    }
-
-    private fun marshalSamples(samples: Any?, format: Structs.XtFormat): FloatArray {
-        return samples as FloatArray
+        audioSystems = audioBackend.detectSupportedAudioSystems()
     }
 
     private fun processSamples(audio: FloatArray, frames: Int) {
         if (paused.get()) return
-        val channels = source.get().format.channels.inputs
+        val channels = source.get().channels
         val sampleFactor = 1.0f / channels.toFloat()
-        val targetSamplesUntilRefresh = ((1.0 / fftRate.get()) * source.get().sampleRate).toInt().coerceAtMost(fftSize.get())
+        val targetSamplesUntilRefresh =
+            ((1.0 / fftRate.get()) * source.get().sampleRate).toInt().coerceAtMost(fftSize.get())
         for (frame in 0 until frames) {
             val sampleIndex = frame * channels
             var combinedSample = 0.0f
@@ -164,10 +161,10 @@ class AudioCaptureService(
         for (i in 0 until samples.channels()) {
             samples.setSizeHint(i, frames)
         }
-        processSamples(frames)
+        furtherProcessSamples(frames)
     }
 
-    private fun processSamples(frames: Int) {
+    private fun furtherProcessSamples(frames: Int) {
         doLoudnessCalc(frames)
 
         sampleObservers.forEachIndex {
@@ -253,64 +250,24 @@ class AudioCaptureService(
     }
 
     @Synchronized
-    fun startCapture(source: XtCaptureSource) {
+    fun startCapture(source: CaptureSource) {
         this.source.set(source)
-        recordingFuture = CompletableFuture.runAsync {
-            lock = CountDownLatch(1)
-            XtAudio.init(null, Pointer.NULL).use { platform ->
-                val service = platform.getService(usedAudioSystem.get())
-                logger.info("Selected device $source")
-                service.openDevice(source.id).use { device ->
-                    val format = source.format
-                    format.mix.sample = Enums.XtSample.FLOAT32
-
-                    val bufferSize: Structs.XtBufferSize = device.getBufferSize(format)
-                    val streamParams = Structs.XtStreamParams(true, this::onBuffer, null, null)
-                    val deviceParams = Structs.XtDeviceStreamParams(streamParams, format, bufferSize.current)
-
-                    val channels = format.channels.inputs
-                    val rate = deviceParams.format.mix.rate
-                    val sample = deviceParams.format.mix.sample
-                    val channelLabels =
-                        (0 until channels).map { idx -> ChannelLabel.Companion.resolve(device.getChannelName(false, idx)) }
-
-                    setScanWindowSize(fftSize.get())
-                    val deviceStream = device.openStream(deviceParams, null)
-                    deviceStream.use { stream ->
-                        logger.info("Stream opened Input latency ${stream.latency.input}")
-                        logger.info("Channels: $channelLabels")
-                        XtSafeBuffer.register(stream).use { _ ->
-                            pcmDataBuffer = ByteArray(
-                                stream.frames * channels * XtAudio.getSampleAttributes(sample).size
-                            )
-                            samples.resize(1 + channels, stream.frames).label(*defaultChannelLabels.plus(channelLabels))
-                            channelVolumes.resize(1 + channels, 1).label(*defaultChannelLabels.plus(channelLabels))
-                            fftSampleBuffer.resize(1 + channels, fftSize.get())
-                                .label(*defaultChannelLabels.plus(channelLabels))
-                            setScanWindowSize(fftSize.get())
-                            updateLabels()
-                            logger.info("Capture started, capturing master + $channels channels @ ${rate}Hz $sample")
-                            _captureRunning.set(true)
-                            stream.start()
-                            lock.await()
-                            stream.stop()
-                            logger.info("Capture finished")
-                            _captureRunning.set(false)
-                        }
-                    }
-                }
-            }
+        audioBackend.startCapture(source) { frames, channelLabels ->
+            setScanWindowSize(fftSize.get())
+            pcmDataBuffer = ByteArray(
+                frames * source.channels * source.nativeFormat.bytesPerSample
+            )
+            samples.resize(1 + source.channels, frames).label(*defaultChannelLabels.plus(channelLabels))
+            channelVolumes.resize(1 + source.channels, 1).label(*defaultChannelLabels.plus(channelLabels))
+            fftSampleBuffer.resize(1 + source.channels, fftSize.get())
+                .label(*defaultChannelLabels.plus(channelLabels))
+            setScanWindowSize(fftSize.get())
+            updateLabels()
         }
-        recordingFuture!!.exceptionally { _ -> _captureRunning.set(false); return@exceptionally null }
     }
 
     fun stopCapture() {
-        if (recordingFuture != null) {
-            logger.info("Stopping capture")
-            lock.countDown()
-            recordingFuture?.get()
-            recordingFuture = null
-        }
+        audioBackend.stopCapture()
     }
 
     fun restartCapture() {
@@ -369,71 +326,13 @@ class AudioCaptureService(
     }
 
     fun findDefaultAudioSource(devices: List<CaptureSource>): CaptureSource? {
-        try {
-            XtAudio.init(null, Pointer.NULL).use { platform ->
-                val service = platform.getService(usedAudioSystem.get())
-                val device = service.getDefaultDeviceId(true) ?: return null
-                val extractedId = extractDeviceUUID(device)
-                return devices.find { extractDeviceUUID(it.id) == extractedId }
-            }
-        } catch (e: AssertionError) {
-            logger.error("Default device query FAIL", e)
-        }; return null
+        return audioBackend.findDefaultCaptureSource(devices)
     }
 
-    fun findSupportedSources(): List<XtCaptureSource> {
-        val supported = ArrayList<XtCaptureSource>()
-        try {
-            XtAudio.init(null, Pointer.NULL).use { platform ->
-                val service = platform.getService(usedAudioSystem.get())
-                try {
-                    service.openDeviceList(EnumSet.of(Enums.XtEnumFlags.ALL)).use { list ->
-                        for (i in 0 until list.count) {
-                            val deviceId = list.getId(i)
-                            val caps = list.getCapabilities(deviceId)
-                            if (caps.contains(Enums.XtDeviceCaps.LOOPBACK) || caps.contains(Enums.XtDeviceCaps.INPUT)) {
-                                val deviceName = list.getName(deviceId)
-                                try {
-                                    service.openDevice(deviceId).use { device ->
-                                        val deviceMix = device.mix.orElse(Structs.XtMix(192000, Enums.XtSample.FLOAT32))
-                                        val inChannelCount = device.getChannelCount(false)
-                                        var channels: Structs.XtChannels
-                                        var format: Structs.XtFormat?
-                                        var supportedChannels = 1
-                                        while (supportedChannels < inChannelCount) {
-                                            channels = Structs.XtChannels(supportedChannels, 0, 0, 0)
-                                            format = Structs.XtFormat(deviceMix, channels)
-                                            if (device.supportsFormat(format)) {
-                                                supported.add(
-                                                    XtCaptureSource(
-                                                        device,
-                                                        format,
-                                                        deviceName,
-                                                        deviceId
-                                                    )
-                                                )
-                                                logger.info("Detected: ${supported[supported.size - 1]}")
-                                                break
-                                            }
-                                            supportedChannels++
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    logger.error(deviceName + "FAIL " + e.message)
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    logger.error("INIT FAILED", e)
-                }
-            }
-        } catch (e: AssertionError) {
-            logger.error("Audio query FAIL", e)
-        }
-        return supported
+    fun findSupportedSources(): List<CaptureSource> {
+        return audioBackend.detectSupportedCaptureSources()
     }
 
-    class SampleEvent(val channel: Int, val data: FloatArray, val source: XtCaptureSource)
-    class FftEvent(val channel: Int, val data: FloatArray, val source: XtCaptureSource)
+    class SampleEvent(val channel: Int, val data: FloatArray, val source: CaptureSource)
+    class FftEvent(val channel: Int, val data: FloatArray, val source: CaptureSource)
 }
