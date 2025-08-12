@@ -9,6 +9,7 @@ import me.ksanstone.wavesync.wavesync.service.PreferenceService
 import me.ksanstone.wavesync.wavesync.service.audio.backend.AudioBackend
 import me.ksanstone.wavesync.wavesync.service.audio.backend.AudioSystem
 import me.ksanstone.wavesync.wavesync.service.audio.backend.CaptureSource
+import me.ksanstone.wavesync.wavesync.service.audio.backend.java.JavaAudioBackend
 import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtAudioBackend
 import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtAudioSystem
 import me.ksanstone.wavesync.wavesync.service.audio.backend.xt.XtCaptureSource
@@ -27,11 +28,12 @@ import kotlin.math.log10
 class AudioCaptureService(
     private val preferenceService: PreferenceService,
     private var fftTransformerService: FFTTransformerService,
-    xtAudioBackend: XtAudioBackend
+    xtAudioBackend: XtAudioBackend,
+    javaAudioBackend: JavaAudioBackend
 ) : AsyncInit() {
     private val logger: Logger = LoggerFactory.getLogger("AudioCaptureService")
 
-    private val audioBackend: AudioBackend = xtAudioBackend
+    private val audioBackend: AudioBackend = if (Platform.isMac()) javaAudioBackend else xtAudioBackend
     private lateinit var pcmDataBuffer: ByteArray
     private lateinit var fftwSignal: FloatPointer
     private lateinit var fftwResult: FloatPointer
@@ -265,7 +267,7 @@ class AudioCaptureService(
     fun changeSource(source: CaptureSource) {
         if (source == this.source.get()) return
         stopCapture()
-        startCapture(source as XtCaptureSource)
+        startCapture(source)
     }
 
     private fun setScanWindowSize(size: Int) {
