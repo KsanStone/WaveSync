@@ -6,6 +6,7 @@ import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
 import me.ksanstone.wavesync.wavesync.service.audio.backend.AudioBackend
 import me.ksanstone.wavesync.wavesync.service.audio.backend.CaptureSource
+import me.ksanstone.wavesync.wavesync.utility.ChannelLabel
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -79,22 +80,23 @@ class JavaAudioBackend : AudioBackend {
 
         recordingFuture = CompletableFuture.runAsync {
             try {
+                logger.info("Starting capture using javax.sound.sampled on ${line.lineInfo} ${line.format}")
                 val chunkSize = 512
                 val channels = javaSource.format.channels
                 val sampleSize = javaSource.format.sampleSizeInBits
                 val bytesPerSample = sampleSize / 8
                 val buffer = ByteArray(chunkSize * channels * bytesPerSample)
                 val sampleBuffer = FloatArray(chunkSize * channels)
+                val channelLabels = ChannelLabel.numGeneric(channels)
 
                 AudioInputStream(line).use { ais ->
-                    // TODO channel labels
-                    preCaptureCallback.onPreCapture(chunkSize, emptyList())
+                    preCaptureCallback.onPreCapture(chunkSize, channelLabels)
                     _captureRunning.set(true)
                     while (true) {
                         val bytesRead = ais.read(buffer, 0, buffer.size)
                         if (bytesRead > 0) {
                             val framesRead = bytesRead / (bytesPerSample * channels)
-                            bytesToFloats(buffer, javaSource.format, sampleBuffer)
+                            bytesToFloats(buffer, javaSource.format, sampleBuffer, bytesRead)
 
                             processor.process(sampleBuffer, framesRead)
                         } else {
@@ -120,14 +122,13 @@ class JavaAudioBackend : AudioBackend {
         }
     }
 
-    fun bytesToFloats(bytes: ByteArray, format: AudioFormat, floatOut: FloatArray): FloatArray {
-        val channels = format.channels
+    fun bytesToFloats(bytes: ByteArray, format: AudioFormat, floatOut: FloatArray, len: Int): FloatArray {
         val bytesPerSample = format.sampleSizeInBits / 8
         val isBigEndian = format.isBigEndian
         val signed = format.encoding == AudioFormat.Encoding.PCM_SIGNED
 
         var outIndex = 0
-        for (i in bytes.indices step bytesPerSample) {
+        for (i in 0 until len step bytesPerSample) {
             var sample = 0
 
             // Assemble sample depending on endianness

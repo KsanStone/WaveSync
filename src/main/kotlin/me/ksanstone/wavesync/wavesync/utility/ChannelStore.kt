@@ -1,5 +1,13 @@
 package me.ksanstone.wavesync.wavesync.utility
 
+import me.ksanstone.wavesync.wavesync.utility.CommonChannel.BACK_LEFT
+import me.ksanstone.wavesync.wavesync.utility.CommonChannel.BACK_RIGHT
+import me.ksanstone.wavesync.wavesync.utility.CommonChannel.FRONT_CENTER
+import me.ksanstone.wavesync.wavesync.utility.CommonChannel.FRONT_LEFT
+import me.ksanstone.wavesync.wavesync.utility.CommonChannel.FRONT_RIGHT
+import me.ksanstone.wavesync.wavesync.utility.CommonChannel.LOW_FREQUENCY
+import me.ksanstone.wavesync.wavesync.utility.CommonChannel.MONO
+
 abstract class ChannelStore<E> {
 
     abstract fun resize(channels: Int, channelSize: Int): ChannelStore<E>
@@ -28,6 +36,7 @@ data class Channel<E>(
 )
 
 enum class CommonChannel(val label: ChannelLabel) {
+    MONO(ChannelLabel("mono", "M")),
     MASTER(ChannelLabel("master", "M")),
     FRONT_LEFT(ChannelLabel("front left", "L")),
     FRONT_RIGHT(ChannelLabel("front right", "R")),
@@ -97,6 +106,13 @@ data class ChannelLabel(var label: String, var shortcut: String, var fullName: S
         fun resolve(channelName: String): ChannelLabel {
             return (CommonChannel.resolve(channelName)?.label ?: UNDEFINED)
                 .withFullName(channelName)
+        }
+
+        fun numGeneric(numOfChannels: Int): List<ChannelLabel> {
+            if (numOfChannels == 1) return listOf(MONO.label)
+            val common = listOf(FRONT_LEFT.label, FRONT_RIGHT.label, FRONT_CENTER.label, LOW_FREQUENCY.label, BACK_LEFT.label, BACK_RIGHT.label)
+            if (numOfChannels <= common.size) return common.subList(0, numOfChannels)
+            return common + List(numOfChannels - common.size) { _ -> UNDEFINED }
         }
 
         val UNDEFINED = ChannelLabel("<none>", "?", "?")
